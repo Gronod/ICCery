@@ -102,7 +102,13 @@ pub async fn run_targen(
     let args = build_targen_args(&config);
     let id = format!("targen_{}", config.basename);
     
-    state.spawn(app, id, binary, args, Some(config.cwd)).await
+    let cwd = if config.cwd.trim().is_empty() {
+        None
+    } else {
+        Some(config.cwd.clone())
+    };
+    
+    state.spawn(app, id, binary, args, cwd).await
 }
 
 #[cfg(test)]
