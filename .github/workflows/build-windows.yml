@@ -1,0 +1,57 @@
+name: Build Windows Packages
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - 'v*'
+  pull_request:
+
+jobs:
+  build-windows:
+    name: Build Windows
+    runs-on: windows-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+          targets: x86_64-pc-windows-msvc
+
+      - name: Rust Cache
+        uses: Swatinem/rust-cache@v2
+
+      - name: Check sidecar binaries
+        run: |
+          if (!(Test-Path "src-tauri\argyll\windows-x86_64\argyll-instlist.exe")) {
+            Write-Host "Warning: Windows ArgyllCMS binaries not found. Please ensure they are downloaded/committed to src-tauri/argyll/windows-x86_64 before release."
+          }
+
+      - name: Install Node dependencies
+        run: npm ci
+
+      - name: Build Tauri App
+        run: npm run tauri build
+
+      - name: Upload MSI Installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: iccery-windows-msi
+          path: src-tauri/target/release/bundle/msi/*.msi
+
+      - name: Upload NSIS Installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: iccery-windows-exe
+          path: src-tauri/target/release/bundle/nsis/*.exe

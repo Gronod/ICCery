@@ -46,6 +46,7 @@ pub async fn resolve_binary(app: AppHandle, binary_name: String) -> Result<Strin
         ("linux", "x86_64") => "linux-x86_64",
         ("windows", "x86_64") => "windows-x86_64",
         ("macos", "aarch64") => "macos-aarch64",
+        ("macos", "x86_64") => "macos-x86_64",
         _ => "linux-x86_64",
     };
 
