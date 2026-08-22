@@ -41,6 +41,8 @@ jobs:
         run: npm ci
 
       - name: Build Tauri App
+        env:
+          APPIMAGE_EXTRACT_AND_RUN: 1
         run: npm run tauri build
 
       - name: Upload Debian Package
