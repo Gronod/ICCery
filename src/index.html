@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ICCery</title>
+    <link rel="stylesheet" href="./styles/main.css" />
+    <script type="module" src="./js/app.js" defer></script>
+  </head>
+  <body>
+    <div class="app-container">
+      <aside class="sidebar">
+        <div class="brand">
+          <h1>ICCery</h1>
+        </div>
+        <nav class="stepper">
+          <button class="step active" data-step="1">1. Generate Target</button>
+          <button class="step" data-step="2">2. Print Layout</button>
+          <button class="step" data-step="3">3. Measure Target</button>
+          <button class="step" data-step="4">4. Create Profile</button>
+          <button class="step" data-step="5">5. Verify</button>
+        </nav>
+      </aside>
+      
+      <main class="content">
+        <!-- Stage 1: targen -->
+        <section id="stage-1" class="stage active">
+          <h2>Generate Target</h2>
+          <p>Configure the colour patches for your profiling target.</p>
+          <div class="form-group">
+            <label>Patch Count</label>
+            <select id="patchCount">
+              <option value="400">Draft (400)</option>
+              <option value="800" selected>Standard (800)</option>
+              <option value="1500">High Quality (1500)</option>
+            </select>
+          </div>
+          <button class="primary" id="btnGenerate">Generate (.ti1)</button>
+        </section>
+
+        <!-- Stage 2: printtarg -->
+        <section id="stage-2" class="stage hidden">
+          <h2>Print Layout</h2>
+          <p>Prepare the target for printing based on your instrument.</p>
+          <button class="primary" id="btnLayout">Create Layout (.ti2, .tif)</button>
+        </section>
+
+        <!-- Stage 3: chartread -->
+        <section id="stage-3" class="stage hidden">
+          <h2>Measure Target</h2>
+          <p>Read the printed patches with your instrument.</p>
+          <div class="swatch-grid" id="swatchGrid"></div>
+          <button class="primary" id="btnRead">Start Reading (.ti3)</button>
+        </section>
+
+        <!-- Stage 4: colprof -->
+        <section id="stage-4" class="stage hidden">
+          <h2>Create Profile</h2>
+          <p>Calculate the ICC profile.</p>
+          <button class="primary" id="btnProfile">Create Profile (.icc)</button>
+        </section>
+
+        <!-- Stage 5: profcheck -->
+        <section id="stage-5" class="stage hidden">
+          <h2>Verify</h2>
+          <p>Analyze the generated profile quality.</p>
+          <button class="primary" id="btnVerify">Verify Profile</button>
+        </section>
+      </main>
+    </div>
+  </body>
+</html>
