@@ -1,0 +1,14 @@
+#!/bin/bash
+# Mock script for profcheck
+# Simulates profcheck verification output
+
+echo "profcheck: Checking profile accuracy..."
+sleep 1
+cat << 'EOF'
+{"event": "profcheck_complete", "avg_de": 0.85, "max_de": 2.41, "rms_de": 1.02}
+EOF
+echo "Summary:"
+echo "  avg. dE = 0.85"
+echo "  max. dE = 2.41"
+echo "  rms. dE = 1.02"
+exit 0

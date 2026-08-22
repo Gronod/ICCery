@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>ICCery</title>
     <link rel="stylesheet" href="./styles/main.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="./js/delaunator.min.js"></script>
     <script type="module" src="./js/app.js" defer></script>
   </head>
   <body>
@@ -12,6 +15,7 @@
       <aside class="sidebar">
         <div class="brand">
           <h1>ICCery</h1>
+          <button id="openSettingsBtn" class="icon-btn" title="Settings">⚙️</button>
         </div>
         <nav class="stepper">
           <button class="step active" data-step="1">1. Generate Target</button>
@@ -84,32 +88,262 @@
         <!-- Stage 2: printtarg -->
         <section id="stage-2" class="stage hidden">
           <h2>Print Layout</h2>
-          <p>Prepare the target for printing based on your instrument.</p>
-          <button class="primary" id="btnLayout">Create Layout (.ti2, .tif)</button>
+          <p>Configure the target layout for your instrument and paper size, then generate printable TIFF images.</p>
+
+          <!-- Colour management warning banner -->
+          <div class="warning-banner" id="cmWarningBanner">
+            <span class="warning-icon">⚠️</span>
+            <div class="warning-text">
+              <strong>CRITICAL: Disable ALL printer driver colour management when printing these targets.</strong>
+              <p>Set your printer driver to "No Colour Adjustment" (Epson), "Off (No Colour Adjustment)" (Canon), or the equivalent setting for your printer. Failure to do this will produce an incorrect profile.</p>
+            </div>
+          </div>
+
+          <div class="form-container">
+            <div class="form-group">
+              <label>Measurement Instrument</label>
+              <select id="instrumentSelect">
+                <option value="i1" selected>X-Rite i1Pro / i1Pro2</option>
+                <option value="p3">X-Rite i1Pro3+</option>
+                <option value="CM">X-Rite ColorMunki</option>
+                <option value="SS">X-Rite SpectroScan</option>
+                <option value="20">X-Rite DTP20</option>
+                <option value="22">X-Rite DTP22</option>
+                <option value="41">X-Rite DTP41</option>
+                <option value="51">X-Rite DTP51</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label>Page Size</label>
+              <select id="pageSizeSelect">
+                <option value="A4" selected>A4 [210 × 297 mm]</option>
+                <option value="A4R">A4 Landscape [297 × 210 mm]</option>
+                <option value="A3">A3 [297 × 420 mm]</option>
+                <option value="A2">A2 [420 × 594 mm]</option>
+                <option value="Letter">US Letter [215.9 × 279.4 mm]</option>
+                <option value="LetterR">US Letter Landscape [279.4 × 215.9 mm]</option>
+                <option value="Legal">US Legal [215.9 × 355.6 mm]</option>
+                <option value="4x6">4×6 [101.6 × 152.4 mm]</option>
+                <option value="11x17">11×17 [279.4 × 431.8 mm]</option>
+                <option value="custom">Custom...</option>
+              </select>
+              <div id="customPageSizeRow" class="input-row hidden" style="margin-top: 8px;">
+                <div>
+                  <label for="customPageW" class="sub-label">Width (mm)</label>
+                  <input type="number" id="customPageW" min="50" max="2000" placeholder="e.g. 200">
+                </div>
+                <div>
+                  <label for="customPageH" class="sub-label">Height (mm)</label>
+                  <input type="number" id="customPageH" min="50" max="2000" placeholder="e.g. 400">
+                </div>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label>TIFF Output</label>
+              <div class="input-row">
+                <div>
+                  <label class="sub-label">Bit Depth</label>
+                  <div class="radio-group">
+                    <label><input type="radio" name="bitDepth" value="8" checked> 8-bit</label>
+                    <label><input type="radio" name="bitDepth" value="16"> 16-bit</label>
+                  </div>
+                </div>
+                <div>
+                  <label for="tiffDpi" class="sub-label">Resolution (DPI)</label>
+                  <select id="tiffDpi">
+                    <option value="100">100 DPI (Draft)</option>
+                    <option value="200" selected>200 DPI (Standard)</option>
+                    <option value="300">300 DPI (High Quality)</option>
+                    <option value="600">600 DPI (Ultra)</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <button class="primary" id="btnCreateLayout">Create Layout (.ti2 + .tif)</button>
+
+          <div class="log-container hidden" id="printtargLogContainer">
+            <h4>Process Output</h4>
+            <pre id="printtargLog"></pre>
+          </div>
+
+          <!-- TIFF preview gallery (populated dynamically after generation) -->
+          <div class="tiff-gallery hidden" id="tiffGallery">
+            <h3>Generated Target Pages</h3>
+            <div class="gallery-info" id="galleryInfo"></div>
+            <div class="gallery-grid" id="galleryGrid"></div>
+          </div>
         </section>
 
         <!-- Stage 3: chartread -->
         <section id="stage-3" class="stage hidden">
           <h2>Measure Target</h2>
-          <p>Read the printed patches with your instrument.</p>
+          <p>Read the printed target patches with your spectrophotometer.</p>
+
+          <!-- State & Prompt Area -->
+          <div class="chartread-status">
+            <div class="status-label">State: <span id="chartreadState">IDLE</span></div>
+            <div class="status-prompt" id="chartreadPrompt">
+              Press 'Start Measurement' to begin reading the printed target.
+            </div>
+          </div>
+
+          <!-- Action Buttons -->
+          <div class="chartread-actions">
+            <button class="primary" id="btnStartRead">Start Measurement</button>
+            <button class="primary hidden" id="btnCalibrate">✓ Calibrate</button>
+            <button class="secondary hidden" id="btnRetry">↻ Retry Strip</button>
+            <button class="secondary hidden" id="btnSkip">⏭ Skip Strip</button>
+            <button class="danger hidden" id="btnCancel">✕ Cancel</button>
+          </div>
+
+          <!-- Progress Bar -->
+          <div class="read-progress-container hidden" id="readProgressContainer">
+            <div class="read-progress-bar" id="readProgress" style="width: 0%"></div>
+          </div>
+          <div class="read-progress-text" id="readProgressText"></div>
+
+          <!-- Live Stats -->
+          <div class="read-stats" id="readStats"></div>
+
+          <!-- Swatch Grid -->
           <div class="swatch-grid" id="swatchGrid"></div>
-          <button class="primary" id="btnRead">Start Reading (.ti3)</button>
+
+          <!-- Process Log -->
+          <div class="log-container hidden" id="chartreadLogContainer">
+            <h4>Process Output</h4>
+            <pre id="chartreadLog"></pre>
+          </div>
         </section>
 
         <!-- Stage 4: colprof -->
         <section id="stage-4" class="stage hidden">
           <h2>Create Profile</h2>
-          <p>Calculate the ICC profile.</p>
-          <button class="primary" id="btnProfile">Create Profile (.icc)</button>
+          <p>Calculate the ICC profile from your target measurement data.</p>
+
+          <div class="form-container">
+            <div class="form-group">
+              <label>Profile Quality</label>
+              <select id="colprofQuality">
+                <option value="l">Low (Fast draft)</option>
+                <option value="m" selected>Medium (Standard)</option>
+                <option value="h">High (Recommended)</option>
+                <option value="u">Ultra (Maximum precision - slow)</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label>Profile Description</label>
+              <input type="text" id="colprofDescription" placeholder="e.g. Epson P600 Lustre Photo">
+            </div>
+
+            <div class="form-group">
+              <label>Copyright / Creator (Optional)</label>
+              <input type="text" id="colprofCopyright" placeholder="e.g. Copyright (c) 2026 My Studio">
+            </div>
+
+            <div class="form-group">
+              <label>Algorithm Type</label>
+              <select id="colprofAlgorithm">
+                <option value="l" selected>Lab cLUT (Standard Lookup Table)</option>
+                <option value="x">XYZ cLUT</option>
+                <option value="X">Display XYZ cLUT + Matrix</option>
+                <option value="m">Matrix Only (Simple)</option>
+              </select>
+            </div>
+          </div>
+
+          <button class="primary" id="btnCreateProfile">Calculate Profile (.icc)</button>
+
+          <!-- Spinner and Progress Stage -->
+          <div class="spinner-container hidden" id="colprofSpinnerContainer">
+            <div class="spinner"></div>
+            <div class="stage-label" id="colprofStageLabel">Calculating ICC Profile...</div>
+          </div>
+
+          <!-- Success Card -->
+          <div class="success-card hidden" id="colprofSuccessCard">
+            <h3>🎉 Profile Calculation Complete</h3>
+            <p id="colprofSuccessInfo"></p>
+            <button class="primary" id="btnGoToVerify">Proceed to Verification →</button>
+          </div>
+
+          <!-- Process Log -->
+          <div class="log-container hidden" id="colprofLogContainer">
+            <h4>Process Output</h4>
+            <pre id="colprofLog"></pre>
+          </div>
         </section>
 
         <!-- Stage 5: profcheck -->
         <section id="stage-5" class="stage hidden">
-          <h2>Verify</h2>
-          <p>Analyze the generated profile quality.</p>
-          <button class="primary" id="btnVerify">Verify Profile</button>
+          <h2>Verify Profile</h2>
+          <p>Check the numerical accuracy of your profile against the original measurement data.</p>
+
+          <button class="primary" id="btnVerify">Run Profile Verification</button>
+
+          <!-- Report Card -->
+          <div class="report-card hidden" id="profcheckReportCard">
+            <div class="report-header">
+              <h3>Profile Quality Report</h3>
+              <div id="profcheckBadge" class="report-badge">GOOD</div>
+            </div>
+            
+            <div class="report-metrics">
+              <div class="metric-box">
+                <span class="metric-value" id="profcheckAvgDe">0.00</span>
+                <span class="metric-label">Average ΔE₀₀</span>
+              </div>
+              <div class="metric-box">
+                <span class="metric-value" id="profcheckMaxDe">0.00</span>
+                <span class="metric-label">Peak ΔE₀₀</span>
+              </div>
+              <div class="metric-box">
+                <span class="metric-value" id="profcheckRmsDe">0.00</span>
+                <span class="metric-label">RMS ΔE₀₀</span>
+              </div>
+            </div>
+
+            <div class="report-footnote">
+              Professional printer profiles typically achieve average ΔE₀₀ &lt; 1.0, and acceptable profiles &lt; 2.0.
+            </div>
+          </div>
+
+          <!-- 3D Gamut Viewer -->
+          <div class="gamut-viewer-section">
+            <h3>3D Gamut Visualization (CIELAB)</h3>
+            <div id="gamutViewerContainer"></div>
+          </div>
+
+          <!-- Process Log -->
+          <div class="log-container hidden" id="profcheckLogContainer">
+            <h4>Verification Output</h4>
+            <pre id="profcheckLog"></pre>
+          </div>
         </section>
       </main>
     </div>
+
+    <!-- Settings Dialog -->
+    <dialog id="settingsDialog" class="settings-modal">
+      <div class="modal-content">
+        <h2>Application Settings</h2>
+        <div class="form-group">
+          <label for="argyll_binary_dir">ArgyllCMS Binary Directory Override</label>
+          <input type="text" id="argyll_binary_dir" placeholder="Leave empty for bundled sidecars (e.g. /usr/bin)">
+        </div>
+        <div class="form-group">
+          <label for="default_instrument">Default Instrument Override</label>
+          <input type="text" id="default_instrument" placeholder="e.g. i1">
+        </div>
+        <div class="modal-actions">
+          <button id="saveSettingsBtn" class="primary">Save Settings</button>
+          <button id="closeSettingsBtn" class="secondary">Cancel</button>
+        </div>
+      </div>
+    </dialog>
   </body>
 </html>

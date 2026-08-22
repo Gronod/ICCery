@@ -45,3 +45,16 @@ pub fn emit_error(app: &AppHandle, id: &str, error: String) {
         error: Some(error),
     });
 }
+
+#[derive(Clone, Serialize)]
+pub struct JsonRowPayload {
+    pub id: String,
+    pub json: String,
+}
+
+pub fn emit_json_row(app: &AppHandle, id: &str, json: String) {
+    let _ = app.emit("process:json_row", JsonRowPayload {
+        id: id.to_string(),
+        json,
+    });
+}

@@ -38,9 +38,15 @@ impl ProcessManager {
                 let id_clone = id.clone();
                 let app_clone = app.clone();
                 tokio::spawn(async move {
+                    const JSON_ROW_PREFIX: &str = "ROW_COLORS_JSON: ";
                     let mut reader = BufReader::new(stdout).lines();
                     while let Ok(Some(line)) = reader.next_line().await {
-                        emit_stdout(&app_clone, &id_clone, line);
+                        if line.starts_with(JSON_ROW_PREFIX) {
+                            let json_str = line[JSON_ROW_PREFIX.len()..].to_string();
+                            crate::events::emit_json_row(&app_clone, &id_clone, json_str);
+                        } else {
+                            emit_stdout(&app_clone, &id_clone, line);
+                        }
                     }
                 });
 

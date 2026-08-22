@@ -1,6 +1,7 @@
 mod commands;
 mod events;
 mod process_manager;
+mod settings;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -13,8 +14,16 @@ pub fn run() {
             commands::send_stdin,
             commands::kill_process,
             commands::resolve_binary,
-            commands::list_instruments,
+            commands::detect_instruments,
+            commands::extract_gamut,
             commands::run_targen,
+            commands::run_printtarg,
+            commands::read_file_base64,
+            commands::run_chartread,
+            commands::run_colprof,
+            commands::run_profcheck,
+            settings::load_settings,
+            settings::save_settings,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

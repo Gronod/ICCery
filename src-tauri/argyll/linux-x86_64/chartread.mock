@@ -1,0 +1,30 @@
+#!/bin/bash
+# Mock script for chartread -u
+# This script simulates the behaviour of chartread for testing purposes.
+
+echo "Place instrument on calibration tile and hit [Space] to calibrate."
+
+# We don't really wait for input, just wait 1 second
+sleep 1
+echo "Calibration successful."
+echo "Hit [Space] to read strip A (or 's' to skip)."
+
+sleep 1
+echo "Reading strip A..."
+
+# Emit mock JSON for strip A
+cat << 'EOF'
+ROW_COLORS_JSON: {"event": "row_complete", "row_id": "A", "row_index": 0, "total_rows": 2, "patch_count": 3, "patches": [{"id": "1", "loc": "A1", "is_pad": false, "device": [0.0, 50.0, 100.0], "expected": {"XYZ": [18.4210, 20.1234, 15.6789], "Lab": [51.98, -8.45, 12.32]}, "measured": {"XYZ": [18.5120, 20.0451, 15.7100], "Lab": [51.89, -8.31, 12.15]}}, {"id": "2", "loc": "A2", "is_pad": false, "device": [10.0, 60.0, 90.0], "expected": {"Lab": [60.0, 10.0, -20.0]}, "measured": {"Lab": [60.1, 10.5, -19.5]}}, {"id": "3", "loc": "A3", "is_pad": true, "device": [100.0, 100.0, 100.0]}]}
+EOF
+
+echo "Hit [Space] to read strip B (or 's' to skip)."
+sleep 1
+echo "Reading strip B..."
+
+# Emit mock JSON for strip B
+cat << 'EOF'
+ROW_COLORS_JSON: {"event": "row_complete", "row_id": "B", "row_index": 1, "total_rows": 2, "patch_count": 2, "patches": [{"id": "4", "loc": "B1", "is_pad": false, "device": [100.0, 0.0, 0.0], "expected": {"Lab": [40.0, 40.0, 40.0]}, "measured": {"Lab": [38.0, 41.0, 39.0]}}, {"id": "5", "loc": "B2", "is_pad": false, "device": [0.0, 100.0, 0.0], "expected": {"Lab": [80.0, -50.0, 50.0]}, "measured": {"Lab": [79.0, -49.0, 51.0]}}]}
+EOF
+
+echo "Ready to read... done."
+exit 0

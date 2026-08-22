@@ -1,0 +1,20 @@
+#!/bin/bash
+# Mock script for colprof
+# Simulates colprof execution and outputs progress log
+
+basename="$1"
+# Find last argument if -D or other flags are used
+for arg in "$@"; do
+    basename="$arg"
+done
+
+echo "colprof: Starting profile calculation for $basename"
+sleep 1
+echo "Gamut mapping calculation..."
+sleep 1
+echo "Fitting cLUT grid points..."
+sleep 1
+echo "Writing ICC profile $basename.icc..."
+touch "$basename.icc"
+echo "Done."
+exit 0
