@@ -26,29 +26,27 @@ document.addEventListener('DOMContentLoaded', () => {
       
       step.classList.add('active');
       const targetStage = document.getElementById(`stage-${targetStep}`);
-      targetStage.classList.remove('hidden');
-      targetStage.classList.add('active');
+      if (targetStage) {
+        targetStage.classList.remove('hidden');
+        targetStage.classList.add('active');
+      }
     });
   });
 
-  // Initialize Stage 1
-  initTargen();
+  const safeInit = (name, initFn) => {
+    try {
+      initFn();
+    } catch (e) {
+      console.error(`[ICCery Init Error] Failed to initialize ${name}:`, e);
+    }
+  };
 
-  // Initialize Stage 2
-  initPrinttarg();
-
-  // Initialize Stage 3
-  initChartread();
-
-  // Initialize Stage 4
-  initColprof();
-
-  // Initialize Stage 5
-  initProfcheck();
-
-  // Initialize Settings
-  initSettings();
-
-  // Initialize 3D Gamut Viewer
-  initGamutViewer();
+  // Initialize all stages & features safely
+  safeInit('Stage 1 (Targen)', initTargen);
+  safeInit('Stage 2 (Printtarg)', initPrinttarg);
+  safeInit('Stage 3 (Chartread)', initChartread);
+  safeInit('Stage 4 (Colprof)', initColprof);
+  safeInit('Stage 5 (Profcheck)', initProfcheck);
+  safeInit('Settings', initSettings);
+  safeInit('Gamut Viewer', initGamutViewer);
 });

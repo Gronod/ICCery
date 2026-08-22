@@ -1,39 +1,44 @@
 const { invoke } = window.__TAURI__.core;
 const { listen } = window.__TAURI__.event;
-const { readTextFile } = window.__TAURI__.fs;
 
 let scene, camera, renderer, controls;
 let currentProfileMesh, sRgbMesh;
 
 export async function initGamutViewer() {
-    const container = document.getElementById('gamutViewerContainer');
-    if (!container) return;
+    try {
+        const container = document.getElementById('gamutViewerContainer');
+        if (!container || typeof THREE === 'undefined') return;
 
-    scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x1a1a24);
+        scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x111116);
 
-    camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 1, 1000);
-    camera.position.set(150, 100, 150);
+        camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 1, 1000);
+        camera.position.set(150, 100, 150);
 
-    renderer = new THREE.WebGLRenderer({ antialias: true });
-    renderer.setSize(container.clientWidth, container.clientHeight);
-    container.appendChild(renderer.domElement);
+        renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(container.clientWidth, container.clientHeight);
+        container.appendChild(renderer.domElement);
 
-    controls = new THREE.OrbitControls(camera, renderer.domElement);
-    controls.enableDamping = true;
+        if (typeof THREE.OrbitControls !== 'undefined') {
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+        }
 
-    // Add CIELAB orientation helpers (Axes: X=a*, Y=L*, Z=b*)
-    const axesHelper = new THREE.AxesHelper(80);
-    scene.add(axesHelper);
+        // Add CIELAB orientation helpers (Axes: X=a*, Y=L*, Z=b*)
+        const axesHelper = new THREE.AxesHelper(80);
+        scene.add(axesHelper);
 
-    // Lights
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
-    scene.add(ambientLight);
-    const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
-    dirLight.position.set(100, 200, 100);
-    scene.add(dirLight);
+        // Lights
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+        scene.add(ambientLight);
+        const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+        dirLight.position.set(100, 200, 100);
+        scene.add(dirLight);
 
-    animate();
+        animate();
+    } catch (err) {
+        console.warn("Gamut viewer initialization notice:", err);
+    }
 }
 
 function animate() {
@@ -71,7 +76,8 @@ function parseCGATS(text) {
 
 export async function loadGamutMesh(gamFilePath, color = 0x3b82f6, isWireframe = false) {
     try {
-        const text = await readTextFile(gamFilePath);
+        const base64Data = await invoke('read_file_base64', { path: gamFilePath });
+        const text = atob(base64Data);
         const points = parseCGATS(text);
         if (points.length < 3) return null;
 
@@ -85,7 +91,7 @@ export async function loadGamutMesh(gamFilePath, color = 0x3b82f6, isWireframe =
             vertices[i * 3 + 2] = pt.b; // Z = b*
         });
 
-        // Use Delaunator for 2D triangulation on a*, b* plane
+        if (typeof Delaunator === 'undefined') return null;
         const delaunay = new Delaunator(coords);
 
         const geometry = new THREE.BufferGeometry();
