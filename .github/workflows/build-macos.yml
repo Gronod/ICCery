@@ -1,0 +1,68 @@
+name: Build macOS Packages
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - 'v*'
+  pull_request:
+
+jobs:
+  build-macos:
+    name: Build macOS (${{ matrix.platform.name }})
+    runs-on: ${{ matrix.platform.os }}
+    strategy:
+      matrix:
+        platform:
+          - name: Intel
+            os: macos-13
+            target: x86_64-apple-darwin
+            binary_dir: macos-x86_64
+          - name: Apple Silicon
+            os: macos-14
+            target: aarch64-apple-darwin
+            binary_dir: macos-aarch64
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+          targets: ${{ matrix.platform.target }}
+
+      - name: Rust Cache
+        uses: Swatinem/rust-cache@v2
+
+      - name: Check sidecar binaries
+        run: |
+          if [ ! -d "src-tauri/argyll/${{ matrix.platform.binary_dir }}" ]; then
+            echo "Warning: macOS ArgyllCMS binaries not found. Please ensure they are downloaded/committed to src-tauri/argyll/${{ matrix.platform.binary_dir }} before release."
+          fi
+
+      - name: Install Node dependencies
+        run: npm ci
+
+      - name: Build Tauri App
+        run: npm run tauri build
+
+      - name: Upload DMG
+        uses: actions/upload-artifact@v4
+        with:
+          name: iccery-macos-${{ matrix.platform.name }}-dmg
+          path: src-tauri/target/release/bundle/dmg/*.dmg
+
+      - name: Upload App Bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: iccery-macos-${{ matrix.platform.name }}-app
+          path: src-tauri/target/release/bundle/macos/*.app
