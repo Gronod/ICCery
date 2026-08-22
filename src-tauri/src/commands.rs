@@ -171,6 +171,39 @@ pub async fn read_file_base64(path: String) -> Result<String, String> {
     Ok(base64::engine::general_purpose::STANDARD.encode(&bytes))
 }
 
+#[derive(Debug, Deserialize, Serialize)]
+pub struct ChartreadConfig {
+    pub basename: String,
+    pub cwd: String,
+}
+
+pub fn build_chartread_args(config: &ChartreadConfig) -> Vec<String> {
+    vec![
+        "-v".to_string(),
+        "-u".to_string(),
+        config.basename.clone(),
+    ]
+}
+
+#[tauri::command]
+pub async fn run_chartread(
+    app: AppHandle,
+    state: State<'_, ProcessManager>,
+    config: ChartreadConfig,
+) -> Result<(), String> {
+    let binary = resolve_binary(app.clone(), "chartread".to_string()).await?;
+    let args = build_chartread_args(&config);
+    let id = format!("chartread_{}", config.basename);
+
+    let cwd = if config.cwd.trim().is_empty() {
+        None
+    } else {
+        Some(config.cwd.clone())
+    };
+
+    state.spawn(app, id, binary, args, cwd).await
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -243,5 +276,15 @@ mod tests {
         };
         let args = build_printtarg_args(&config);
         assert_eq!(args, vec!["-v", "-u", "-i", "SS", "-p", "200x400", "-t", "150", "custom_target"]);
+    }
+
+    #[test]
+    fn test_build_chartread_args() {
+        let config = ChartreadConfig {
+            basename: "my_profile".to_string(),
+            cwd: "/home/user".to_string(),
+        };
+        let args = build_chartread_args(&config);
+        assert_eq!(args, vec!["-v", "-u", "my_profile"]);
     }
 }

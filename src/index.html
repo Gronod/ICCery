@@ -177,9 +177,42 @@
         <!-- Stage 3: chartread -->
         <section id="stage-3" class="stage hidden">
           <h2>Measure Target</h2>
-          <p>Read the printed patches with your instrument.</p>
+          <p>Read the printed target patches with your spectrophotometer.</p>
+
+          <!-- State & Prompt Area -->
+          <div class="chartread-status">
+            <div class="status-label">State: <span id="chartreadState">IDLE</span></div>
+            <div class="status-prompt" id="chartreadPrompt">
+              Press 'Start Measurement' to begin reading the printed target.
+            </div>
+          </div>
+
+          <!-- Action Buttons -->
+          <div class="chartread-actions">
+            <button class="primary" id="btnStartRead">Start Measurement</button>
+            <button class="primary hidden" id="btnCalibrate">✓ Calibrate</button>
+            <button class="secondary hidden" id="btnRetry">↻ Retry Strip</button>
+            <button class="secondary hidden" id="btnSkip">⏭ Skip Strip</button>
+            <button class="danger hidden" id="btnCancel">✕ Cancel</button>
+          </div>
+
+          <!-- Progress Bar -->
+          <div class="read-progress-container hidden" id="readProgressContainer">
+            <div class="read-progress-bar" id="readProgress" style="width: 0%"></div>
+          </div>
+          <div class="read-progress-text" id="readProgressText"></div>
+
+          <!-- Live Stats -->
+          <div class="read-stats" id="readStats"></div>
+
+          <!-- Swatch Grid -->
           <div class="swatch-grid" id="swatchGrid"></div>
-          <button class="primary" id="btnRead">Start Reading (.ti3)</button>
+
+          <!-- Process Log -->
+          <div class="log-container hidden" id="chartreadLogContainer">
+            <h4>Process Output</h4>
+            <pre id="chartreadLog"></pre>
+          </div>
         </section>
 
         <!-- Stage 4: colprof -->

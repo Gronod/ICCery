@@ -1,5 +1,6 @@
 import { initTargen } from './targen.js';
 import { initPrinttarg } from './printtarg.js';
+import { initChartread } from './chartread.js';
 
 const { invoke } = window.__TAURI__.core;
 
@@ -31,4 +32,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Initialize Stage 2
   initPrinttarg();
+
+  // Initialize Stage 3
+  initChartread();
 });

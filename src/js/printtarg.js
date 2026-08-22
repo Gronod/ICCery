@@ -1,5 +1,6 @@
 const { invoke } = window.__TAURI__.core;
 const { listen } = window.__TAURI__.event;
+import { setStage2Result } from './chartread.js';
 
 // Module-level state: set by Stage 1 when it completes
 let stage1Basename = "";
@@ -118,6 +119,7 @@ export function initPrinttarg() {
               renderTiffGallery(manifest, config.cwd);
             }
 
+            setStage2Result(stage1Basename, stage1Cwd);
             advanceToStage3();
           } else {
             logPre.textContent += `\n[ERROR] printtarg exited with code ${event.payload.code}.\n`;

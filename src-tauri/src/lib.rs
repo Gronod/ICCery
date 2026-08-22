@@ -17,6 +17,7 @@ pub fn run() {
             commands::run_targen,
             commands::run_printtarg,
             commands::read_file_base64,
+            commands::run_chartread,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
