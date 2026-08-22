@@ -32,25 +32,60 @@ pub async fn kill_process(
 
 #[tauri::command]
 pub async fn resolve_binary(app: AppHandle, binary_name: String) -> Result<String, String> {
-    // Resolve sidecar resource path
+    let settings = crate::settings::load_settings(app.clone()).unwrap_or_default();
+    if let Some(dir) = settings.argyll_binary_dir {
+        if !dir.trim().is_empty() {
+            let custom_path = std::path::Path::new(&dir).join(&binary_name);
+            if custom_path.exists() {
+                return Ok(custom_path.to_string_lossy().to_string());
+            }
+        }
+    }
+
+    let platform = match (std::env::consts::OS, std::env::consts::ARCH) {
+        ("linux", "x86_64") => "linux-x86_64",
+        ("windows", "x86_64") => "windows-x86_64",
+        ("macos", "aarch64") => "macos-aarch64",
+        _ => "linux-x86_64",
+    };
+
     let resource_path = app
         .path()
         .resolve(
-            format!("argyll/linux-x86_64/{}", binary_name),
+            format!("argyll/{}/{}", platform, binary_name),
             tauri::path::BaseDirectory::Resource,
         )
         .map_err(|e| e.to_string())?;
 
-    // In a real app we'd switch based on target_os, but for Milestone 1 scaffolding we'll mock the linux path.
     Ok(resource_path.to_string_lossy().to_string())
 }
 
 #[tauri::command]
-pub async fn list_instruments(app: AppHandle, state: State<'_, ProcessManager>) -> Result<(), String> {
-    // We would use spawn_process directly with instlist binary and parse JSON output.
-    // For scaffolding, this is a placeholder.
+pub async fn detect_instruments(app: AppHandle, state: State<'_, ProcessManager>) -> Result<(), String> {
     let binary = resolve_binary(app.clone(), "instlist".to_string()).await?;
     state.spawn(app, "instlist".to_string(), binary, vec![], None).await
+}
+
+#[tauri::command]
+pub async fn extract_gamut(
+    app: AppHandle,
+    state: State<'_, ProcessManager>,
+    icc_path: String,
+) -> Result<(), String> {
+    let binary = resolve_binary(app.clone(), "iccgamut".to_string()).await?;
+    let path = std::path::Path::new(&icc_path);
+    let basename = path.file_stem().unwrap().to_str().unwrap();
+    let parent_dir = path.parent().map(|p| p.to_str().unwrap()).unwrap_or("");
+    
+    let mut args = vec!["-w".to_string()];
+    if !parent_dir.is_empty() {
+        args.push("-d".to_string());
+        args.push(parent_dir.to_string());
+    }
+    args.push(icc_path.clone());
+    
+    let id = format!("iccgamut_{}", basename);
+    state.spawn(app, id, binary, args, None).await
 }
 
 #[derive(Debug, Deserialize, Serialize)]

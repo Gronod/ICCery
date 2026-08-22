@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>ICCery</title>
     <link rel="stylesheet" href="./styles/main.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="./js/delaunator.min.js"></script>
     <script type="module" src="./js/app.js" defer></script>
   </head>
   <body>
@@ -12,6 +15,7 @@
       <aside class="sidebar">
         <div class="brand">
           <h1>ICCery</h1>
+          <button id="openSettingsBtn" class="icon-btn" title="Settings">⚙️</button>
         </div>
         <nav class="stepper">
           <button class="step active" data-step="1">1. Generate Target</button>
@@ -308,6 +312,12 @@
             </div>
           </div>
 
+          <!-- 3D Gamut Viewer -->
+          <div class="gamut-viewer-section">
+            <h3>3D Gamut Visualization (CIELAB)</h3>
+            <div id="gamutViewerContainer"></div>
+          </div>
+
           <!-- Process Log -->
           <div class="log-container hidden" id="profcheckLogContainer">
             <h4>Verification Output</h4>
@@ -316,5 +326,24 @@
         </section>
       </main>
     </div>
+
+    <!-- Settings Dialog -->
+    <dialog id="settingsDialog" class="settings-modal">
+      <div class="modal-content">
+        <h2>Application Settings</h2>
+        <div class="form-group">
+          <label for="argyll_binary_dir">ArgyllCMS Binary Directory Override</label>
+          <input type="text" id="argyll_binary_dir" placeholder="Leave empty for bundled sidecars (e.g. /usr/bin)">
+        </div>
+        <div class="form-group">
+          <label for="default_instrument">Default Instrument Override</label>
+          <input type="text" id="default_instrument" placeholder="e.g. i1">
+        </div>
+        <div class="modal-actions">
+          <button id="saveSettingsBtn" class="primary">Save Settings</button>
+          <button id="closeSettingsBtn" class="secondary">Cancel</button>
+        </div>
+      </div>
+    </dialog>
   </body>
 </html>

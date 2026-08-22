@@ -3,6 +3,8 @@ import { initPrinttarg } from './printtarg.js';
 import { initChartread } from './chartread.js';
 import { initColprof } from './colprof.js';
 import { initProfcheck } from './profcheck.js';
+import { initSettings } from './settings.js';
+import { initGamutViewer } from './gamut_viewer.js';
 
 const { invoke } = window.__TAURI__.core;
 
@@ -43,4 +45,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Initialize Stage 5
   initProfcheck();
+
+  // Initialize Settings
+  initSettings();
+
+  // Initialize 3D Gamut Viewer
+  initGamutViewer();
 });
