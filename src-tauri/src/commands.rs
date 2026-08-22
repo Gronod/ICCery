@@ -204,6 +204,94 @@ pub async fn run_chartread(
     state.spawn(app, id, binary, args, cwd).await
 }
 
+#[derive(Debug, Deserialize, Serialize)]
+pub struct ColprofConfig {
+    pub quality: String,
+    pub algorithm: String,
+    pub description: String,
+    pub copyright: Option<String>,
+    pub basename: String,
+    pub cwd: String,
+}
+
+pub fn build_colprof_args(config: &ColprofConfig) -> Vec<String> {
+    let mut args = vec![
+        "-v".to_string(),
+        "-u".to_string(),
+        "-q".to_string(),
+        config.quality.clone(),
+        "-a".to_string(),
+        config.algorithm.clone(),
+        "-D".to_string(),
+        config.description.clone(),
+    ];
+
+    if let Some(copyright) = &config.copyright {
+        if !copyright.trim().is_empty() {
+            args.push("-C".to_string());
+            args.push(copyright.clone());
+        }
+    }
+
+    args.push(config.basename.clone());
+    args
+}
+
+#[tauri::command]
+pub async fn run_colprof(
+    app: AppHandle,
+    state: State<'_, ProcessManager>,
+    config: ColprofConfig,
+) -> Result<(), String> {
+    let binary = resolve_binary(app.clone(), "colprof".to_string()).await?;
+    let args = build_colprof_args(&config);
+    let id = format!("colprof_{}", config.basename);
+
+    let cwd = if config.cwd.trim().is_empty() {
+        None
+    } else {
+        Some(config.cwd.clone())
+    };
+
+    state.spawn(app, id, binary, args, cwd).await
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct ProfcheckConfig {
+    pub ti3_path: String,
+    pub icc_path: String,
+    pub cwd: String,
+}
+
+pub fn build_profcheck_args(config: &ProfcheckConfig) -> Vec<String> {
+    vec![
+        "-v".to_string(),
+        "-k".to_string(),
+        "-u".to_string(),
+        config.ti3_path.clone(),
+        config.icc_path.clone(),
+    ]
+}
+
+#[tauri::command]
+pub async fn run_profcheck(
+    app: AppHandle,
+    state: State<'_, ProcessManager>,
+    config: ProfcheckConfig,
+) -> Result<(), String> {
+    let binary = resolve_binary(app.clone(), "profcheck".to_string()).await?;
+    let args = build_profcheck_args(&config);
+    let id = format!("profcheck_{}", config.ti3_path);
+
+    let cwd = if config.cwd.trim().is_empty() {
+        None
+    } else {
+        Some(config.cwd.clone())
+    };
+
+    state.spawn(app, id, binary, args, cwd).await
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -286,5 +374,33 @@ mod tests {
         };
         let args = build_chartread_args(&config);
         assert_eq!(args, vec!["-v", "-u", "my_profile"]);
+    }
+
+    #[test]
+    fn test_build_colprof_args() {
+        let config = ColprofConfig {
+            quality: "h".to_string(),
+            algorithm: "l".to_string(),
+            description: "My Profile".to_string(),
+            copyright: Some("2026 ACME".to_string()),
+            basename: "my_profile".to_string(),
+            cwd: "/home/user".to_string(),
+        };
+        let args = build_colprof_args(&config);
+        assert_eq!(
+            args,
+            vec!["-v", "-u", "-q", "h", "-a", "l", "-D", "My Profile", "-C", "2026 ACME", "my_profile"]
+        );
+    }
+
+    #[test]
+    fn test_build_profcheck_args() {
+        let config = ProfcheckConfig {
+            ti3_path: "my_profile.ti3".to_string(),
+            icc_path: "my_profile.icc".to_string(),
+            cwd: "/home/user".to_string(),
+        };
+        let args = build_profcheck_args(&config);
+        assert_eq!(args, vec!["-v", "-k", "-u", "my_profile.ti3", "my_profile.icc"]);
     }
 }

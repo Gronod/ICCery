@@ -1,6 +1,8 @@
 import { initTargen } from './targen.js';
 import { initPrinttarg } from './printtarg.js';
 import { initChartread } from './chartread.js';
+import { initColprof } from './colprof.js';
+import { initProfcheck } from './profcheck.js';
 
 const { invoke } = window.__TAURI__.core;
 
@@ -35,4 +37,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Initialize Stage 3
   initChartread();
+
+  // Initialize Stage 4
+  initColprof();
+
+  // Initialize Stage 5
+  initProfcheck();
 });

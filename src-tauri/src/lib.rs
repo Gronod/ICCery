@@ -18,6 +18,8 @@ pub fn run() {
             commands::run_printtarg,
             commands::read_file_base64,
             commands::run_chartread,
+            commands::run_colprof,
+            commands::run_profcheck,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

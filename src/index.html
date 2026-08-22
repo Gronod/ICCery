@@ -218,15 +218,101 @@
         <!-- Stage 4: colprof -->
         <section id="stage-4" class="stage hidden">
           <h2>Create Profile</h2>
-          <p>Calculate the ICC profile.</p>
-          <button class="primary" id="btnProfile">Create Profile (.icc)</button>
+          <p>Calculate the ICC profile from your target measurement data.</p>
+
+          <div class="form-container">
+            <div class="form-group">
+              <label>Profile Quality</label>
+              <select id="colprofQuality">
+                <option value="l">Low (Fast draft)</option>
+                <option value="m" selected>Medium (Standard)</option>
+                <option value="h">High (Recommended)</option>
+                <option value="u">Ultra (Maximum precision - slow)</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label>Profile Description</label>
+              <input type="text" id="colprofDescription" placeholder="e.g. Epson P600 Lustre Photo">
+            </div>
+
+            <div class="form-group">
+              <label>Copyright / Creator (Optional)</label>
+              <input type="text" id="colprofCopyright" placeholder="e.g. Copyright (c) 2026 My Studio">
+            </div>
+
+            <div class="form-group">
+              <label>Algorithm Type</label>
+              <select id="colprofAlgorithm">
+                <option value="l" selected>Lab cLUT (Standard Lookup Table)</option>
+                <option value="x">XYZ cLUT</option>
+                <option value="X">Display XYZ cLUT + Matrix</option>
+                <option value="m">Matrix Only (Simple)</option>
+              </select>
+            </div>
+          </div>
+
+          <button class="primary" id="btnCreateProfile">Calculate Profile (.icc)</button>
+
+          <!-- Spinner and Progress Stage -->
+          <div class="spinner-container hidden" id="colprofSpinnerContainer">
+            <div class="spinner"></div>
+            <div class="stage-label" id="colprofStageLabel">Calculating ICC Profile...</div>
+          </div>
+
+          <!-- Success Card -->
+          <div class="success-card hidden" id="colprofSuccessCard">
+            <h3>🎉 Profile Calculation Complete</h3>
+            <p id="colprofSuccessInfo"></p>
+            <button class="primary" id="btnGoToVerify">Proceed to Verification →</button>
+          </div>
+
+          <!-- Process Log -->
+          <div class="log-container hidden" id="colprofLogContainer">
+            <h4>Process Output</h4>
+            <pre id="colprofLog"></pre>
+          </div>
         </section>
 
         <!-- Stage 5: profcheck -->
         <section id="stage-5" class="stage hidden">
-          <h2>Verify</h2>
-          <p>Analyze the generated profile quality.</p>
-          <button class="primary" id="btnVerify">Verify Profile</button>
+          <h2>Verify Profile</h2>
+          <p>Check the numerical accuracy of your profile against the original measurement data.</p>
+
+          <button class="primary" id="btnVerify">Run Profile Verification</button>
+
+          <!-- Report Card -->
+          <div class="report-card hidden" id="profcheckReportCard">
+            <div class="report-header">
+              <h3>Profile Quality Report</h3>
+              <div id="profcheckBadge" class="report-badge">GOOD</div>
+            </div>
+            
+            <div class="report-metrics">
+              <div class="metric-box">
+                <span class="metric-value" id="profcheckAvgDe">0.00</span>
+                <span class="metric-label">Average ΔE₀₀</span>
+              </div>
+              <div class="metric-box">
+                <span class="metric-value" id="profcheckMaxDe">0.00</span>
+                <span class="metric-label">Peak ΔE₀₀</span>
+              </div>
+              <div class="metric-box">
+                <span class="metric-value" id="profcheckRmsDe">0.00</span>
+                <span class="metric-label">RMS ΔE₀₀</span>
+              </div>
+            </div>
+
+            <div class="report-footnote">
+              Professional printer profiles typically achieve average ΔE₀₀ &lt; 1.0, and acceptable profiles &lt; 2.0.
+            </div>
+          </div>
+
+          <!-- Process Log -->
+          <div class="log-container hidden" id="profcheckLogContainer">
+            <h4>Verification Output</h4>
+            <pre id="profcheckLog"></pre>
+          </div>
         </section>
       </main>
     </div>

@@ -1,6 +1,7 @@
 const { invoke } = window.__TAURI__.core;
 const { listen } = window.__TAURI__.event;
 import { startSwatchListener, stopSwatchListener } from './swatch_grid.js';
+import { setStage3Result } from './colprof.js';
 
 // Module-level state: set by Stage 2 when it completes
 let stage2Basename = "";
@@ -150,6 +151,7 @@ export function initChartread() {
             setState(STATE.FINISHED);
             setPrompt("✅ Measurement complete! .ti3 file has been saved.");
             logPre.textContent += "\n[SUCCESS] chartread completed. .ti3 file written.\n";
+            setStage3Result(stage2Basename, stage2Cwd);
             advanceToStage4();
           } else {
             setState(STATE.FINISHED);
