@@ -33,6 +33,38 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
+  // About modal
+  const aboutDialog = document.getElementById('aboutDialog');
+  const openAboutBtn = document.getElementById('openAboutBtn');
+  const closeAboutBtn = document.getElementById('closeAboutBtn');
+
+  const updateAppInfo = async () => {
+    try {
+      const info = await invoke('get_app_info');
+      const versionEl = document.getElementById('aboutVersion');
+      const buildDateEl = document.getElementById('aboutBuildDate');
+      if (versionEl && info.version) versionEl.textContent = `v${info.version}`;
+      if (buildDateEl && info.build_date) buildDateEl.textContent = info.build_date;
+    } catch (e) {
+      console.warn('[ICCery] Could not load dynamic app info:', e);
+    }
+  };
+
+  updateAppInfo();
+
+  if (openAboutBtn && aboutDialog) {
+    openAboutBtn.addEventListener('click', () => {
+      updateAppInfo();
+      aboutDialog.showModal();
+    });
+  }
+
+  if (closeAboutBtn && aboutDialog) {
+    closeAboutBtn.addEventListener('click', () => {
+      aboutDialog.close();
+    });
+  }
+
   const safeInit = (name, initFn) => {
     try {
       initFn();

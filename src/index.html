@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>ICCery</title>
     <link rel="stylesheet" href="./styles/main.css" />
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="./js/three.min.js"></script>
+    <script src="./js/OrbitControls.js"></script>
     <script src="./js/delaunator.min.js"></script>
     <script type="module" src="./js/app.js" defer></script>
   </head>
@@ -15,7 +15,21 @@
       <aside class="sidebar">
         <div class="brand">
           <h1>ICCery</h1>
-          <button id="openSettingsBtn" class="icon-btn" title="Settings">⚙️</button>
+          <div class="brand-actions">
+            <button id="openAboutBtn" class="icon-btn" title="About" style="display: flex; align-items: center; justify-content: center;">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="16" x2="12" y2="12"></line>
+                <line x1="12" y1="8" x2="12.01" y2="8"></line>
+              </svg>
+            </button>
+            <button id="openSettingsBtn" class="icon-btn" title="Settings" style="display: flex; align-items: center; justify-content: center;">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="3"></circle>
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+              </svg>
+            </button>
+          </div>
         </div>
         <nav class="stepper">
           <button class="step active" data-step="1">1. Generate Target</button>
@@ -342,6 +356,76 @@
         <div class="modal-actions">
           <button id="saveSettingsBtn" class="primary">Save Settings</button>
           <button id="closeSettingsBtn" class="secondary">Cancel</button>
+        </div>
+      </div>
+    </dialog>
+
+    <!-- About Dialog -->
+    <dialog id="aboutDialog" class="settings-modal about-modal">
+      <div class="modal-content">
+        <h2>About ICCery</h2>
+        <p><strong>Version:</strong> <span id="aboutVersion">v0.1.0</span> &bull; <strong>Build Date:</strong> <span id="aboutBuildDate">August 2026</span></p>
+        <p><strong>Copyright &copy; 2026 Gordon Bolton. All rights reserved.</strong></p>
+        <h3>Licences & EULA</h3>
+        <div class="license-text-container">
+          <h4>End-User Licence Agreement (EULA) for ICCery</h4>
+          <p><strong>IMPORTANT — READ CAREFULLY:</strong> This End-User Licence Agreement ("EULA") is a legal agreement between you (either an individual or a single entity) and the developer of ICCery, Gordon Bolton ("Licensor") for the software product identified above, which includes computer software and may include associated media, printed materials, and "online" or electronic documentation ("Software").</p>
+          <p>By installing, copying, or otherwise using the Software, you agree to be bound by the terms of this EULA. If you do not agree to the terms of this EULA, do not install or use the Software.</p>
+
+          <h5>1. GRANT OF LICENCE</h5>
+          <p>Licensor grants you a revocable, non-exclusive, non-transferable, limited commercial licence to download, install, and use the ICCery graphical user interface (GUI) software strictly in accordance with the terms of this Agreement.</p>
+
+          <h5>2. RESTRICTIONS</h5>
+          <p>You agree not to, and you will not permit others to:</p>
+          <ul>
+            <li>Licence, sell, rent, lease, assign, distribute, transmit, host, outsource, disclose, or otherwise commercially exploit the ICCery GUI.</li>
+            <li>Modify, make derivative works of, disassemble, decrypt, reverse compile, or reverse engineer any part of the proprietary ICCery GUI software.</li>
+            <li>Remove, alter, or obscure any proprietary notice (including any notice of copyright or trademark) of Licensor or its affiliates, partners, suppliers, or the licensors of the Software.</li>
+          </ul>
+
+          <h5>3. INTELLECTUAL PROPERTY</h5>
+          <p>The ICCery GUI (excluding third-party components described below) is proprietary software. All copyrights, patents, trademarks, trade secrets, and other intellectual property rights in the ICCery GUI are and shall remain the sole and exclusive property of the Licensor (Gordon Bolton).</p>
+
+          <h5>4. THIRD-PARTY COMPONENTS &amp; AGPL COMPLIANCE</h5>
+          <p>ICCery relies on and interacts with a modified version of <strong>ArgyllCMS</strong>, an open-source colour management system.</p>
+
+          <h6>Arms-Length Integration</h6>
+          <p>The ICCery software architecture maintains a strict, loosely-coupled separation from ArgyllCMS. The proprietary ICCery GUI operates as a distinct, standalone process that interacts with the ArgyllCMS binaries strictly at arm's length via standard inter-process communication. Specifically, ICCery executes the modified ArgyllCMS binary and receives real-time, line-by-line patch measurement spectral data piped through standard output (stdout).</p>
+          <p>Because of this separate process architecture, the proprietary commercial licence of ICCery does not extend to ArgyllCMS, and the AGPLv3 licence of ArgyllCMS does not extend to or infect the proprietary ICCery GUI wrapper.</p>
+
+          <h6>ArgyllCMS Licence (AGPLv3)</h6>
+          <p>ArgyllCMS is licensed under the GNU Affero General Public Licence version 3.0 (AGPLv3).</p>
+          <ul>
+            <li>The original ArgyllCMS software is copyright (c) Graeme W. Gill.</li>
+            <li>In compliance with the AGPLv3, the modifications made to the ArgyllCMS C codebase to implement the custom command-line switch for real-time data output remain fully subject to the AGPLv3.</li>
+            <li><strong>Source Code Availability:</strong> You are entitled to the complete machine-readable source code of the modified ArgyllCMS binaries distributed with this software. The source code for the modified ArgyllCMS component can be obtained at: <code>https://git.i3omb.com/gronod/argyllcms</code>.</li>
+          </ul>
+
+          <h5>5. DISCLAIMER OF WARRANTY</h5>
+          <p class="license-legal-block">THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT, OR OTHERWISE, ARISING FROM, OUT OF, OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.</p>
+
+          <h5>6. LIMITATION OF LIABILITY</h5>
+          <p class="license-legal-block">NOTWITHSTANDING ANY DAMAGES THAT YOU MIGHT INCUR, THE ENTIRE LIABILITY OF LICENSOR AND ANY OF ITS SUPPLIERS UNDER ANY PROVISION OF THIS EULA AND YOUR EXCLUSIVE REMEDY FOR ALL OF THE FOREGOING SHALL BE LIMITED TO THE AMOUNT ACTUALLY PAID BY YOU FOR THE SOFTWARE.</p>
+
+          <hr class="license-divider" />
+
+          <h4>Third-Party Licenses</h4>
+          <p>The ICCery software, Copyright (c) 2026 Gordon Bolton, uses the following third-party components:</p>
+
+          <h5>Three.js</h5>
+          <p>Copyright (c) 2010-2023 three.js authors</p>
+          <p class="license-legal-block">Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:<br/><br/>The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.<br/><br/>THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.</p>
+
+          <h5>Delaunator</h5>
+          <p>Copyright (c) 2017, Mapbox</p>
+          <p class="license-legal-block">Permission to use, copy, modify, and/or distribute this software for any purpose with or without fee is hereby granted, provided that the above copyright notice and this permission notice appear in all copies.<br/><br/>THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.</p>
+
+          <h5>Tauri Framework &amp; Rust Dependencies</h5>
+          <p>Copyright (c) 2019-present, Tauri Programme within The Commons Conservancy.</p>
+          <p>This software also uses various libraries from the Rust ecosystem (including Serde, Tokio) that are distributed under the MIT License or Apache License Version 2.0.</p>
+        </div>
+        <div class="modal-actions">
+          <button id="closeAboutBtn" class="primary">Close</button>
         </div>
       </div>
     </dialog>

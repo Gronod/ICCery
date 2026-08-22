@@ -60,6 +60,20 @@ pub async fn resolve_binary(app: AppHandle, binary_name: String) -> Result<Strin
     Ok(resource_path.to_string_lossy().to_string())
 }
 
+#[derive(Serialize)]
+pub struct AppInfo {
+    pub version: String,
+    pub build_date: String,
+}
+
+#[tauri::command]
+pub fn get_app_info() -> AppInfo {
+    AppInfo {
+        version: env!("CARGO_PKG_VERSION").to_string(),
+        build_date: env!("BUILD_DATE").to_string(),
+    }
+}
+
 #[tauri::command]
 pub async fn detect_instruments(app: AppHandle, state: State<'_, ProcessManager>) -> Result<(), String> {
     let binary = resolve_binary(app.clone(), "instlist".to_string()).await?;
