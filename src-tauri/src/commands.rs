@@ -1,5 +1,4 @@
-use tauri::{AppHandle, State, Manager};
-use std::path::PathBuf;
+use tauri::{AppHandle, Manager, State};
 use crate::process_manager::ProcessManager;
 
 #[tauri::command]

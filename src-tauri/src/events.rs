@@ -27,6 +27,7 @@ pub fn emit_stderr(app: &AppHandle, id: &str, line: String) {
     });
 }
 
+#[allow(dead_code)]
 pub fn emit_exit(app: &AppHandle, id: &str, code: i32) {
     let _ = app.emit("process:exit", ProcessEventPayload {
         id: id.to_string(),

@@ -1,12 +1,11 @@
 use std::collections::HashMap;
 use std::process::Stdio;
-use std::sync::Arc;
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 use tokio::process::{Child, Command};
 use tokio::sync::Mutex;
 use tauri::AppHandle;
 
-use crate::events::{emit_error, emit_exit, emit_stderr, emit_stdout};
+use crate::events::{emit_error, emit_stderr, emit_stdout};
 
 pub struct ProcessManager {
     processes: Mutex<HashMap<String, Child>>,
