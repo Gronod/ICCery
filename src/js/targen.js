@@ -1,6 +1,6 @@
-import { invoke } from "@tauri-apps/api/core";
-import { listen } from "@tauri-apps/api/event";
-import { save } from "@tauri-apps/plugin-dialog";
+const { invoke } = window.__TAURI__.core;
+const { listen } = window.__TAURI__.event;
+const { save } = window.__TAURI__.dialog;
 
 export function initTargen() {
   const colourSpaceRadios = document.querySelectorAll('input[name="colourSpace"]');
@@ -27,10 +27,19 @@ export function initTargen() {
     }
   });
 
+  // Enable generate button if text is entered manually
+  targetBasename.addEventListener("input", () => {
+    if (targetBasename.value.trim() !== "") {
+      btnGenerate.disabled = false;
+    } else {
+      btnGenerate.disabled = true;
+    }
+  });
+
   // Browse button opens save dialog
   btnBrowse.addEventListener("click", async () => {
     try {
-      const filePath = await save({
+      let filePath = await save({
         title: "Save Target File As...",
         filters: [{
           name: "ArgyllCMS Target",
@@ -39,18 +48,22 @@ export function initTargen() {
       });
       
       if (filePath) {
+        // Ensure .ti1 suffix is present in the display if the OS dialog didn't append it
+        if (!filePath.toLowerCase().endsWith('.ti1')) {
+          filePath += '.ti1';
+        }
+
         // Simple extraction of directory and basename. 
-        // Example: /home/user/my_paper.ti1 -> /home/user and my_paper
         const isWindows = filePath.includes('\\');
         const sep = isWindows ? '\\' : '/';
         const parts = filePath.split(sep);
         const fileName = parts.pop();
         
         currentWorkingDir = parts.join(sep);
-        currentBasename = fileName.replace(/\.ti1$/i, '');
+        const basename = fileName.replace(/\.ti1$/i, '');
         
-        targetBasename.value = currentBasename;
-        selectedPathDisplay.textContent = filePath;
+        targetBasename.value = basename;
+        selectedPathDisplay.textContent = `Directory: ${currentWorkingDir}`;
         
         // Enable generate button
         btnGenerate.disabled = false;
@@ -78,18 +91,20 @@ export function initTargen() {
       if (radio.checked) colourSpace = radio.value;
     });
 
+    const basename = targetBasename.value.trim();
+
     const config = {
       colour_space: colourSpace,
       patch_count: patchCount,
       white_patches: whitePatches.value ? parseInt(whitePatches.value, 10) : null,
       black_patches: blackPatches.value ? parseInt(blackPatches.value, 10) : null,
-      basename: currentBasename,
+      basename: basename,
       cwd: currentWorkingDir
     };
 
     try {
       // Set up listeners just for this run
-      const processId = `targen_${currentBasename}`;
+      const processId = `targen_${basename}`;
       
       const unlistenStdout = await listen("process:stdout", (event) => {
         if (event.payload.id === processId && event.payload.line) {
