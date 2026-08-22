@@ -1,6 +1,7 @@
 const { invoke } = window.__TAURI__.core;
 const { listen } = window.__TAURI__.event;
 const { save } = window.__TAURI__.dialog;
+import { setStage1Result } from './printtarg.js';
 
 export function initTargen() {
   const colourSpaceRadios = document.querySelectorAll('input[name="colourSpace"]');
@@ -131,6 +132,7 @@ export function initTargen() {
             // In a real app we'd dispatch an event to advance the stepper here.
             // For now, we'll manually unlock stage 2 in the state.
             btnGenerate.disabled = false;
+            setStage1Result(basename, currentWorkingDir);
             advanceToStage2();
           } else {
             logPre.textContent += `\n[ERROR] Targen exited with code ${event.payload.code}.\n`;

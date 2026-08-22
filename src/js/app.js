@@ -1,4 +1,5 @@
 import { initTargen } from './targen.js';
+import { initPrinttarg } from './printtarg.js';
 
 const { invoke } = window.__TAURI__.core;
 
@@ -27,4 +28,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Initialize Stage 1
   initTargen();
+
+  // Initialize Stage 2
+  initPrinttarg();
 });

@@ -225,7 +225,8 @@ button:disabled {
   font-size: 0.9em;
 }
 
-#targenLog {
+#targenLog,
+#printtargLog {
   margin: 0;
   font-family: monospace;
   font-size: 0.9em;
@@ -234,3 +235,109 @@ button:disabled {
   overflow-y: auto;
   white-space: pre-wrap;
 }
+
+/* ========================================
+   Stage 2: Warning Banner
+   ======================================== */
+.warning-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  background: rgba(255, 152, 0, 0.12);
+  border: 1px solid rgba(255, 152, 0, 0.4);
+  border-left: 4px solid #ff9800;
+  border-radius: 6px;
+  padding: 16px;
+  margin-bottom: 20px;
+}
+
+.warning-icon {
+  font-size: 1.5rem;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.warning-text strong {
+  display: block;
+  color: #ffb74d;
+  margin-bottom: 6px;
+}
+
+.warning-text p {
+  margin: 0;
+  font-size: 0.9em;
+  color: #ccc;
+  line-height: 1.5;
+}
+
+/* ========================================
+   Stage 2: TIFF Gallery
+   ======================================== */
+.tiff-gallery {
+  margin-top: 24px;
+}
+
+.tiff-gallery h3 {
+  margin: 0 0 8px 0;
+  color: #fff;
+}
+
+.gallery-info {
+  font-size: 0.9em;
+  color: #888;
+  margin-bottom: 16px;
+}
+
+.gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 16px;
+}
+
+.gallery-card {
+  background: var(--panel-color);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  overflow: hidden;
+  transition: border-color 0.2s;
+}
+
+.gallery-card:hover {
+  border-color: var(--accent-color);
+}
+
+.gallery-card img {
+  width: 100%;
+  height: auto;
+  display: block;
+  background: #fff;
+}
+
+.gallery-label {
+  padding: 10px 12px;
+  font-size: 0.85em;
+  color: #aaa;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.gallery-fallback {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 30px 16px;
+  background: var(--bg-color);
+  gap: 8px;
+}
+
+.gallery-fallback .file-icon {
+  font-size: 2.5rem;
+}
+
+.gallery-fallback .file-size {
+  font-size: 0.8em;
+  color: #666;
+}
+

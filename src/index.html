@@ -84,8 +84,94 @@
         <!-- Stage 2: printtarg -->
         <section id="stage-2" class="stage hidden">
           <h2>Print Layout</h2>
-          <p>Prepare the target for printing based on your instrument.</p>
-          <button class="primary" id="btnLayout">Create Layout (.ti2, .tif)</button>
+          <p>Configure the target layout for your instrument and paper size, then generate printable TIFF images.</p>
+
+          <!-- Colour management warning banner -->
+          <div class="warning-banner" id="cmWarningBanner">
+            <span class="warning-icon">⚠️</span>
+            <div class="warning-text">
+              <strong>CRITICAL: Disable ALL printer driver colour management when printing these targets.</strong>
+              <p>Set your printer driver to "No Colour Adjustment" (Epson), "Off (No Colour Adjustment)" (Canon), or the equivalent setting for your printer. Failure to do this will produce an incorrect profile.</p>
+            </div>
+          </div>
+
+          <div class="form-container">
+            <div class="form-group">
+              <label>Measurement Instrument</label>
+              <select id="instrumentSelect">
+                <option value="i1" selected>X-Rite i1Pro / i1Pro2</option>
+                <option value="p3">X-Rite i1Pro3+</option>
+                <option value="CM">X-Rite ColorMunki</option>
+                <option value="SS">X-Rite SpectroScan</option>
+                <option value="20">X-Rite DTP20</option>
+                <option value="22">X-Rite DTP22</option>
+                <option value="41">X-Rite DTP41</option>
+                <option value="51">X-Rite DTP51</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label>Page Size</label>
+              <select id="pageSizeSelect">
+                <option value="A4" selected>A4 [210 × 297 mm]</option>
+                <option value="A4R">A4 Landscape [297 × 210 mm]</option>
+                <option value="A3">A3 [297 × 420 mm]</option>
+                <option value="A2">A2 [420 × 594 mm]</option>
+                <option value="Letter">US Letter [215.9 × 279.4 mm]</option>
+                <option value="LetterR">US Letter Landscape [279.4 × 215.9 mm]</option>
+                <option value="Legal">US Legal [215.9 × 355.6 mm]</option>
+                <option value="4x6">4×6 [101.6 × 152.4 mm]</option>
+                <option value="11x17">11×17 [279.4 × 431.8 mm]</option>
+                <option value="custom">Custom...</option>
+              </select>
+              <div id="customPageSizeRow" class="input-row hidden" style="margin-top: 8px;">
+                <div>
+                  <label for="customPageW" class="sub-label">Width (mm)</label>
+                  <input type="number" id="customPageW" min="50" max="2000" placeholder="e.g. 200">
+                </div>
+                <div>
+                  <label for="customPageH" class="sub-label">Height (mm)</label>
+                  <input type="number" id="customPageH" min="50" max="2000" placeholder="e.g. 400">
+                </div>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label>TIFF Output</label>
+              <div class="input-row">
+                <div>
+                  <label class="sub-label">Bit Depth</label>
+                  <div class="radio-group">
+                    <label><input type="radio" name="bitDepth" value="8" checked> 8-bit</label>
+                    <label><input type="radio" name="bitDepth" value="16"> 16-bit</label>
+                  </div>
+                </div>
+                <div>
+                  <label for="tiffDpi" class="sub-label">Resolution (DPI)</label>
+                  <select id="tiffDpi">
+                    <option value="100">100 DPI (Draft)</option>
+                    <option value="200" selected>200 DPI (Standard)</option>
+                    <option value="300">300 DPI (High Quality)</option>
+                    <option value="600">600 DPI (Ultra)</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <button class="primary" id="btnCreateLayout">Create Layout (.ti2 + .tif)</button>
+
+          <div class="log-container hidden" id="printtargLogContainer">
+            <h4>Process Output</h4>
+            <pre id="printtargLog"></pre>
+          </div>
+
+          <!-- TIFF preview gallery (populated dynamically after generation) -->
+          <div class="tiff-gallery hidden" id="tiffGallery">
+            <h3>Generated Target Pages</h3>
+            <div class="gallery-info" id="galleryInfo"></div>
+            <div class="gallery-grid" id="galleryGrid"></div>
+          </div>
         </section>
 
         <!-- Stage 3: chartread -->
