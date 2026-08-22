@@ -1,3 +1,5 @@
+import { initTargen } from './targen.js';
+
 const { invoke } = window.__TAURI__.core;
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -11,16 +13,18 @@ document.addEventListener('DOMContentLoaded', () => {
       
       // Update UI
       steps.forEach(s => s.classList.remove('active'));
-      stages.forEach(s => s.classList.remove('active'));
+      stages.forEach(s => {
+        s.classList.remove('active');
+        s.classList.add('hidden');
+      });
       
       step.classList.add('active');
-      document.getElementById(`stage-${targetStep}`).classList.add('active');
+      const targetStage = document.getElementById(`stage-${targetStep}`);
+      targetStage.classList.remove('hidden');
+      targetStage.classList.add('active');
     });
   });
 
-  // Example Tauri invoke calls for later
-  document.getElementById('btnGenerate').addEventListener('click', async () => {
-    console.log("Stage 1 triggered");
-    // await invoke('spawn_process', { binary: 'targen', args: [...] });
-  });
+  // Initialize Stage 1
+  initTargen();
 });

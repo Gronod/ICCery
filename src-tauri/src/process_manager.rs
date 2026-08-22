@@ -18,9 +18,12 @@ impl ProcessManager {
         }
     }
 
-    pub async fn spawn(&self, app: AppHandle, id: String, binary: String, args: Vec<String>) -> Result<(), String> {
+    pub async fn spawn(&self, app: AppHandle, id: String, binary: String, args: Vec<String>, cwd: Option<String>) -> Result<(), String> {
         let mut command = Command::new(&binary);
         command.args(args);
+        if let Some(dir) = cwd {
+            command.current_dir(dir);
+        }
         command.stdout(Stdio::piped());
         command.stderr(Stdio::piped());
         command.stdin(Stdio::piped());

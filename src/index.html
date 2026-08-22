@@ -27,15 +27,58 @@
         <section id="stage-1" class="stage active">
           <h2>Generate Target</h2>
           <p>Configure the colour patches for your profiling target.</p>
-          <div class="form-group">
-            <label>Patch Count</label>
-            <select id="patchCount">
-              <option value="400">Draft (400)</option>
-              <option value="800" selected>Standard (800)</option>
-              <option value="1500">High Quality (1500)</option>
-            </select>
+          
+          <div class="form-container">
+            <div class="form-group">
+              <label>Colour Space</label>
+              <div class="radio-group">
+                <label><input type="radio" name="colourSpace" value="rgb" checked> RGB (Printer Driver)</label>
+                <label><input type="radio" name="colourSpace" value="cmyk"> CMYK (RIP)</label>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label>Patch Count</label>
+              <select id="patchCountPreset">
+                <option value="400">Draft (400 patches)</option>
+                <option value="800" selected>Standard (800 patches)</option>
+                <option value="1500">High Quality (1500 patches)</option>
+                <option value="2500">Ultra (2500 patches)</option>
+                <option value="custom">Custom...</option>
+              </select>
+              <input type="number" id="patchCountCustom" value="800" min="50" max="10000" class="hidden" style="margin-top: 8px;">
+            </div>
+
+            <div class="form-group">
+              <label>Neutral Axis Boost (Optional)</label>
+              <div class="input-row">
+                <div>
+                  <label for="whitePatches" class="sub-label">White Patches</label>
+                  <input type="number" id="whitePatches" min="0" max="100" placeholder="e.g. 4">
+                </div>
+                <div>
+                  <label for="blackPatches" class="sub-label">Black Patches</label>
+                  <input type="number" id="blackPatches" min="0" max="100" placeholder="e.g. 8">
+                </div>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label>Project Directory & Filename</label>
+              <div class="input-row has-btn">
+                <input type="text" id="targetBasename" placeholder="e.g. my_paper_profile" readonly>
+                <button type="button" id="btnBrowse" class="secondary">Browse...</button>
+              </div>
+              <small id="selectedPathDisplay" class="path-display">No directory selected.</small>
+            </div>
           </div>
-          <button class="primary" id="btnGenerate">Generate (.ti1)</button>
+
+          <button class="primary" id="btnGenerate" disabled>Generate (.ti1)</button>
+          
+          <div class="log-container hidden" id="targenLogContainer">
+            <h4>Process Output</h4>
+            <pre id="targenLog"></pre>
+          </div>
         </section>
 
         <!-- Stage 2: printtarg -->
