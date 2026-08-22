@@ -108,6 +108,8 @@ pub async fn run_targen(
         Some(config.cwd.clone())
     };
     
+    println!("DEBUG RUN_TARGEN: binary='{}' args={:?} cwd={:?}", binary, args, cwd);
+    
     state.spawn(app, id, binary, args, cwd).await
 }
 
