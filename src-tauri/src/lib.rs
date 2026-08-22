@@ -6,13 +6,15 @@ mod process_manager;
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_dialog::init())
         .manage(process_manager::ProcessManager::new())
         .invoke_handler(tauri::generate_handler![
             commands::spawn_process,
             commands::send_stdin,
             commands::kill_process,
             commands::resolve_binary,
-            commands::list_instruments
+            commands::list_instruments,
+            commands::run_targen,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

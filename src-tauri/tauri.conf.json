@@ -30,7 +30,7 @@
       "icons/icon.ico"
     ],
     "resources": [
-      "../argyll/**/*"
+      "argyll/**/*"
     ]
   }
 }

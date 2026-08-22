@@ -7,8 +7,10 @@ use tauri::AppHandle;
 
 use crate::events::{emit_error, emit_stderr, emit_stdout};
 
+use std::sync::Arc;
+
 pub struct ProcessManager {
-    processes: Mutex<HashMap<String, Child>>,
+    processes: Mutex<HashMap<String, Arc<Mutex<Child>>>>,
 }
 
 impl ProcessManager {
@@ -18,9 +20,12 @@ impl ProcessManager {
         }
     }
 
-    pub async fn spawn(&self, app: AppHandle, id: String, binary: String, args: Vec<String>) -> Result<(), String> {
+    pub async fn spawn(&self, app: AppHandle, id: String, binary: String, args: Vec<String>, cwd: Option<String>) -> Result<(), String> {
         let mut command = Command::new(&binary);
         command.args(args);
+        if let Some(dir) = cwd {
+            command.current_dir(dir);
+        }
         command.stdout(Stdio::piped());
         command.stderr(Stdio::piped());
         command.stdin(Stdio::piped());
@@ -48,14 +53,22 @@ impl ProcessManager {
                     }
                 });
                 
+                let child_arc = Arc::new(Mutex::new(child));
                 let mut processes = self.processes.lock().await;
-                // We don't keep it in the map if we await it immediately, but we need it in the map for send_stdin/kill.
-                // We'll wrap the child's kill/stdin in a way we can extract, or use an Arc<Mutex<Child>>?
-                // Actually, tokio's Child can be awaited, taking `&mut self`. 
-                // Let's store Child in the map. Wait, we can't easily poll wait() and have it in a map.
-                // Better approach for scaffolding: just store it in the map. The frontend will know it's done when stdout closes, or we provide a poll_status command. 
-                // For simplicity now, let's keep it in the map. We'll poll its status manually or when kill is called.
-                processes.insert(id.clone(), child);
+                processes.insert(id.clone(), child_arc.clone());
+                
+                let id_clone_exit = id.clone();
+                let app_clone_exit = app.clone();
+                tokio::spawn(async move {
+                    loop {
+                        tokio::time::sleep(std::time::Duration::from_millis(100)).await;
+                        let mut c = child_arc.lock().await;
+                        if let Ok(Some(status)) = c.try_wait() {
+                            crate::events::emit_exit(&app_clone_exit, &id_clone_exit, status.code().unwrap_or(1));
+                            break;
+                        }
+                    }
+                });
                 
                 Ok(())
             }
@@ -65,14 +78,11 @@ impl ProcessManager {
             }
         }
     }
-    
-    // We need a separate task to wait for the process to exit, but we also want it in the map for stdin/kill.
-    // Instead of waiting, we can let it be managed. If we want to know when it exits, we can periodically poll or use a channel.
-    // Let's refine this in a moment.
 
     pub async fn send_stdin(&self, id: &str, input: &str) -> Result<(), String> {
-        let mut processes = self.processes.lock().await;
-        if let Some(child) = processes.get_mut(id) {
+        let processes = self.processes.lock().await;
+        if let Some(child_arc) = processes.get(id) {
+            let mut child = child_arc.lock().await;
             if let Some(stdin) = child.stdin.as_mut() {
                 stdin.write_all(input.as_bytes()).await.map_err(|e| e.to_string())?;
                 stdin.flush().await.map_err(|e| e.to_string())?;
@@ -84,7 +94,8 @@ impl ProcessManager {
 
     pub async fn kill(&self, id: &str) -> Result<(), String> {
         let mut processes = self.processes.lock().await;
-        if let Some(mut child) = processes.remove(id) {
+        if let Some(child_arc) = processes.remove(id) {
+            let mut child = child_arc.lock().await;
             child.kill().await.map_err(|e| e.to_string())?;
             return Ok(());
         }
