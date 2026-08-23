@@ -26,6 +26,8 @@ pub fn run() {
             commands::run_profcheck,
             commands::get_windows_printers,
             commands::print_target_windows,
+            commands::get_cups_printers,
+            commands::print_target_cups,
             settings::load_settings,
             settings::save_settings,
         ])
