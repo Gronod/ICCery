@@ -13,7 +13,7 @@ on:
 jobs:
   build-windows:
     name: Build Windows
-    runs-on: windows-latest
+    runs-on: windows
     
     steps:
       - name: Checkout repository
@@ -26,17 +26,25 @@ jobs:
           cache: 'npm'
 
       - name: Install Rust stable
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          toolchain: stable
-          targets: x86_64-pc-windows-msvc
+        shell: powershell
+        run: |
+          if (!(Get-Command rustup -ErrorAction SilentlyContinue) -and !(Test-Path "$env:USERPROFILE\.cargo\bin\rustup.exe")) {
+            Write-Host "Downloading rustup-init.exe..."
+            Invoke-WebRequest -Uri "https://win.rustup.rs/x86_64" -OutFile "$env:TEMP\rustup-init.exe"
+            & "$env:TEMP\rustup-init.exe" -y --default-toolchain stable --profile minimal
+          }
+          "$env:USERPROFILE\.cargo\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+          rustup default stable
+          rustup target add x86_64-pc-windows-msvc
 
       - name: Rust Cache
         uses: Swatinem/rust-cache@v2
+        continue-on-error: true
         with:
           workspaces: "src-tauri -> target"
 
       - name: Check sidecar binaries
+        shell: powershell
         run: |
           if (!(Test-Path "src-tauri\argyll\windows-x86_64\argyll-instlist.exe")) {
             Write-Host "Warning: Windows ArgyllCMS binaries not found. Please ensure they are downloaded/committed to src-tauri/argyll/windows-x86_64 before release."
@@ -47,14 +55,14 @@ jobs:
 
       - name: Get App Version
         id: get_version
-        shell: bash
+        shell: powershell
         run: |
-          VERSION=$(node -p "require('./package.json').version")
-          if [ "${{ github.ref }}" = "refs/heads/main" ]; then
-            echo "APP_VERSION=${VERSION}" >> $GITHUB_ENV
-          else
-            echo "APP_VERSION=${VERSION}-dev" >> $GITHUB_ENV
-          fi
+          $VERSION = node -p "require('./package.json').version"
+          if ($env:GITHUB_REF -eq "refs/heads/main") {
+            "APP_VERSION=$VERSION" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          } else {
+            "APP_VERSION=$VERSION-dev" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          }
 
       - name: Build Tauri App
         run: npm run tauri build -- -v

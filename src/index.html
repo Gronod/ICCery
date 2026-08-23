@@ -166,13 +166,11 @@
                   </div>
                 </div>
                 <div>
-                  <label for="tiffDpi" class="sub-label">Resolution (DPI)</label>
-                  <select id="tiffDpi">
-                    <option value="100">100 DPI (Draft)</option>
-                    <option value="200" selected>200 DPI (Standard)</option>
-                    <option value="300">300 DPI (High Quality)</option>
-                    <option value="600">600 DPI (Ultra)</option>
-                  </select>
+                  <label class="sub-label">Automatic Fit Scaling</label>
+                  <div class="auto-scaler-badge" title="Master 300 DPI high-resolution target is automatically scaled to fit the device printable area without distortion or clipping">
+                    <span class="badge-icon">⚡</span>
+                    <span>300 DPI Auto-Fit Scaler (Active)</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -219,6 +217,7 @@
                     <option value="" disabled selected>Detecting printers...</option>
                   </select>
                   <button type="button" class="btn-icon" id="btnRefreshPrinters" title="Refresh printer list">↻</button>
+                  <button type="button" class="btn-properties" id="btnPrinterProperties" title="Open native printer driver preferences (disable colour management, set media type, etc.)">⚙️ Preferences</button>
                   <span id="printerStatusBadge" class="status-badge badge-idle hidden">Idle</span>
                 </div>
               </div>
@@ -228,6 +227,24 @@
                   <input type="checkbox" id="chkPpdFallback">
                   <span>PPD Uncorrected Passthrough (Fallback)</span>
                 </label>
+              </div>
+            </div>
+
+            <!-- Media & Print Job Configuration Row -->
+            <div class="printer-media-row">
+              <div class="form-group media-group">
+                <label for="printerTraySelect">Paper Source / Tray</label>
+                <select id="printerTraySelect">
+                  <option value="" selected>Default / Auto Select</option>
+                </select>
+              </div>
+
+              <div class="form-group orientation-group">
+                <label>Orientation</label>
+                <div class="orientation-toggle-group">
+                  <button type="button" class="btn-toggle active" id="btnOrientPortrait" data-orient="portrait" title="Portrait orientation">📄 Portrait</button>
+                  <button type="button" class="btn-toggle" id="btnOrientLandscape" data-orient="landscape" title="Landscape orientation">📄 Landscape</button>
+                </div>
               </div>
             </div>
 

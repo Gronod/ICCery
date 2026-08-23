@@ -10,6 +10,7 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
         .manage(process_manager::ProcessManager::new())
+        .manage(print::PrinterDevModeStore::new())
         .invoke_handler(tauri::generate_handler![
             commands::spawn_process,
             commands::get_app_info,
@@ -29,6 +30,8 @@ pub fn run() {
             commands::get_cups_printers,
             commands::print_target_cups,
             commands::get_printers,
+            commands::get_printer_capabilities,
+            commands::show_printer_properties,
             commands::print_target_native,
             settings::load_settings,
             settings::save_settings,

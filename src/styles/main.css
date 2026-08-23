@@ -924,6 +924,97 @@ button.danger:hover {
   max-width: 100%;
 }
 
+.auto-scaler-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(0, 122, 204, 0.12);
+  border: 1px solid rgba(0, 122, 204, 0.35);
+  color: #4fc3f7;
+  font-size: 0.8rem;
+  font-weight: 500;
+  padding: 6px 12px;
+  border-radius: 6px;
+  margin-top: 4px;
+}
+
+.auto-scaler-badge .badge-icon {
+  font-size: 0.9rem;
+}
+
+.btn-properties {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--border-color);
+  color: var(--text-color);
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-size: 0.82rem;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.btn-properties:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: var(--accent-color);
+  color: #fff;
+}
+
+.printer-media-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  background: rgba(0, 0, 0, 0.2);
+  padding: 14px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  margin-bottom: 18px;
+}
+
+.printer-media-row .form-group {
+  margin-bottom: 0;
+}
+
+.orientation-toggle-group {
+  display: flex;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.btn-toggle {
+  flex: 1;
+  background: var(--bg-color);
+  border: 1px solid var(--border-color);
+  color: #aaa;
+  padding: 7px 12px;
+  border-radius: 4px;
+  font-size: 0.82rem;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+}
+
+.btn-toggle:hover {
+  border-color: rgba(255, 255, 255, 0.3);
+  color: var(--text-color);
+}
+
+.btn-toggle.active {
+  background: rgba(0, 122, 204, 0.25);
+  border-color: var(--accent-color);
+  color: #fff;
+  font-weight: 600;
+}
+
 .btn-icon {
   background: var(--bg-color);
   border: 1px solid var(--border-color);

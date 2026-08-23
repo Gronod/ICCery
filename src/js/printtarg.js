@@ -36,6 +36,10 @@ export function initPrinttarg() {
   const rawPrintPanel = document.getElementById("rawPrintPanel");
   const printerSelect = document.getElementById("printerSelect");
   const btnRefreshPrinters = document.getElementById("btnRefreshPrinters");
+  const btnPrinterProperties = document.getElementById("btnPrinterProperties");
+  const printerTraySelect = document.getElementById("printerTraySelect");
+  const btnOrientPortrait = document.getElementById("btnOrientPortrait");
+  const btnOrientLandscape = document.getElementById("btnOrientLandscape");
   const printerStatusBadge = document.getElementById("printerStatusBadge");
   const chkPpdFallback = document.getElementById("chkPpdFallback");
   const btnPrintAll = document.getElementById("btnPrintAll");
@@ -43,6 +47,23 @@ export function initPrinttarg() {
   const printNotification = document.getElementById("printNotification");
   const printNotificationIcon = document.getElementById("printNotificationIcon");
   const printNotificationText = document.getElementById("printNotificationText");
+
+  let selectedOrientation = "portrait";
+
+  // Orientation toggle buttons
+  if (btnOrientPortrait && btnOrientLandscape) {
+    btnOrientPortrait.addEventListener("click", () => {
+      selectedOrientation = "portrait";
+      btnOrientPortrait.classList.add("active");
+      btnOrientLandscape.classList.remove("active");
+    });
+
+    btnOrientLandscape.addEventListener("click", () => {
+      selectedOrientation = "landscape";
+      btnOrientLandscape.classList.add("active");
+      btnOrientPortrait.classList.remove("active");
+    });
+  }
 
   // Show/hide custom page size inputs
   pageSizeSelect.addEventListener("change", (e) => {
@@ -76,6 +97,44 @@ export function initPrinttarg() {
     if (printNotification) {
       printNotification.classList.add("hidden");
     }
+  }
+
+  /**
+   * Fetch hardware trays and paper capabilities for selected printer.
+   */
+  async function loadPrinterCapabilities(printerName) {
+    if (!printerTraySelect || !printerName) return;
+    printerTraySelect.innerHTML = '<option value="" selected>Default / Auto Select</option>';
+
+    try {
+      const caps = await invoke("get_printer_capabilities", { printerName });
+      if (caps && caps.trays && caps.trays.length > 0) {
+        caps.trays.forEach(tray => {
+          const opt = document.createElement("option");
+          opt.value = tray.id;
+          opt.textContent = tray.name;
+          printerTraySelect.appendChild(opt);
+        });
+      }
+    } catch (err) {
+      console.warn("[ICCery Print] Could not fetch printer capabilities:", err);
+    }
+  }
+
+  /**
+   * Build current print options payload from UI controls.
+   */
+  function getSelectedPrintOptions() {
+    const trayVal = printerTraySelect ? printerTraySelect.value : "";
+    const paperSource = trayVal ? parseInt(trayVal, 10) : null;
+    const ppdFallback = chkPpdFallback ? chkPpdFallback.checked : false;
+
+    return {
+      paper_source: paperSource,
+      orientation: selectedOrientation,
+      paper_size: pageSizeSelect ? pageSizeSelect.value : null,
+      ppd_uncorrected_passthrough: ppdFallback,
+    };
   }
 
   /**
@@ -145,6 +204,11 @@ export function initPrinttarg() {
         printerSelect.selectedIndex = 0;
       }
 
+      const activePrinter = printerSelect.value;
+      if (activePrinter) {
+        loadPrinterCapabilities(activePrinter);
+      }
+
       if (btnPrintAll && currentManifest) btnPrintAll.disabled = false;
       updatePrinterStatusBadge();
 
@@ -160,12 +224,32 @@ export function initPrinttarg() {
   if (printerSelect) {
     printerSelect.addEventListener("change", () => {
       updatePrinterStatusBadge();
+      loadPrinterCapabilities(printerSelect.value);
     });
   }
 
   if (btnRefreshPrinters) {
     btnRefreshPrinters.addEventListener("click", () => {
       loadPrinters();
+    });
+  }
+
+  if (btnPrinterProperties) {
+    btnPrinterProperties.addEventListener("click", async () => {
+      const printerName = printerSelect ? printerSelect.value : "";
+      if (!printerName) {
+        showNotification("error", "Please select a destination printer first.");
+        return;
+      }
+
+      try {
+        showNotification("info", `Opening native printer preferences for '${printerName}'...`);
+        await invoke("show_printer_properties", { printerName });
+        showNotification("success", `✓ Printer driver preferences configured for '${printerName}'.`);
+      } catch (err) {
+        console.error("[ICCery Print] Failed to open printer properties:", err);
+        showNotification("error", `Could not open printer properties: ${err}`);
+      }
     });
   }
 
@@ -212,7 +296,7 @@ export function initPrinttarg() {
       instrument: instrumentSelect.value,
       page_size: pageSize,
       bit_depth: bitDepth,
-      dpi: parseInt(tiffDpi.value, 10),
+      dpi: 300, // Master high-resolution layout scaled automatically to device bounds
       basename: stage1Basename,
       cwd: stage1Cwd,
     };
@@ -274,7 +358,7 @@ export function initPrinttarg() {
   });
 
   /**
-   * Spool a single TIFF target file with native color management bypass.
+   * Spool a single TIFF target file with native color management bypass and options.
    */
   async function printTargetFile(filePath, label, triggeringButton) {
     const printerName = printerSelect ? printerSelect.value : "";
@@ -283,7 +367,7 @@ export function initPrinttarg() {
       return;
     }
 
-    const ppdFallback = chkPpdFallback ? chkPpdFallback.checked : false;
+    const options = getSelectedPrintOptions();
     const origBtnContent = triggeringButton ? triggeringButton.innerHTML : "";
 
     if (triggeringButton) {
@@ -297,7 +381,7 @@ export function initPrinttarg() {
       await invoke("print_target_native", {
         printerName,
         tiffPath: filePath,
-        ppdUncorrectedPassthrough: ppdFallback,
+        options,
       });
 
       showNotification("success", `✓ Successfully spooled ${label} to '${printerName}' with raw color management bypass.`);
@@ -328,7 +412,7 @@ export function initPrinttarg() {
         return;
       }
 
-      const ppdFallback = chkPpdFallback ? chkPpdFallback.checked : false;
+      const options = getSelectedPrintOptions();
       const cwd = stage1Cwd;
       const sep = cwd.includes('\\') ? '\\' : '/';
       const pages = currentManifest.pages;
@@ -350,7 +434,7 @@ export function initPrinttarg() {
           await invoke("print_target_native", {
             printerName,
             tiffPath: filePath,
-            ppdUncorrectedPassthrough: ppdFallback,
+            options,
           });
         } catch (err) {
           console.error(`[ICCery Print Error] Page ${page.filename}:`, err);
