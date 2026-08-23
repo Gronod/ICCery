@@ -1,1 +1,80 @@
-bmFtZTogQnVpbGQgV2luZG93cyBQYWNrYWdlcw0KDQpvbjoNCiAgcHVzaDoNCiAgICBicmFuY2hlczoNCiAgICAgIC0gbWFpbg0KICAgICAgLSBkZXZlbG9wbWVudA0KICBwdWxsX3JlcXVlc3Q6DQogICAgYnJhbmNoZXM6DQogICAgICAtIG1haW4NCiAgICAgIC0gZGV2ZWxvcG1lbnQNCg0Kam9iczoNCiAgYnVpbGQtd2luZG93czoNCiAgICBuYW1lOiBCdWlsZCBXaW5kb3dzDQogICAgcnVucy1vbjogd2luZG93cw0KICAgIA0KICAgIHN0ZXBzOg0KICAgICAgLSBuYW1lOiBDaGVja291dCByZXBvc2l0b3J5DQogICAgICAgIHVzZXM6IGFjdGlvbnMvY2hlY2tvdXRAdjQNCg0KICAgICAgLSBuYW1lOiBTZXR1cCBOb2RlLmpzDQogICAgICAgIHVzZXM6IGFjdGlvbnMvc2V0dXAtbm9kZUB2NA0KICAgICAgICB3aXRoOg0KICAgICAgICAgIG5vZGUtdmVyc2lvbjogMjANCiAgICAgICAgICBjYWNoZTogJ25wbScNCg0KICAgICAgLSBuYW1lOiBJbnN0YWxsIFJ1c3Qgc3RhYmxlDQogICAgICAgIHNoZWxsOiBwd3NoDQogICAgICAgIHJ1bjogfA0KICAgICAgICAgIGlmICghKEdldC1Db21tYW5kIHJ1c3R1cCAtRXJyb3JBY3Rpb24gU2lsZW50bHlDb250aW51ZSkgLWFuZCAhKFRlc3QtUGF0aCAiJGVudjpVU0VSUFJPRklMRVwuY2FyZ29cYmluXHJ1c3R1cC5leGUiKSkgew0KICAgICAgICAgICAgV3JpdGUtSG9zdCAiRG93bmxvYWRpbmcgcnVzdHVwLWluaXQuZXhlLi4uIg0KICAgICAgICAgICAgSW52b2tlLVdlYlJlcXVlc3QgLVVyaSAiaHR0cHM6Ly93aW4ucnVzdHVwLnJzL3g4Nl82NCIgLU91dEZpbGUgIiRlbnY6VEVNUFxydXN0dXAtaW5pdC5leGUiDQogICAgICAgICAgICAmICIkZW52OlRFTVBccnVzdHVwLWluaXQuZXhlIiAteSAtLWRlZmF1bHQtdG9vbGNoYWluIHN0YWJsZSAtLXByb2ZpbGUgbWluaW1hbA0KICAgICAgICAgIH0NCiAgICAgICAgICAiJGVudjpVU0VSUFJPRklMRVwuY2FyZ29cYmluIiB8IE91dC1GaWxlIC1GaWxlUGF0aCAkZW52OkdJVEhVQl9QQVRIIC1FbmNvZGluZyB1dGY4IC1BcHBlbmQNCiAgICAgICAgICBydXN0dXAgZGVmYXVsdCBzdGFibGUNCiAgICAgICAgICBydXN0dXAgdGFyZ2V0IGFkZCB4ODZfNjQtcGMtd2luZG93cy1tc3ZjDQoNCiAgICAgIC0gbmFtZTogUnVzdCBDYWNoZQ0KICAgICAgICB1c2VzOiBTd2F0aW5lbS9ydXN0LWNhY2hlQHYyDQogICAgICAgIGNvbnRpbnVlLW9uLWVycm9yOiB0cnVlDQogICAgICAgIHdpdGg6DQogICAgICAgICAgd29ya3NwYWNlczogInNyYy10YXVyaSAtPiB0YXJnZXQiDQoNCiAgICAgIC0gbmFtZTogQ2hlY2sgc2lkZWNhciBiaW5hcmllcw0KICAgICAgICBzaGVsbDogcHdzaA0KICAgICAgICBydW46IHwNCiAgICAgICAgICBpZiAoIShUZXN0LVBhdGggInNyYy10YXVyaVxhcmd5bGxcd2luZG93cy14ODZfNjRcYXJneWxsLWluc3RsaXN0LmV4ZSIpKSB7DQogICAgICAgICAgICBXcml0ZS1Ib3N0ICJXYXJuaW5nOiBXaW5kb3dzIEFyZ3lsbENNUyBiaW5hcmllcyBub3QgZm91bmQuIFBsZWFzZSBlbnN1cmUgdGhleSBhcmUgZG93bmxvYWRlZC9jb21taXR0ZWQgdG8gc3JjLXRhdXJpL2FyZ3lsbC93aW5kb3dzLXg4Nl82NCBiZWZvcmUgcmVsZWFzZS4iDQogICAgICAgICAgfQ0KDQogICAgICAtIG5hbWU6IEluc3RhbGwgTm9kZSBkZXBlbmRlbmNpZXMNCiAgICAgICAgcnVuOiBucG0gY2kNCg0KICAgICAgLSBuYW1lOiBHZXQgQXBwIFZlcnNpb24NCiAgICAgICAgaWQ6IGdldF92ZXJzaW9uDQogICAgICAgIHNoZWxsOiBwd3NoDQogICAgICAgIHJ1bjogfA0KICAgICAgICAgICRWRVJTSU9OID0gbm9kZSAtcCAicmVxdWlyZSgnLi9wYWNrYWdlLmpzb24nKS52ZXJzaW9uIg0KICAgICAgICAgIGlmICgkZW52OkdJVEhVQl9SRUYgLWVxICJyZWZzL2hlYWRzL21haW4iKSB7DQogICAgICAgICAgICAiQVBQX1ZFUlNJT049JFZFUlNJT04iIHwgT3V0LUZpbGUgLUZpbGVQYXRoICRlbnY6R0lUSFVCX0VOViAtRW5jb2RpbmcgdXRmOCAtQXBwZW5kDQogICAgICAgICAgfSBlbHNlIHsNCiAgICAgICAgICAgICJBUFBfVkVSU0lPTj0kVkVSU0lPTi1kZXYiIHwgT3V0LUZpbGUgLUZpbGVQYXRoICRlbnY6R0lUSFVCX0VOViAtRW5jb2RpbmcgdXRmOCAtQXBwZW5kDQogICAgICAgICAgfQ0KDQogICAgICAtIG5hbWU6IEJ1aWxkIFRhdXJpIEFwcA0KICAgICAgICBydW46IG5wbSBydW4gdGF1cmkgYnVpbGQgLS0gLXYNCg0KICAgICAgLSBuYW1lOiBVcGxvYWQgTVNJIEluc3RhbGxlcg0KICAgICAgICB1c2VzOiBhY3Rpb25zL3VwbG9hZC1hcnRpZmFjdEB2NA0KICAgICAgICB3aXRoOg0KICAgICAgICAgIG5hbWU6IGljY2VyeS13aW5kb3dzLW1zaS0ke3sgZW52LkFQUF9WRVJTSU9OIH19DQogICAgICAgICAgcGF0aDogc3JjLXRhdXJpL3RhcmdldC9yZWxlYXNlL2J1bmRsZS9tc2kvKi5tc2kNCg0KICAgICAgLSBuYW1lOiBVcGxvYWQgTlNJUyBJbnN0YWxsZXINCiAgICAgICAgdXNlczogYWN0aW9ucy91cGxvYWQtYXJ0aWZhY3RAdjQNCiAgICAgICAgd2l0aDoNCiAgICAgICAgICBuYW1lOiBpY2Nlcnktd2luZG93cy1leGUtJHt7IGVudi5BUFBfVkVSU0lPTiB9fQ0KICAgICAgICAgIHBhdGg6IHNyYy10YXVyaS90YXJnZXQvcmVsZWFzZS9idW5kbGUvbnNpcy8qLmV4ZQ0K
+name: Build Windows Packages
+
+on:
+  push:
+    branches:
+      - main
+      - development
+  pull_request:
+    branches:
+      - main
+      - development
+
+jobs:
+  build-windows:
+    name: Build Windows
+    runs-on: windows
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install Rust stable
+        shell: pwsh
+        run: |
+          if (!(Get-Command rustup -ErrorAction SilentlyContinue) -and !(Test-Path "$env:USERPROFILE\.cargo\bin\rustup.exe")) {
+            Write-Host "Downloading rustup-init.exe..."
+            Invoke-WebRequest -Uri "https://win.rustup.rs/x86_64" -OutFile "$env:TEMP\rustup-init.exe"
+            & "$env:TEMP\rustup-init.exe" -y --default-toolchain stable --profile minimal
+          }
+          "$env:USERPROFILE\.cargo\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+          rustup default stable
+          rustup target add x86_64-pc-windows-msvc
+
+      - name: Rust Cache
+        uses: Swatinem/rust-cache@v2
+        continue-on-error: true
+        with:
+          workspaces: "src-tauri -> target"
+
+      - name: Check sidecar binaries
+        shell: pwsh
+        run: |
+          if (!(Test-Path "src-tauri\argyll\windows-x86_64\argyll-instlist.exe")) {
+            Write-Host "Warning: Windows ArgyllCMS binaries not found. Please ensure they are downloaded/committed to src-tauri/argyll/windows-x86_64 before release."
+          }
+
+      - name: Install Node dependencies
+        run: npm ci
+
+      - name: Get App Version
+        id: get_version
+        shell: pwsh
+        run: |
+          $VERSION = node -p "require('./package.json').version"
+          if ($env:GITHUB_REF -eq "refs/heads/main") {
+            "APP_VERSION=$VERSION" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          } else {
+            "APP_VERSION=$VERSION-dev" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          }
+
+      - name: Build Tauri App
+        run: npm run tauri build -- -v
+
+      - name: Upload MSI Installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: iccery-windows-msi-${{ env.APP_VERSION }}
+          path: src-tauri/target/release/bundle/msi/*.msi
+
+      - name: Upload NSIS Installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: iccery-windows-exe-${{ env.APP_VERSION }}
+          path: src-tauri/target/release/bundle/nsis/*.exe
