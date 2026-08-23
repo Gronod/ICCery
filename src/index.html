@@ -190,6 +190,56 @@
             <div class="gallery-info" id="galleryInfo"></div>
             <div class="gallery-grid" id="galleryGrid"></div>
           </div>
+
+          <!-- Native Raw Printing Engine (Bypass Colour Management) -->
+          <div class="print-panel hidden" id="rawPrintPanel">
+            <div class="print-panel-header">
+              <div class="print-panel-title">
+                <span class="print-icon">🖨️</span>
+                <h3>Direct Native Raw Printing</h3>
+              </div>
+              <span class="acpu-badge" title="Bypasses OS ICM / ColorSync & CUPS color management, replicating Adobe Color Print Utility">ACPU-Equivalent Mode</span>
+            </div>
+            <p class="print-panel-desc">
+              Send the generated profiling target directly to the printer nozzles with all OS and driver color management strictly bypassed.
+            </p>
+
+            <!-- Notification / Feedback Banner -->
+            <div id="printNotification" class="notification-banner hidden">
+              <span class="notification-icon" id="printNotificationIcon">ℹ️</span>
+              <div class="notification-text" id="printNotificationText"></div>
+            </div>
+
+            <div class="printer-controls-row">
+              <div class="form-group printer-select-group">
+                <label for="printerSelect">Destination Printer</label>
+                <div class="printer-select-wrapper">
+                  <select id="printerSelect">
+                    <option value="" disabled selected>Detecting printers...</option>
+                  </select>
+                  <button type="button" class="btn-icon" id="btnRefreshPrinters" title="Refresh printer list">↻</button>
+                  <span id="printerStatusBadge" class="status-badge badge-idle hidden">Idle</span>
+                </div>
+              </div>
+
+              <div class="form-group print-options-group" id="cupsOptionsGroup">
+                <label class="checkbox-label" title="Enable for printers that do not accept raw TIFF streams (uses uncorrected CUPS passthrough)">
+                  <input type="checkbox" id="chkPpdFallback">
+                  <span>PPD Uncorrected Passthrough (Fallback)</span>
+                </label>
+              </div>
+            </div>
+
+            <div class="print-actions-row">
+              <button class="primary btn-print" id="btnPrintAll">
+                <span class="btn-text">🖨️ Print All Pages (Bypass CM)</span>
+                <span class="btn-spinner hidden"></span>
+              </button>
+              <button class="secondary" id="btnAdvanceToStage3">
+                <span>Proceed to Measurement (Stage 3) →</span>
+              </button>
+            </div>
+          </div>
         </section>
 
         <!-- Stage 3: chartread -->

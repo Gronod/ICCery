@@ -28,6 +28,8 @@ pub fn run() {
             commands::print_target_windows,
             commands::get_cups_printers,
             commands::print_target_cups,
+            commands::get_printers,
+            commands::print_target_native,
             settings::load_settings,
             settings::save_settings,
         ])

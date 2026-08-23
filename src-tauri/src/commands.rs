@@ -346,7 +346,7 @@ pub async fn run_profcheck(
 pub async fn get_windows_printers() -> Result<Vec<String>, String> {
     #[cfg(windows)]
     {
-        crate::print::windows::get_printers()
+        crate::print::windows::get_printers().map(|list| list.into_iter().map(|p| p.name).collect())
     }
     #[cfg(not(windows))]
     {
@@ -397,6 +397,48 @@ pub async fn print_target_cups(
     {
         let _ = (printer_name, tiff_path, ppd_uncorrected_passthrough);
         Err("CUPS printing is only supported on macOS and Linux.".to_string())
+    }
+}
+
+#[tauri::command]
+pub async fn get_printers() -> Result<Vec<crate::print::Printer>, String> {
+    #[cfg(windows)]
+    {
+        crate::print::windows::get_printers()
+    }
+    #[cfg(unix)]
+    {
+        crate::print::unix::get_printers()
+    }
+    #[cfg(not(any(windows, unix)))]
+    {
+        Err("Native printer enumeration is not supported on this platform.".to_string())
+    }
+}
+
+#[tauri::command]
+pub async fn print_target_native(
+    printer_name: String,
+    tiff_path: String,
+    ppd_uncorrected_passthrough: Option<bool>,
+) -> Result<(), String> {
+    #[cfg(windows)]
+    {
+        let _ = ppd_uncorrected_passthrough;
+        crate::print::windows::print_target(&printer_name, &tiff_path)
+    }
+    #[cfg(unix)]
+    {
+        crate::print::unix::print_target(
+            &printer_name,
+            &tiff_path,
+            ppd_uncorrected_passthrough.unwrap_or(false),
+        )
+    }
+    #[cfg(not(any(windows, unix)))]
+    {
+        let _ = (printer_name, tiff_path, ppd_uncorrected_passthrough);
+        Err("Native raw printing is not supported on this platform.".to_string())
     }
 }
 
