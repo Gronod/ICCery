@@ -109,8 +109,13 @@ pub struct TargenConfig {
     pub patch_count: u32,
     pub white_patches: Option<u32>,
     pub black_patches: Option<u32>,
+    pub total_patches: Option<u32>,
     pub basename: String,
     pub cwd: String,
+}
+
+fn default_dpi() -> u32 {
+    300
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -118,7 +123,8 @@ pub struct PrinttargConfig {
     pub instrument: String,   // One of: "i1", "p3", "CM", "SS", "20", "22", "41", "51"
     pub page_size: String,    // One of: "A4", "A4R", "A3", "A2", "Letter", "LetterR", "Legal", "4x6", "11x17", or "WWWxHHH"
     pub bit_depth: u8,        // 8 or 16
-    pub dpi: u32,             // TIFF resolution, e.g. 100, 200, 300
+    #[serde(default = "default_dpi")]
+    pub dpi: u32,             // TIFF resolution, defaults to 300 DPI
     pub basename: String,     // Must match the .ti1 basename from Stage 1
     pub cwd: String,          // Working directory where the .ti1 file resides
 }
@@ -135,8 +141,10 @@ pub fn build_targen_args(config: &TargenConfig) -> Vec<String> {
         args.push("2".to_string()); // Default to RGB
     }
     
-    args.push("-f".to_string());
-    args.push(config.patch_count.to_string());
+    if let Some(patches) = config.total_patches {
+        args.push("-f".to_string());
+        args.push(patches.to_string());
+    }
     
     if let Some(white) = config.white_patches {
         args.push("-e".to_string());
@@ -256,34 +264,48 @@ pub async fn run_chartread(
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct ColprofConfig {
-    pub quality: String,
     pub algorithm: String,
-    pub description: String,
+    pub quality: String,
+    pub intent: Option<String>,
     pub copyright: Option<String>,
-    pub basename: String,
+    pub description: Option<String>,
     pub cwd: String,
+    pub ti3_path: String,
+    pub icc_path: String,
 }
 
 pub fn build_colprof_args(config: &ColprofConfig) -> Vec<String> {
     let mut args = vec![
         "-v".to_string(),
-        "-u".to_string(),
-        "-q".to_string(),
-        config.quality.clone(),
         "-a".to_string(),
         config.algorithm.clone(),
-        "-D".to_string(),
-        config.description.clone(),
+        "-q".to_string(),
+        config.quality.clone(),
     ];
 
-    if let Some(copyright) = &config.copyright {
-        if !copyright.trim().is_empty() {
-            args.push("-C".to_string());
-            args.push(copyright.clone());
+    if let Some(ref intent) = config.intent {
+        if !intent.trim().is_empty() {
+            args.push("-p".to_string());
+            args.push(intent.clone());
         }
     }
 
-    args.push(config.basename.clone());
+    if let Some(ref cr) = config.copyright {
+        if !cr.trim().is_empty() {
+            args.push("-C".to_string());
+            args.push(cr.clone());
+        }
+    }
+
+    if let Some(ref desc) = config.description {
+        if !desc.trim().is_empty() {
+            args.push("-D".to_string());
+            args.push(desc.clone());
+        }
+    }
+
+    args.push(config.ti3_path.clone());
+    args.push(config.icc_path.clone());
     args
 }
 
@@ -295,7 +317,7 @@ pub async fn run_colprof(
 ) -> Result<(), String> {
     let binary = resolve_binary(app.clone(), "colprof".to_string()).await?;
     let args = build_colprof_args(&config);
-    let id = format!("colprof_{}", config.basename);
+    let id = format!("colprof_{}", config.icc_path);
 
     let cwd = if config.cwd.trim().is_empty() {
         None
@@ -317,7 +339,7 @@ pub fn build_profcheck_args(config: &ProfcheckConfig) -> Vec<String> {
     vec![
         "-v".to_string(),
         "-k".to_string(),
-        "-u".to_string(),
+        "-s".to_string(),
         config.ti3_path.clone(),
         config.icc_path.clone(),
     ]
@@ -355,14 +377,19 @@ pub async fn get_windows_printers() -> Result<Vec<String>, String> {
 }
 
 #[tauri::command]
-pub async fn print_target_windows(printer_name: String, tiff_path: String) -> Result<(), String> {
+pub async fn print_target_windows(
+    state: State<'_, crate::print::PrinterDevModeStore>,
+    printer_name: String,
+    tiff_path: String,
+    options: Option<crate::print::PrintOptions>,
+) -> Result<(), String> {
     #[cfg(windows)]
     {
-        crate::print::windows::print_target(&printer_name, &tiff_path)
+        crate::print::windows::print_target(&printer_name, &tiff_path, options.as_ref(), Some(&state))
     }
     #[cfg(not(windows))]
     {
-        let _ = (printer_name, tiff_path);
+        let _ = (state, printer_name, tiff_path, options);
         Err("Windows native printing is only supported on Windows.".to_string())
     }
 }
@@ -383,19 +410,19 @@ pub async fn get_cups_printers() -> Result<Vec<crate::print::Printer>, String> {
 pub async fn print_target_cups(
     printer_name: String,
     tiff_path: String,
-    ppd_uncorrected_passthrough: Option<bool>,
+    options: Option<crate::print::PrintOptions>,
 ) -> Result<(), String> {
     #[cfg(unix)]
     {
         crate::print::unix::print_target(
             &printer_name,
             &tiff_path,
-            ppd_uncorrected_passthrough.unwrap_or(false),
+            options.as_ref(),
         )
     }
     #[cfg(not(unix))]
     {
-        let _ = (printer_name, tiff_path, ppd_uncorrected_passthrough);
+        let _ = (printer_name, tiff_path, options);
         Err("CUPS printing is only supported on macOS and Linux.".to_string())
     }
 }
@@ -417,27 +444,73 @@ pub async fn get_printers() -> Result<Vec<crate::print::Printer>, String> {
 }
 
 #[tauri::command]
-pub async fn print_target_native(
+pub async fn get_printer_capabilities(
     printer_name: String,
-    tiff_path: String,
-    ppd_uncorrected_passthrough: Option<bool>,
-) -> Result<(), String> {
+) -> Result<crate::print::PrinterCapabilities, String> {
     #[cfg(windows)]
     {
-        let _ = ppd_uncorrected_passthrough;
-        crate::print::windows::print_target(&printer_name, &tiff_path)
+        crate::print::windows::get_printer_capabilities(&printer_name)
     }
     #[cfg(unix)]
     {
+        crate::print::unix::get_printer_capabilities(&printer_name)
+    }
+    #[cfg(not(any(windows, unix)))]
+    {
+        let _ = printer_name;
+        Err("Printer capabilities query is not supported on this platform.".to_string())
+    }
+}
+
+#[tauri::command]
+pub async fn show_printer_properties(
+    state: State<'_, crate::print::PrinterDevModeStore>,
+    printer_name: String,
+) -> Result<(), String> {
+    #[cfg(windows)]
+    {
+        crate::print::windows::show_printer_properties(&printer_name, &state)
+    }
+    #[cfg(unix)]
+    {
+        let _ = (state, printer_name);
+        Ok(())
+    }
+    #[cfg(not(any(windows, unix)))]
+    {
+        let _ = (state, printer_name);
+        Err("Printer properties dialog is not supported on this platform.".to_string())
+    }
+}
+
+#[tauri::command]
+pub async fn print_target_native(
+    state: State<'_, crate::print::PrinterDevModeStore>,
+    printer_name: String,
+    tiff_path: String,
+    options: Option<crate::print::PrintOptions>,
+) -> Result<(), String> {
+    #[cfg(windows)]
+    {
+        crate::print::windows::print_target(
+            &printer_name,
+            &tiff_path,
+            options.as_ref(),
+            Some(&state),
+        )
+    }
+    #[cfg(unix)]
+    {
+        let _ = state;
         crate::print::unix::print_target(
             &printer_name,
             &tiff_path,
-            ppd_uncorrected_passthrough.unwrap_or(false),
+            options.as_ref(),
         )
     }
     #[cfg(not(any(windows, unix)))]
     {
-        let _ = (printer_name, tiff_path, ppd_uncorrected_passthrough);
+        let _ = (state, printer_name, tiff_path, options);
         Err("Native raw printing is not supported on this platform.".to_string())
     }
 }

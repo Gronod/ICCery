@@ -1,5 +1,7 @@
 use std::path::Path;
-use crate::print::Printer;
+use crate::print::{
+    PrintOptions, Printer, PrinterCapabilities, PrinterPaperSize, PrinterTray,
+};
 
 /// Parse `lpstat -e` output into a list of printer destination names.
 pub fn parse_lpstat_e(output: &str) -> Vec<String> {
@@ -94,7 +96,6 @@ pub fn merge_printer_info(
 
 /// Query available CUPS printers, connection statuses, and default destination.
 pub fn get_printers() -> Result<Vec<Printer>, String> {
-    // 1. Run lpstat -e
     let e_output = std::process::Command::new("lpstat")
         .arg("-e")
         .output();
@@ -105,7 +106,6 @@ pub fn get_printers() -> Result<Vec<Printer>, String> {
         _ => Vec::new(),
     };
 
-    // 2. Run lpstat -p
     let p_output = std::process::Command::new("lpstat")
         .arg("-p")
         .output();
@@ -121,7 +121,6 @@ pub fn get_printers() -> Result<Vec<Printer>, String> {
         }
     };
 
-    // 3. Run lpstat -d
     let d_output = std::process::Command::new("lpstat")
         .arg("-d")
         .output();
@@ -133,11 +132,69 @@ pub fn get_printers() -> Result<Vec<Printer>, String> {
     Ok(merge_printer_info(&destinations, &statuses, default_dest.as_deref()))
 }
 
-/// Construct `lp` command line arguments for target printing.
+/// Parse `lpoptions -p <printer> -l` output into trays and paper sizes.
+pub fn parse_lpoptions_l(output: &str) -> (Vec<PrinterTray>, Vec<PrinterPaperSize>) {
+    let mut trays = Vec::new();
+    let mut paper_sizes = Vec::new();
+
+    for line in output.lines() {
+        let trimmed = line.trim();
+        if trimmed.is_empty() {
+            continue;
+        }
+
+        if let Some((key_part, values_part)) = trimmed.split_once(':') {
+            let key_name = key_part.split('/').next().unwrap_or("").trim();
+            let values = values_part.split_whitespace();
+
+            if key_name.eq_ignore_ascii_case("InputSlot") || key_name.eq_ignore_ascii_case("MediaSource") {
+                for (idx, val) in values.enumerate() {
+                    let clean_val = val.trim_start_matches('*');
+                    trays.push(PrinterTray {
+                        id: (idx + 1) as u16,
+                        name: clean_val.to_string(),
+                    });
+                }
+            } else if key_name.eq_ignore_ascii_case("PageSize") || key_name.eq_ignore_ascii_case("MediaSize") {
+                for (idx, val) in values.enumerate() {
+                    let clean_val = val.trim_start_matches('*');
+                    paper_sizes.push(PrinterPaperSize {
+                        id: (idx + 1) as u16,
+                        name: clean_val.to_string(),
+                    });
+                }
+            }
+        }
+    }
+
+    (trays, paper_sizes)
+}
+
+/// Query CUPS printer capabilities via `lpoptions -p <printer> -l`.
+pub fn get_printer_capabilities(printer_name: &str) -> Result<PrinterCapabilities, String> {
+    let output = std::process::Command::new("lpoptions")
+        .args(["-p", printer_name, "-l"])
+        .output();
+
+    let (trays, paper_sizes) = match output {
+        Ok(out) if out.status.success() => {
+            parse_lpoptions_l(&String::from_utf8_lossy(&out.stdout))
+        }
+        _ => (Vec::new(), Vec::new()),
+    };
+
+    Ok(PrinterCapabilities {
+        trays,
+        paper_sizes,
+        supports_orientation: true,
+    })
+}
+
+/// Construct `lp` command line arguments for target printing with options.
 pub fn build_lp_args(
     printer_name: &str,
     tiff_path: &str,
-    ppd_uncorrected_passthrough: bool,
+    options: Option<&PrintOptions>,
 ) -> Vec<String> {
     let path = Path::new(tiff_path);
     let title = format!(
@@ -152,7 +209,11 @@ pub fn build_lp_args(
         title,
     ];
 
-    if ppd_uncorrected_passthrough {
+    let ppd_fallback = options
+        .and_then(|o| o.ppd_uncorrected_passthrough)
+        .unwrap_or(false);
+
+    if ppd_fallback {
         args.push("-o".to_string());
         args.push("ColorModel=Gray".to_string());
         args.push("-o".to_string());
@@ -160,6 +221,24 @@ pub fn build_lp_args(
     } else {
         args.push("-o".to_string());
         args.push("raw".to_string());
+    }
+
+    if let Some(opts) = options {
+        if let Some(ref orient) = opts.orientation {
+            args.push("-o".to_string());
+            if orient.eq_ignore_ascii_case("landscape") {
+                args.push("orientation-requested=4".to_string());
+            } else {
+                args.push("orientation-requested=3".to_string());
+            }
+        }
+
+        if let Some(ref page_size) = opts.paper_size {
+            if !page_size.trim().is_empty() {
+                args.push("-o".to_string());
+                args.push(format!("PageSize={}", page_size.trim()));
+            }
+        }
     }
 
     args.push(tiff_path.to_string());
@@ -170,14 +249,14 @@ pub fn build_lp_args(
 pub fn print_target(
     printer_name: &str,
     tiff_path: &str,
-    ppd_uncorrected_passthrough: bool,
+    options: Option<&PrintOptions>,
 ) -> Result<(), String> {
     let path = Path::new(tiff_path);
     if !path.exists() {
         return Err(format!("Target TIFF file not found: {}", tiff_path));
     }
 
-    let args = build_lp_args(printer_name, tiff_path, ppd_uncorrected_passthrough);
+    let args = build_lp_args(printer_name, tiff_path, options);
 
     let output = std::process::Command::new("lp")
         .args(&args)
@@ -199,6 +278,7 @@ pub fn print_target(
 
     Ok(())
 }
+
 
 #[cfg(test)]
 mod tests {
@@ -296,8 +376,26 @@ printer Zebra_Label disabled since Wed 10 Jun 2026 - reason: out of ribbon\n\
     }
 
     #[test]
+    fn test_parse_lpoptions_l() {
+        let sample = "\
+PageSize/Media Size: *A4 Letter Legal A3\n\
+InputSlot/Media Source: *Auto Upper Lower Rear Manual\n\
+Duplex/2-Sided Printing: *None DuplexNoTumble DuplexTumble\n\
+";
+        let (trays, paper_sizes) = parse_lpoptions_l(sample);
+        assert_eq!(trays.len(), 5);
+        assert_eq!(trays[0].name, "Auto");
+        assert_eq!(trays[1].name, "Upper");
+        assert_eq!(trays[4].name, "Manual");
+
+        assert_eq!(paper_sizes.len(), 4);
+        assert_eq!(paper_sizes[0].name, "A4");
+        assert_eq!(paper_sizes[1].name, "Letter");
+    }
+
+    #[test]
     fn test_build_lp_args_raw() {
-        let args = build_lp_args("Epson-Stylus-SX420W", "/tmp/target.tif", false);
+        let args = build_lp_args("Epson-Stylus-SX420W", "/tmp/target.tif", None);
         assert_eq!(
             args,
             vec![
@@ -314,7 +412,11 @@ printer Zebra_Label disabled since Wed 10 Jun 2026 - reason: out of ribbon\n\
 
     #[test]
     fn test_build_lp_args_ppd_fallback() {
-        let args = build_lp_args("Epson-Stylus-SX420W", "/tmp/target.tif", true);
+        let opts = PrintOptions {
+            ppd_uncorrected_passthrough: Some(true),
+            ..Default::default()
+        };
+        let args = build_lp_args("Epson-Stylus-SX420W", "/tmp/target.tif", Some(&opts));
         assert_eq!(
             args,
             vec![
@@ -332,8 +434,35 @@ printer Zebra_Label disabled since Wed 10 Jun 2026 - reason: out of ribbon\n\
     }
 
     #[test]
+    fn test_build_lp_args_with_orientation_and_size() {
+        let opts = PrintOptions {
+            orientation: Some("landscape".to_string()),
+            paper_size: Some("A4".to_string()),
+            ppd_uncorrected_passthrough: Some(false),
+            ..Default::default()
+        };
+        let args = build_lp_args("Epson-Stylus-SX420W", "/tmp/target.tif", Some(&opts));
+        assert_eq!(
+            args,
+            vec![
+                "-d",
+                "Epson-Stylus-SX420W",
+                "-t",
+                "ICCery Target - target.tif",
+                "-o",
+                "raw",
+                "-o",
+                "orientation-requested=4",
+                "-o",
+                "PageSize=A4",
+                "/tmp/target.tif"
+            ]
+        );
+    }
+
+    #[test]
     fn test_print_target_file_not_found() {
-        let res = print_target("Epson-Stylus-SX420W", "/non/existent/target.tif", false);
+        let res = print_target("Epson-Stylus-SX420W", "/non/existent/target.tif", None);
         assert!(res.is_err());
         assert!(res.unwrap_err().contains("not found"));
     }
