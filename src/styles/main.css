@@ -41,9 +41,21 @@ body {
   gap: 8px;
 }
 
-.brand h1 {
-  margin: 0;
-  font-size: 1.5rem;
+.main-logo {
+  height: 2rem;
+  max-width: 200px;
+  object-fit: contain;
+}
+
+.about-logo-container {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 1rem;
+}
+
+.about-logo {
+  height: 4rem;
+  object-fit: contain;
 }
 
 .stepper {
