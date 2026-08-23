@@ -1,5 +1,6 @@
 mod commands;
 mod events;
+mod print;
 mod process_manager;
 mod settings;
 
@@ -23,6 +24,8 @@ pub fn run() {
             commands::run_chartread,
             commands::run_colprof,
             commands::run_profcheck,
+            commands::get_windows_printers,
+            commands::print_target_windows,
             settings::load_settings,
             settings::save_settings,
         ])
