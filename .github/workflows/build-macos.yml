@@ -54,17 +54,28 @@ jobs:
       - name: Install Node dependencies
         run: npm ci
 
+      - name: Get App Version
+        id: get_version
+        shell: bash
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          if [ "${{ github.ref }}" = "refs/heads/main" ]; then
+            echo "APP_VERSION=${VERSION}" >> $GITHUB_ENV
+          else
+            echo "APP_VERSION=${VERSION}-dev" >> $GITHUB_ENV
+          fi
+
       - name: Build Tauri App
         run: npm run tauri build
 
       - name: Upload DMG
         uses: actions/upload-artifact@v4
         with:
-          name: iccery-macos-${{ matrix.platform.name }}-dmg
+          name: iccery-macos-${{ matrix.platform.name }}-dmg-${{ env.APP_VERSION }}
           path: src-tauri/target/release/bundle/dmg/*.dmg
 
       - name: Upload App Bundle
         uses: actions/upload-artifact@v4
         with:
-          name: iccery-macos-${{ matrix.platform.name }}-app
+          name: iccery-macos-${{ matrix.platform.name }}-app-${{ env.APP_VERSION }}
           path: src-tauri/target/release/bundle/macos/*.app
