@@ -1,4 +1,5 @@
 :root {
+  color-scheme: dark;
   --bg-color: #1e1e1e;
   --panel-color: #252526;
   --text-color: #d4d4d4;
@@ -129,13 +130,34 @@ button.primary:hover {
   margin-bottom: 8px;
 }
 
+select,
 .form-group select {
-  padding: 8px;
-  background-color: var(--panel-color);
-  color: var(--text-color);
+  padding: 8px 12px;
+  background-color: var(--bg-color);
+  color: #ffffff;
   border: 1px solid var(--border-color);
   border-radius: 4px;
-  width: 200px;
+  width: 100%;
+  max-width: 320px;
+  color-scheme: dark;
+  cursor: pointer;
+  box-sizing: border-box;
+}
+
+select:focus,
+.form-group select:focus {
+  outline: 1px solid var(--accent-color);
+  border-color: var(--accent-color);
+}
+
+select option {
+  background-color: var(--panel-color);
+  color: #ffffff;
+}
+
+select option:checked {
+  background-color: var(--accent-color);
+  color: #ffffff;
 }
 
 @keyframes fadeIn {
