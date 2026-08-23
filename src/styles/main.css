@@ -22,7 +22,7 @@ body {
 }
 
 .sidebar {
-  width: 250px;
+  width: 270px;
   background-color: var(--panel-color);
   border-right: 1px solid var(--border-color);
   display: flex;
@@ -30,22 +30,29 @@ body {
 }
 
 .brand {
-  padding: 20px;
+  padding: 14px 16px;
   border-bottom: 1px solid var(--border-color);
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 10px;
+  min-width: 0;
 }
 
 .brand-actions {
   display: flex;
-  gap: 8px;
+  gap: 6px;
+  flex-shrink: 0;
 }
 
 .main-logo {
   height: 4.42rem;
-  max-width: 310px;
+  max-width: 175px;
+  width: 100%;
   object-fit: contain;
+  object-position: left center;
+  flex-shrink: 1;
+  min-width: 0;
 }
 
 .about-logo-container {
@@ -88,7 +95,7 @@ body {
 
 .content {
   flex: 1;
-  padding: 40px;
+  padding: 24px 32px;
   overflow-y: auto;
 }
 
@@ -103,6 +110,7 @@ body {
 
 h2 {
   margin-top: 0;
+  margin-bottom: 6px;
   color: #fff;
 }
 
@@ -110,11 +118,11 @@ button.primary {
   background-color: var(--accent-color);
   color: white;
   border: none;
-  padding: 10px 20px;
-  font-size: 1rem;
+  padding: 9px 18px;
+  font-size: 0.95rem;
   border-radius: 4px;
   cursor: pointer;
-  margin-top: 20px;
+  margin-top: 14px;
 }
 
 button.primary:hover {
@@ -122,12 +130,20 @@ button.primary:hover {
 }
 
 .form-group {
-  margin: 20px 0;
+  margin: 14px 0;
+}
+
+.form-group:first-child {
+  margin-top: 0;
+}
+
+.form-group:last-child {
+  margin-bottom: 0;
 }
 
 .form-group label {
   display: block;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
 }
 
 select,
@@ -172,7 +188,7 @@ select option:checked {
 .form-container {
   max-width: 600px;
   background: var(--panel-color);
-  padding: 20px;
+  padding: 16px 20px;
   border-radius: 8px;
   border: 1px solid var(--border-color);
 }
