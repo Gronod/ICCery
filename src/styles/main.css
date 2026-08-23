@@ -233,8 +233,7 @@ button:disabled {
   font-size: 0.9em;
 }
 
-#targenLog,
-#printtargLog {
+.log-container pre {
   margin: 0;
   font-family: monospace;
   font-size: 0.9em;
@@ -242,6 +241,7 @@ button:disabled {
   max-height: 200px;
   overflow-y: auto;
   white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }
 
 /* ========================================
@@ -497,16 +497,7 @@ button.danger:hover {
   border-color: #f44336;
 }
 
-/* Process log for chartread */
-#chartreadLog {
-  margin: 0;
-  font-family: monospace;
-  font-size: 0.9em;
-  color: #ccc;
-  max-height: 200px;
-  overflow-y: auto;
-  white-space: pre-wrap;
-}
+
 
 /* ========================================
    Stage 4: Spinner & Success Card
