@@ -526,6 +526,7 @@ mod tests {
             patch_count: 800,
             white_patches: Some(4),
             black_patches: None,
+            total_patches: Some(800),
             basename: "my_profile".to_string(),
             cwd: "/tmp".to_string(),
         };
@@ -540,6 +541,7 @@ mod tests {
             patch_count: 1500,
             white_patches: None,
             black_patches: Some(8),
+            total_patches: Some(1500),
             basename: "cmyk_profile".to_string(),
             cwd: "/tmp".to_string(),
         };
@@ -604,15 +606,17 @@ mod tests {
         let config = ColprofConfig {
             quality: "h".to_string(),
             algorithm: "l".to_string(),
-            description: "My Profile".to_string(),
+            intent: None,
+            description: Some("My Profile".to_string()),
             copyright: Some("2026 ACME".to_string()),
-            basename: "my_profile".to_string(),
+            ti3_path: "my_profile.ti3".to_string(),
+            icc_path: "my_profile.icc".to_string(),
             cwd: "/home/user".to_string(),
         };
         let args = build_colprof_args(&config);
         assert_eq!(
             args,
-            vec!["-v", "-u", "-q", "h", "-a", "l", "-D", "My Profile", "-C", "2026 ACME", "my_profile"]
+            vec!["-v", "-a", "l", "-q", "h", "-C", "2026 ACME", "-D", "My Profile", "my_profile.ti3", "my_profile.icc"]
         );
     }
 
@@ -624,6 +628,6 @@ mod tests {
             cwd: "/home/user".to_string(),
         };
         let args = build_profcheck_args(&config);
-        assert_eq!(args, vec!["-v", "-k", "-u", "my_profile.ti3", "my_profile.icc"]);
+        assert_eq!(args, vec!["-v", "-k", "-s", "my_profile.ti3", "my_profile.icc"]);
     }
 }

@@ -63,7 +63,7 @@ impl PrinterDevModeStore {
 #[cfg(windows)]
 pub mod windows;
 
-#[cfg(unix)]
+#[cfg(any(unix, test))]
 pub mod unix;
 
 #[cfg(test)]

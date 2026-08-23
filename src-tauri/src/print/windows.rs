@@ -1,3 +1,5 @@
+#![allow(non_snake_case, dead_code)]
+
 use std::ffi::{c_void, OsStr};
 use std::os::windows::ffi::OsStrExt;
 use std::path::Path;
@@ -432,15 +434,15 @@ pub fn print_target(
                 if let Some(opts) = options {
                     if let Some(tray_id) = opts.paper_source {
                         (*p_devmode).dmFields |= DEVMODE_FIELD_FLAGS(DM_DEFAULTSOURCE);
-                        (*p_devmode).dmDefaultSource = tray_id as i16;
+                        (*p_devmode).Anonymous1.Anonymous1.dmDefaultSource = tray_id as i16;
                     }
 
                     if let Some(ref orient) = opts.orientation {
                         (*p_devmode).dmFields |= DEVMODE_FIELD_FLAGS(DM_ORIENTATION);
                         if orient.eq_ignore_ascii_case("landscape") {
-                            (*p_devmode).dmOrientation = DMORIENT_LANDSCAPE;
+                            (*p_devmode).Anonymous1.Anonymous1.dmOrientation = DMORIENT_LANDSCAPE;
                         } else {
-                            (*p_devmode).dmOrientation = DMORIENT_PORTRAIT;
+                            (*p_devmode).Anonymous1.Anonymous1.dmOrientation = DMORIENT_PORTRAIT;
                         }
                     }
                 }
