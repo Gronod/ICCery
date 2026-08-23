@@ -342,6 +342,16 @@ pub async fn run_profcheck(
     state.spawn(app, id, binary, args, cwd).await
 }
 
+#[tauri::command]
+pub async fn get_windows_printers() -> Result<Vec<String>, String> {
+    crate::print::get_printers()
+}
+
+#[tauri::command]
+pub async fn print_target_windows(printer_name: String, tiff_path: String) -> Result<(), String> {
+    crate::print::print_target(&printer_name, &tiff_path)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
