@@ -37,10 +37,12 @@ pub struct PrintOptions {
 }
 
 #[derive(Clone, Default)]
+#[allow(dead_code)]
 pub struct PrinterDevModeStore {
     pub devmodes: Arc<Mutex<HashMap<String, Vec<u8>>>>,
 }
 
+#[allow(dead_code)]
 impl PrinterDevModeStore {
     pub fn new() -> Self {
         Self {
