@@ -43,17 +43,28 @@ jobs:
       - name: Install Node dependencies
         run: npm ci
 
+      - name: Get App Version
+        id: get_version
+        shell: bash
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          if [ "${{ github.ref }}" = "refs/heads/main" ]; then
+            echo "APP_VERSION=${VERSION}" >> $GITHUB_ENV
+          else
+            echo "APP_VERSION=${VERSION}-dev" >> $GITHUB_ENV
+          fi
+
       - name: Build Tauri App
         run: npm run tauri build
 
       - name: Upload MSI Installer
         uses: actions/upload-artifact@v4
         with:
-          name: iccery-windows-msi
+          name: iccery-windows-msi-${{ env.APP_VERSION }}
           path: src-tauri/target/release/bundle/msi/*.msi
 
       - name: Upload NSIS Installer
         uses: actions/upload-artifact@v4
         with:
-          name: iccery-windows-exe
+          name: iccery-windows-exe-${{ env.APP_VERSION }}
           path: src-tauri/target/release/bundle/nsis/*.exe

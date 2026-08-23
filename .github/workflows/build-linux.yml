@@ -42,6 +42,17 @@ jobs:
       - name: Install Node dependencies
         run: npm ci
 
+      - name: Get App Version
+        id: get_version
+        shell: bash
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          if [ "${{ github.ref }}" = "refs/heads/main" ]; then
+            echo "APP_VERSION=${VERSION}" >> $GITHUB_ENV
+          else
+            echo "APP_VERSION=${VERSION}-dev" >> $GITHUB_ENV
+          fi
+
       - name: Build Tauri App
         env:
           APPIMAGE_EXTRACT_AND_RUN: 1
@@ -50,11 +61,11 @@ jobs:
       - name: Upload Debian Package
         uses: actions/upload-artifact@v4
         with:
-          name: iccery-linux-deb
+          name: iccery-linux-deb-${{ env.APP_VERSION }}
           path: src-tauri/target/release/bundle/deb/*.deb
 
       - name: Upload AppImage
         uses: actions/upload-artifact@v4
         with:
-          name: iccery-linux-appimage
+          name: iccery-linux-appimage-${{ env.APP_VERSION }}
           path: src-tauri/target/release/bundle/appimage/*.AppImage
