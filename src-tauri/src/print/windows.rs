@@ -4,9 +4,9 @@ use std::path::Path;
 use windows::core::PCWSTR;
 use windows::Win32::Foundation::{HANDLE, HWND};
 use windows::Win32::Graphics::Gdi::{
-    CreateDCW, DeleteDC, EndDoc, EndPage, GetDeviceCaps, StartDocW, StartPage, StretchDIBits,
-    BITMAPINFO, BITMAPINFOHEADER, BI_RGB, DEVMODEW, DIB_RGB_COLORS, DOCINFOW, HDC, HORZRES,
-    LOGPIXELSX, LOGPIXELSY, RGBQUAD, SRCCOPY, VERTRES,
+    CreateDCW, DeleteDC, GetDeviceCaps, StretchDIBits,
+    BITMAPINFO, BITMAPINFOHEADER, BI_RGB, DEVMODEW, DEVMODE_FIELD_FLAGS,
+    DIB_RGB_COLORS, HDC, HORZRES, LOGPIXELSX, LOGPIXELSY, RGBQUAD, SRCCOPY, VERTRES,
 };
 use windows::Win32::Graphics::Printing::{
     ClosePrinter, DocumentPropertiesW, EnumPrintersW, OpenPrinterW,
@@ -15,14 +15,27 @@ use windows::Win32::Graphics::Printing::{
 
 use crate::print::Printer;
 
+#[repr(C)]
+struct DOCINFOW {
+    cbSize: i32,
+    lpszDocName: PCWSTR,
+    lpszOutput: PCWSTR,
+    lpszDatatype: PCWSTR,
+    fwType: u32,
+}
+
 extern "system" {
     fn SetICMMode(hdc: HDC, mode: i32) -> i32;
+    fn StartDocW(hdc: HDC, lpdi: *const DOCINFOW) -> i32;
+    fn StartPage(hdc: HDC) -> i32;
+    fn EndPage(hdc: HDC) -> i32;
+    fn EndDoc(hdc: HDC) -> i32;
 }
 
 const ICM_OFF: i32 = 1;
 const DM_OUT_BUFFER: u32 = 2;
 const DM_ICMMETHOD: u32 = 0x00800000;
-const DMICMMETHOD_NONE: i32 = 1;
+const DMICMMETHOD_NONE: u32 = 1;
 
 fn to_wide(s: &str) -> Vec<u16> {
     OsStr::new(s).encode_wide().chain(std::iter::once(0)).collect()
@@ -187,7 +200,7 @@ pub fn print_target(printer_name: &str, tiff_path: &str) -> Result<(), String> {
             );
             if res >= 0 {
                 // Attempt to explicitly disable driver ICM if supported in DEVMODE
-                (*p_devmode).dmFields |= DM_ICMMETHOD;
+                (*p_devmode).dmFields |= DEVMODE_FIELD_FLAGS(DM_ICMMETHOD);
                 (*p_devmode).dmICMMethod = DMICMMETHOD_NONE;
                 Some(buf)
             } else {
