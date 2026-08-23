@@ -43,5 +43,5 @@
   <circle cx="78" cy="22" r="1.5" fill="#ffffff" opacity="0.6"/>
 
   <!-- Text: ICCery -->
-  <text font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="58" font-weight="800" x="140" y="105" fill="#1E293B" letter-spacing="-1">ICC<tspan fill="url(#textGrad)">ery</tspan></text>
+  <text font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="58" font-weight="800" x="140" y="105" fill="#ffffff" letter-spacing="-1">ICC<tspan fill="url(#textGrad)">ery</tspan></text>
 </svg>

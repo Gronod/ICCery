@@ -42,7 +42,7 @@ body {
 }
 
 .main-logo {
-  height: 2rem;
+  height: 2.8rem;
   max-width: 200px;
   object-fit: contain;
 }
@@ -54,7 +54,7 @@ body {
 }
 
 .about-logo {
-  height: 4rem;
+  height: 5.5rem;
   object-fit: contain;
 }
 
