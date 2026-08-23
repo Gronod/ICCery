@@ -33,6 +33,8 @@ jobs:
 
       - name: Rust Cache
         uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: "src-tauri -> target"
 
       - name: Check sidecar binaries
         run: |
@@ -55,7 +57,7 @@ jobs:
           fi
 
       - name: Build Tauri App
-        run: npm run tauri build
+        run: npm run tauri build -- -v
 
       - name: Upload MSI Installer
         uses: actions/upload-artifact@v4
