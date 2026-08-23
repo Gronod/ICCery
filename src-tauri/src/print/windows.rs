@@ -1,1 +1,572 @@
-IyFbYWxsb3cobm9uX3NuYWtlX2Nhc2UsIGRlYWRfY29kZSldDQoNCnVzZSBzdGQ6OmZmaTo6e2Nfdm9pZCwgT3NTdHJ9Ow0KdXNlIHN0ZDo6b3M6OndpbmRvd3M6OmZmaTo6T3NTdHJFeHQ7DQp1c2Ugc3RkOjpwYXRoOjpQYXRoOw0KdXNlIHdpbmRvd3M6OmNvcmU6OlBDV1NUUjsNCnVzZSB3aW5kb3dzOjpXaW4zMjo6Rm91bmRhdGlvbjo6e0hBTkRMRSwgSFdORH07DQp1c2Ugd2luZG93czo6V2luMzI6OkdyYXBoaWNzOjpHZGk6OnsNCiAgICBDcmVhdGVEQ1csIERlbGV0ZURDLCBHZXREZXZpY2VDYXBzLCBTdHJldGNoRElCaXRzLA0KICAgIEJJVE1BUElORk8sIEJJVE1BUElORk9IRUFERVIsIEJJX1JHQiwgREVWTU9ERVcsIERFVk1PREVfRklFTERfRkxBR1MsDQogICAgRElCX1JHQl9DT0xPUlMsIEhEQywgSE9SWlJFUywgTE9HUElYRUxTWCwgTE9HUElYRUxTWSwgUkdCUVVBRCwgU1JDQ09QWSwgVkVSVFJFUywNCn07DQp1c2Ugd2luZG93czo6V2luMzI6OkdyYXBoaWNzOjpQcmludGluZzo6ew0KICAgIENsb3NlUHJpbnRlciwgRG9jdW1lbnRQcm9wZXJ0aWVzVywgRW51bVByaW50ZXJzVywgT3BlblByaW50ZXJXLA0KICAgIFBSSU5URVJfRU5VTV9DT05ORUNUSU9OUywgUFJJTlRFUl9FTlVNX0xPQ0FMLCBQUklOVEVSX0lORk9fMVcsIFBSSU5URVJfSU5GT180VywNCn07DQp1c2Ugd2luZG93czo6V2luMzI6OlVJOjpXaW5kb3dzQW5kTWVzc2FnaW5nOjpHZXRGb3JlZ3JvdW5kV2luZG93Ow0KDQp1c2UgY3JhdGU6OnByaW50Ojp7DQogICAgUHJpbnRPcHRpb25zLCBQcmludGVyLCBQcmludGVyQ2FwYWJpbGl0aWVzLCBQcmludGVyRGV2TW9kZVN0b3JlLCBQcmludGVyUGFwZXJTaXplLCBQcmludGVyVHJheSwNCn07DQoNCiNbcmVwcihDKV0NCnN0cnVjdCBET0NJTkZPVyB7DQogICAgY2JTaXplOiBpMzIsDQogICAgbHBzekRvY05hbWU6IFBDV1NUUiwNCiAgICBscHN6T3V0cHV0OiBQQ1dTVFIsDQogICAgbHBzekRhdGF0eXBlOiBQQ1dTVFIsDQogICAgZndUeXBlOiB1MzIsDQp9DQoNCmV4dGVybiAic3lzdGVtIiB7DQogICAgZm4gU2V0SUNNTW9kZShoZGM6IEhEQywgbW9kZTogaTMyKSAtPiBpMzI7DQogICAgZm4gU3RhcnREb2NXKGhkYzogSERDLCBscGRpOiAqY29uc3QgRE9DSU5GT1cpIC0+IGkzMjsNCiAgICBmbiBTdGFydFBhZ2UoaGRjOiBIREMpIC0+IGkzMjsNCiAgICBmbiBFbmRQYWdlKGhkYzogSERDKSAtPiBpMzI7DQogICAgZm4gRW5kRG9jKGhkYzogSERDKSAtPiBpMzI7DQogICAgZm4gRGV2aWNlQ2FwYWJpbGl0aWVzVygNCiAgICAgICAgcGRldmljZW5hbWU6IFBDV1NUUiwNCiAgICAgICAgcHBvcnQ6IFBDV1NUUiwNCiAgICAgICAgZndjYXBhYmlsaXR5OiB1MTYsDQogICAgICAgIHBvdXRwdXQ6ICptdXQgdTE2LA0KICAgICAgICBwZGV2bW9kZTogKmNvbnN0IERFVk1PREVXLA0KICAgICkgLT4gaTMyOw0KfQ0KDQpjb25zdCBJQ01fT0ZGOiBpMzIgPSAxOw0KY29uc3QgRE1fSU5fUFJPTVBUOiB1MzIgPSA0Ow0KY29uc3QgRE1fSU5fQlVGRkVSOiB1MzIgPSA4Ow0KY29uc3QgRE1fT1VUX0JVRkZFUjogdTMyID0gMjsNCmNvbnN0IERNX09SSUVOVEFUSU9OOiB1MzIgPSAweDAwMDAwMDAxOw0KY29uc3QgRE1fREVGQVVMVFNPVVJDRTogdTMyID0gMHgwMDAwMDIwMDsNCmNvbnN0IERNX0lDTU1FVEhPRDogdTMyID0gMHgwMDgwMDAwMDsNCmNvbnN0IERNSUNNTUVUSE9EX05PTkU6IHUzMiA9IDE7DQpjb25zdCBETU9SSUVOVF9QT1JUUkFJVDogaTE2ID0gMTsNCmNvbnN0IERNT1JJRU5UX0xBTkRTQ0FQRTogaTE2ID0gMjsNCg0KY29uc3QgRENfUEFQRVJTOiB1MTYgPSAyOw0KY29uc3QgRENfQklOUzogdTE2ID0gNjsNCmNvbnN0IERDX0JJTk5BTUVTOiB1MTYgPSAxMjsNCmNvbnN0IERDX1BBUEVSTkFNRVM6IHUxNiA9IDE2Ow0KY29uc3QgSURPSzogaTMyID0gMTsNCg0KZm4gdG9fd2lkZShzOiAmc3RyKSAtPiBWZWM8dTE2PiB7DQogICAgT3NTdHI6Om5ldyhzKS5lbmNvZGVfd2lkZSgpLmNoYWluKHN0ZDo6aXRlcjo6b25jZSgwKSkuY29sbGVjdCgpDQp9DQoNCmZuIGV4dHJhY3RfbnVsbF90ZXJtaW5hdGVkX3N0cmluZyh3aWRlX3NsaWNlOiAmW3UxNl0pIC0+IFN0cmluZyB7DQogICAgbGV0IGxlbiA9IHdpZGVfc2xpY2UuaXRlcigpLnBvc2l0aW9uKHwmY3wgYyA9PSAwKS51bndyYXBfb3Iod2lkZV9zbGljZS5sZW4oKSk7DQogICAgU3RyaW5nOjpmcm9tX3V0ZjE2X2xvc3N5KCZ3aWRlX3NsaWNlWy4ubGVuXSkudHJpbSgpLnRvX3N0cmluZygpDQp9DQoNCi8vLyBFbnVtZXJhdGUgYXZhaWxhYmxlIHByaW50ZXJzIG9uIHRoZSBzeXN0ZW0NCnB1YiBmbiBnZXRfcHJpbnRlcnMoKSAtPiBSZXN1bHQ8VmVjPFByaW50ZXI+LCBTdHJpbmc+IHsNCiAgICB1bnNhZmUgew0KICAgICAgICBsZXQgZmxhZ3MgPSBQUklOVEVSX0VOVU1fTE9DQUwgfCBQUklOVEVSX0VOVU1fQ09OTkVDVElPTlM7DQogICAgICAgIGxldCBtdXQgYnl0ZXNfbmVlZGVkID0gMHUzMjsNCiAgICAgICAgbGV0IG11dCBjb3VudCA9IDB1MzI7DQoNCiAgICAgICAgbGV0IF8gPSBFbnVtUHJpbnRlcnNXKA0KICAgICAgICAgICAgZmxhZ3MsDQogICAgICAgICAgICBQQ1dTVFI6Om51bGwoKSwNCiAgICAgICAgICAgIDQsDQogICAgICAgICAgICBOb25lLA0KICAgICAgICAgICAgJm11dCBieXRlc19uZWVkZWQsDQogICAgICAgICAgICAmbXV0IGNvdW50LA0KICAgICAgICApOw0KDQogICAgICAgIGlmIGJ5dGVzX25lZWRlZCA9PSAwIHsNCiAgICAgICAgICAgIGxldCBfID0gRW51bVByaW50ZXJzVygNCiAgICAgICAgICAgICAgICBmbGFncywNCiAgICAgICAgICAgICAgICBQQ1dTVFI6Om51bGwoKSwNCiAgICAgICAgICAgICAgICAxLA0KICAgICAgICAgICAgICAgIE5vbmUsDQogICAgICAgICAgICAgICAgJm11dCBieXRlc19uZWVkZWQsDQogICAgICAgICAgICAgICAmbXV0IGNvdW50LA0KICAgICAgICAgICAgKTsNCg0KICAgICAgICAgICAgaWYgYnl0ZXNfbmVlZGVkID09IDAgew0KICAgICAgICAgICAgICAgIHJldHVybiBPayhWZWM6Om5ldygpKTsNCiAgICAgICAgICAgIH0NCg0KICAgICAgICAgICAgbGV0IG11dCBidWZmZXIgPSB2ZWMhWzB1ODsgYnl0ZXNfbmVlZGVkIGFzIHVzaXplXTsNCiAgICAgICAgICAgIGxldCByZXMgPSBFbnVtUHJpbnRlcnNXKA0KICAgICAgICAgICAgICAgIGZsYWdzLA0KICAgICAgICAgICAgICAgIFBDV1NUUjo6bnVsbCgpLA0KICAgICAgICAgICAgICAgIDEsDQogICAgICAgICAgICAgICAgU29tZSgmbXV0IGJ1ZmZlciksDQogICAgICAgICAgICAgICAgJm11dCBieXRlc19uZWVkZWQsDQogICAgICAgICAgICAgICAgJm11dCBjb3VudCwNCiAgICAgICAgICAgICk7DQoNCiAgICAgICAgICAgIGlmIHJlcy5pc19lcnIoKSB7DQogICAgICAgICAgICAgICAgcmV0dXJuIEVycigiRmFpbGVkIHRvIGVudW1lcmF0ZSBwcmludGVycyAoTGV2ZWwgMSkiLnRvX3N0cmluZygpKTsNCiAgICAgICAgICAgIH0NCg0KICAgICAgICAgICAgbGV0IHBfaW5mbyA9IGJ1ZmZlci5hc19wdHIoKSBhcyAqY29uc3QgUFJJTlRFUl9JTkZPXzFXOw0KICAgICAgICAgICAgbGV0IG11dCBwcmludGVycyA9IFZlYzo6bmV3KCk7DQogICAgICAgICAgICBmb3IgaSBpbiAwLi5jb3VudCBhcyB1c2l6ZSB7DQogICAgICAgICAgICAgICAgbGV0IGluZm8gPSAqcF9pbmZvLmFkZChpKTsNCiAgICAgICAgICAgICAgICBpZiAhaW5mby5wTmFtZS5pc19udWxsKCkgew0KICAgICAgICAgICAgICAgICAgICBsZXQgbmFtZSA9IGluZm8ucE5hbWUudG9fc3RyaW5nKCkubWFwX2Vycih8ZXwgZS50b19zdHJpbmcoKSk/Ow0KICAgICAgICAgICAgICAgICAgICBwcmludGVycy5wdXNoKFByaW50ZXIgew0KICAgICAgICAgICAgICAgICAgICAgICAgbmFtZSwNCiAgICAgICAgICAgICAgICAgICAgICAgIHN0YXR1czogIlJlYWR5Ii50b19zdHJpbmcoKSwNCiAgICAgICAgICAgICAgICAgICAgICAgIGlzX2RlZmF1bHQ6IGZhbHNlLA0KICAgICAgICAgICAgICAgICAgICB9KTsNCiAgICAgICAgICAgICAgICB9DQogICAgICAgICAgICB9DQogICAgICAgICAgICByZXR1cm4gT2socHJpbnRlcnMpOw0KICAgICAgICB9DQoNCiAgICAgICAgbGV0IG11dCBidWZmZXIgPSB2ZWMhWzB1ODsgYnl0ZXNfbmVlZGVkIGFzIHVzaXplXTsNCiAgICAgICAgbGV0IHJlcyA9IEVudW1QcmludGVyc1coDQogICAgICAgICAgICBmbGFncywNCiAgICAgICAgICAgIFBDV1NUUjo6bnVsbCgpLA0KICAgICAgICAgICAgNCwNCiAgICAgICAgICAgIFNvbWUoJm11dCBidWZmZXIpLA0KICAgICAgICAgICAgJm11dCBieXRlc19uZWVkZWQsDQogICAgICAgICAgICAmbXV0IGNvdW50LA0KICAgICAgICApOw0KDQogICAgICAgIGlmIHJlcy5pc19lcnIoKSB7DQogICAgICAgICAgICByZXR1cm4gRXJyKCJGYWlsZWQgdG8gZW51bWVyYXRlIHByaW50ZXJzIChMZXZlbCA0KSIudG9fc3RyaW5nKCkpOw0KICAgICAgICB9DQoNCiAgICAgICAgbGV0IHBfaW5mbyA9IGJ1ZmZlci5hc19wdHIoKSBhcyAqY29uc3QgUFJJTlRFUl9JTkZPXzRXOw0KICAgICAgICBsZXQgbXV0IHByaW50ZXJzID0gVmVjOjpuZXcoKTsNCiAgICAgICAgZm9yIGkgaW4gMC4uY291bnQgYXMgdXNpemUgew0KICAgICAgICAgICAgbGV0IGluZm8gPSAqcF9pbmZvLmFkZChpKTsNCiAgICAgICAgICAgIGlmICFpbmZvLnBQcmludGVyTmFtZS5pc19udWxsKCkgew0KICAgICAgICAgICAgICAgIGxldCBuYW1lID0gaW5mby5wUHJpbnRlck5hbWUudG9fc3RyaW5nKCkubWFwX2Vycih8ZXwgZS50b19zdHJpbmcoKSk/Ow0KICAgICAgICAgICAgICAgIHByaW50ZXJzLnB1c2goUHJpbnRlciB7DQogICAgICAgICAgICAgICAgICAgIG5hbWUsDQogICAgICAgICAgICAgICAgICAgIHN0YXR1czogIlJlYWR5Ii50b19zdHJpbmcoKSwNCiAgICAgICAgICAgICAgICAgICAgaXNfZGVmYXVsdDogZmFsc2UsDQogICAgICAgICAgICAgICAgfSk7DQogICAgICAgICAgICB9DQogICAgICAgIH0NCiAgICAgICAgT2socHJpbnRlcnMpDQogICAgfQ0KfQ0KDQovLy8gUXVlcnkgaGFyZHdhcmUgY2FwYWJpbGl0aWVzIChwYXBlciB0cmF5cyBhbmQgcGFwZXIgc2l6ZXMpIGZvciBhIGdpdmVuIHByaW50ZXINCnB1YiBmbiBnZXRfcHJpbnRlcl9jYXBhYmlsaXRpZXMocHJpbnRlcl9uYW1lOiAmc3RyKSAtPiBSZXN1bHQ8UHJpbnRlckNhcGFiaWxpdGllcywgU3RyaW5nPiB7DQogICAgbGV0IHByaW50ZXJfd2lkZSA9IHRvX3dpZGUocHJpbnRlcl9uYW1lKTsNCg0KICAgIHVuc2FmZSB7DQogICAgICAgIC8vIFF1ZXJ5IHRyYXlzIChiaW5zKQ0KICAgICAgICBsZXQgbnVtX2JpbnMgPSBEZXZpY2VDYXBhYmlsaXRpZXNXKA0KICAgICAgICAgICAgUENXU1RSKHByaW50ZXJfd2lkZS5hc19wdHIoKSksDQogICAgICAgICAgICBQQ1dTVFI6Om51bGwoKSwNCiAgICAgICAgICAgIERDX0JJTlMsDQogICAgICAgICAgICBzdGQ6OnB0cjo6bnVsbF9tdXQoKSwNCiAgICAgICAgICAgIHN0ZDo6cHRyOjpudWxsKCksDQogICAgICAgICk7DQoNCiAgICAgICAgbGV0IG11dCB0cmF5cyA9IFZlYzo6bmV3KCk7DQogICAgICAgIGlmIG51bV9iaW5zID4gMCB7DQogICAgICAgICAgICBsZXQgbXV0IGJpbl9pZHMgPSB2ZWMhWzB1MTY7IG51bV9iaW5zIGFzIHVzaXplXTsNCiAgICAgICAgICAgIGxldCBtdXQgYmluX25hbWVzX3JhdyA9IHZlYyFbMHUxNjsgbnVtX2JpbnMgYXMgdXNpemUgKiAyNF07DQoNCiAgICAgICAgICAgIGxldCByZXNfaWRzID0gRGV2aWNlQ2FwYWJpbGl0aWVzVygNCiAgICAgICAgICAgICAgICBQQ1dTVFIocHJpbnRlcl93aWRlLmFzX3B0cigpKSwNCiAgICAgICAgICAgICAgICBQQ1dTVFI6Om51bGwoKSwNCiAgICAgICAgICAgICAgICBEQ19CSU5TLA0KICAgICAgICAgICAgICAgIGJpbl9pZHMuYXNfbXV0X3B0cigpLA0KICAgICAgICAgICAgICAgIHN0ZDo6cHRyOjpudWxsKCksDQogICAgICAgICAgICApOw0KDQogICAgICAgICAgICBsZXQgcmVzX25hbWVzID0gRGV2aWNlQ2FwYWJpbGl0aWVzVygNCiAgICAgICAgICAgICAgICBQQ1dTVFIocHJpbnRlcl93aWRlLmFzX3B0cigpKSwNCiAgICAgICAgICAgICAgICBQQ1dTVFI6Om51bGwoKSwNCiAgICAgICAgICAgICAgICBEQ19CSU5OQU1FUywNCiAgICAgICAgICAgICAgICBiaW5fbmFtZXNfcmF3LmFzX211dF9wdHIoKSwNCiAgICAgICAgICAgICAgICBzdGQ6OnB0cjo6bnVsbCgpLA0KICAgICAgICAgICAgKTsNCg0KICAgICAgICAgICAgaWYgcmVzX2lkcyA+IDAgJiYgcmVzX25hbWVzID4gMCB7DQogICAgICAgICAgICAgICAgZm9yIGkgaW4gMC4ubnVtX2JpbnMgYXMgdXNpemUgew0KICAgICAgICAgICAgICAgICAgICBsZXQgaWQgPSBiaW5faWRzW2ldOw0KICAgICAgICAgICAgICAgICAgICBsZXQgbmFtZV9zbGljZSA9ICZwYXBlcl9uYW1lc19yYXdbaSAqIDI0Li4oaSArIDEpICogMjRdOw0KICAgICAgICAgICAgICAgICAgICBsZXQgbmFtZSA9IGV4dHJhY3RfbnVsbF90ZXJtaW5hdGVkX3N0cmluZyhuYW1lX3NsaWNlKTsNCiAgICAgICAgICAgICAgICAgICAgbGV0IGRpc3BsYXlfbmFtZSA9IGlmIG5hbWUuaXNfZW1wdHkoKSB7DQogICAgICAgICAgICAgICAgICAgICAgICBmb3JtYXQhKCJUcmF5IHt9IiwgaWQpDQogICAgICAgICAgICAgICAgICAgIH0gZWxzZSB7DQogICAgICAgICAgICAgICAgICAgICAgICBuYW1lDQogICAgICAgICAgICAgICAgICAgIH07DQogICAgICAgICAgICAgICAgICAgIHRyYXlzLnB1c2goUHJpbnRlclRyYXkgew0KICAgICAgICAgICAgICAgICAgICAgICAgaWQsDQogICAgICAgICAgICAgICAgICAgICAgICBuYW1lOiBkaXNwbGF5X25hbWUsDQogICAgICAgICAgICAgICAgICAgIH0pOw0KICAgICAgICAgICAgICAgIH0NCiAgICAgICAgICAgIH0NCiAgICAgICAgfQ0KDQogICAgICAgIC8vIFF1ZXJ5IHBhcGVyIHNpemVzDQogICAgICAgIGxldCBudW1fcGFwZXJzID0gRGV2aWNlQ2FwYWJpbGl0aWVzVygNCiAgICAgICAgICAgIFBDV1NUUihwcmludGVyX3dpZGUuYXNfcHRyKCkpLA0KICAgICAgICAgICAgUENXU1RSOjpudWxsKCksDQogICAgICAgICAgICBEQ19QQVBFUlMsDQogICAgICAgICAgICBzdGQ6OnB0cjo6bnVsbF9tdXQoKSwNCiAgICAgICAgICAgIHN0ZDo6cHRyOjpudWxsKCksDQogICAgICAgICk7DQoNCiAgICAgICAgbGV0IG11dCBwYXBlcl9zaXplcyA9IFZlYzo6bmV3KCk7DQogICAgICAgIGlmIG51bV9wYXBlcnMgPiAwIHsNCiAgICAgICAgICAgIGxldCBtdXQgcGFwZXJfaWRzID0gdmVjIVswdTE2OyBudW1fcGFwZXJzIGFzIHVzaXplXTsNCiAgICAgICAgICAgIGxldCBtdXQgcGFwZXJfbmFtZXNfcmF3ID0gdmVjIVswdTE2OyBudW1fcGFwZXJzIGFzIHVzaXplICogNjRdOw0KDQogICAgICAgICAgICBsZXQgcmVzX2lkcyA9IERldmljZUNhcGFiaWxpdGllc1coDQogICAgICAgICAgICAgICAgUENXU1RSKHByaW50ZXJfd2lkZS5hc19wdHIoKSksDQogICAgICAgICAgICAgICAgUENXU1RSOjpudWxsKCksDQogICAgICAgICAgICAgICAgRENfUEFQRVJTLA0KICAgICAgICAgICAgICAgIHBhcGVyX2lkcy5hc19tdXRfcHRyKCksDQogICAgICAgICAgICAgICAgc3RkOjpwdHI6Om51bGwoKSwNCiAgICAgICAgICAgICk7DQoNCiAgICAgICAgICAgIGxldCByZXNfbmFtZXMgPSBEZXZpY2VDYXBhYmlsaXRpZXNXKA0KICAgICAgICAgICAgICAgIFBDV1NUUihwcmludGVyX3dpZGUuYXNfcHRyKCkpLA0KICAgICAgICAgICAgICAgIFBDV1NUUjo6bnVsbCgpLA0KICAgICAgICAgICAgICAgIERDX1BBUEVSTkFNRVMsDQogICAgICAgICAgICAgICAgcGFwZXJfbmFtZXNfcmF3LmFzX211dF9wdHIoKSwNCiAgICAgICAgICAgICAgICBzdGQ6OnB0cjo6bnVsbCgpLA0KICAgICAgICAgICAgKTsNCg0KICAgICAgICAgICAgaWYgcmVzX2lkcyA+IDAgJiYgcmVzX25hbWVzID4gMCB7DQogICAgICAgICAgICAgICAgZm9yIGkgaW4gMC4ubnVtX3BhcGVycyBhcyB1c2l6ZSB7DQogICAgICAgICAgICAgICAgICAgIGxldCBpZCA9IHBhcGVyX2lkc1tpXTsNCiAgICAgICAgICAgICAgICAgICAgbGV0IG5hbWVfc2xpY2UgPSAmcGFwZXJfbmFtZXNfcmF3W2kgKiA2NC4uKGkgKyAxKSAqIDY0XTsNCiAgICAgICAgICAgICAgICAgICAgbGV0IG5hbWUgPSBleHRyYWN0X251bGxfdGVybWluYXRlZF9zdHJpbmcobmFtZV9zbGljZSk7DQogICAgICAgICAgICAgICAgICAgIGxldCBkaXNwbGF5X25hbWUgPSBpZiBuYW1lLmlzX2VtcHR5KCkgew0KICAgICAgICAgICAgICAgICAgICAgICAgZm9ybWF0ISgiUGFwZXIgU2l6ZSB7fSIsIGlkKQ0KICAgICAgICAgICAgICAgICAgICB9IGVsc2Ugew0KICAgICAgICAgICAgICAgICAgICAgICAgbmFtZQ0KICAgICAgICAgICAgICAgICAgICB9Ow0KICAgICAgICAgICAgICAgICAgICBwYXBlcl9zaXplcy5wdXNoKFByaW50ZXJQYXBlclNpemUgew0KICAgICAgICAgICAgICAgICAgICAgICAgaWQsDQogICAgICAgICAgICAgICAgICAgICAgICBuYW1lOiBkaXNwbGF5X25hbWUsDQogICAgICAgICAgICAgICAgICAgIH0pOw0KICAgICAgICAgICAgICAgIH0NCiAgICAgICAgICAgIH0NCiAgICAgICAgfQ0KDQogICAgICAgIE9rKFByaW50ZXJDYXBhYmlsaXRpZXMgew0KICAgICAgICAgICAgdHJheXMsDQogICAgICAgICAgICBwYXBlcl9zaXplcywNCiAgICAgICAgICAgIHN1cHBvcnRzX29yaWVudGF0aW9uOiB0cnVlLA0KICAgICAgICB9KQ0KICAgIH0NCn0NCg0KLy8vIE9wZW4gdGhlIG5hdGl2ZSBtb2RhbCBQcmludGVyIFByb3BlcnRpZXMgLyBQcmVmZXJlbmNlcyBkaWFsb2cgYW5kIHJldGFpbiBERVZNT0RFIGNoYW5nZXMNCnB1YiBmbiBzaG93X3ByaW50ZXJfcHJvcGVydGllcygNCiAgICBwcmludGVyX25hbWU6ICZzdHIsDQogICAgZGV2bW9kZV9zdG9yZTogJlByaW50ZXJEZXZNb2RlU3RvcmUsDQopIC0+IFJlc3VsdDwoKSwgU3RyaW5nPiB7DQogICAgbGV0IHByaW50ZXJfd2lkZSA9IHRvX3dpZGUocHJpbnRlcl9uYW1lKTsNCg0KICAgIHVuc2FmZSB7DQogICAgICAgIGxldCBtdXQgaF9wcmludGVyID0gSEFORExFOjpkZWZhdWx0KCk7DQogICAgICAgIGxldCBvcGVuX3JlcyA9IE9wZW5QcmludGVyVyhQQ1dTVFIocHJpbnRlcl93aWRlLmFzX3B0cigpKSwgJm11dCBoX3ByaW50ZXIsIE5vbmUpOw0KICAgICAgICBpZiBvcGVuX3Jlcy5pc19lcnIoKSB8fCBoX3ByaW50ZXIuaXNfaW52YWxpZCgpIHsNCiAgICAgICAgICAgIHJldHVybiBFcnIoZm9ybWF0ISgiRmFpbGVkIHRvIG9wZW4gcHJpbnRlciAne30nIiwgcHJpbnRlcl9uYW1lKSk7DQogICAgICAgIH0NCg0KICAgICAgICBsZXQgcGFyZW50X2h3bmQgPSBHZXRGb3JlZ3JvdW5kV2luZG93KCk7DQoNCiAgICAgICAgbGV0IGRldm1vZGVfc2l6ZSA9IERvY3VtZW50UHJvcGVydGllc1coDQogICAgICAgICAgICBwYXJlbnRfaHduZCwNCiAgICAgICAgICAgIGhfcHJpbnRlciwNCiAgICAgICAgICAgIFBDV1NUUihwcmludGVyX3dpZGUuYXNfcHRyKCkpLA0KICAgICAgICAgICAgTm9uZSwNCiAgICAgICAgICAgIE5vbmUsDQogICAgICAgICAgICAwLA0KICAgICAgICApOw0KDQogICAgICAgIGlmIGRldm1vZGVfc2l6ZSA8PSAwIHsNCiAgICAgICAgICAgIGxldCBfID0gQ2xvc2VQcmludGVyKGhfcHJpbnRlcik7DQogICAgICAgICAgICByZXR1cm4gRXJyKCJGYWlsZWQgdG8gcXVlcnkgREVWTU9ERSBzaXplIGZvciBwcmludGVyIHByb3BlcnRpZXMiLnRvX3N0cmluZygpKTsNCiAgICAgICAgfQ0KDQogICAgICAgIGxldCBtdXQgaW5fYnVmID0gZGV2bW9kZV9zdG9yZQ0KICAgICAgICAgICAgLmdldChwcmludGVyX25hbWUpDQogICAgICAgICAgICAudW53cmFwX29yX2Vsc2UofHwgdmVjIVswdTg7IGRldm1vZGVfc2l6ZSBhcyB1c2l6ZV0pOw0KDQogICAgICAgIGlmIGluX2J1Zi5sZW4oKSA8IGRldm1vZGVfc2l6ZSBhcyB1c2l6ZSB7DQogICAgICAgICAgICBpbl9idWYucmVzaXplKGRldm1vZGVfc2l6ZSBhcyB1c2l6ZSwgMCk7DQogICAgICAgIH0NCg0KICAgICAgICAvLyBQb3B1bGF0ZSBpbml0aWFsIERFVk1PREUgaWYgZW1wdHkNCiAgICAgICAgaWYgaW5fYnVmLml0ZXIoKS5hbGwofCZifCBiID09IDApIHsNCiAgICAgICAgICAgIGxldCBfID0gRG9jdW1lbnRQcm9wZXJ0aWVzVygNCiAgICAgICAgICAgICAgICBwYXJlbnRfaHduZCwNCiAgICAgICAgICAgICAgICBoX3ByaW50ZXIsDQogICAgICAgICAgICAgICAgUENXU1RSKHByaW50ZXJfd2lkZS5hc19wdHIoKSksDQogICAgICAgICAgICAgICAgU29tZShpbl9idWYuYXNfbXV0X3B0cigpIGFzICptdXQgREVWTU9ERVcpLA0KICAgICAgICAgICAgICAgIE5vbmUsDQogICAgICAgICAgICAgICAgRE1fT1VUX0JVRkZFUiwNCiAgICAgICAgICAgICk7DQogICAgICAgIH0NCg0KICAgICAgICBsZXQgbXV0IG91dF9idWYgPSB2ZWMhWzB1ODsgZGV2bW9kZV9zaXplIGFzIHVzaXplXTsNCg0KICAgICAgICBsZXQgcmVzID0gRG9jdW1lbnRQcm9wZXJ0aWVzVygNCiAgICAgICAgICAgIHBhcmVudF9od25kLA0KICAgICAgICAgICAgaF9wcmludGVyLA0KICAgICAgICAgICAgUENXU1RSKHByaW50ZXJfd2lkZS5hc19wdHIoKSksDQogICAgICAgICAgICBTb21lKG91dF9idWYuYXNfbXV0X3B0cigpIGFzICptdXQgREVWTU9ERVcpLA0KICAgICAgICAgICAgU29tZShpbl9idWYuYXNfcHRyKCkgYXMgKmNvbnN0IERFVk1PREVXKSwNCiAgICAgICAgICAgIERNX0lOX1BST01QVCB8IERNX0lOX0JVRkZFUiB8IERNX09VVF9CVUZGRVIsDQogICAgICAgICk7DQoNCiAgICAgICAgbGV0IF8gPSBDbG9zZVByaW50ZXIoaF9wcmludGVyKTsNCg0KICAgICAgICBpZiByZXMgPT0gSURPSyB7DQogICAgICAgICAgICBkZXZtb2RlX3N0b3JlLnNldChwcmludGVyX25hbWUsIG91dF9idWYpOw0KICAgICAgICAgICAgT2soKCkpDQogICAgICAgIH0gZWxzZSBpZiByZXMgPT0gMiB7DQogICAgICAgICAgICAvLyBDYW5jZWxsZWQgYnkgdXNlcg0KICAgICAgICAgICAgT2soKCkpDQogICAgICAgIH0gZWxzZSB7DQogICAgICAgICAgICBFcnIoIlByaW50ZXIgcHJvcGVydGllcyBkaWFsb2cgd2FzIGRpc21pc3NlZCBvciBlbmNvdW50ZXJlZCBhbiBlcnJvciIudG9fc3RyaW5nKCkpDQogICAgICAgIH0NCiAgICB9DQp9DQoNCi8vLyBQcmludCB0YXJnZXQgVElGRiBmaWxlIHRvIHByaW50ZXIgd2l0aCBHREkgSUNNIGJ5cGFzcywgREVWTU9ERSBvdmVycmlkZXMsIGFuZCBhdXRvLWZpdCBzY2FsaW5nDQpwdWIgZm4gcHJpbnRfdGFyZ2V0KA0KICAgIHByaW50ZXJfbmFtZTogJnN0ciwNCiAgICB0aWZmX3BhdGg6ICZzdHIsDQogICAgb3B0aW9uczogT3B0aW9uPCZQcmludE9wdGlvbnM+LA0KICAgIGRldm1vZGVfc3RvcmU6IE9wdGlvbjwmUHJpbnRlckRldk1vZGVTdG9yZT4sDQopIC0+IFJlc3VsdDwoKSwgU3RyaW5nPiB7DQogICAgbGV0IHBhdGggPSBQYXRoOjpuZXcodGlmZl9wYXRoKTsNCiAgICBpZiAhcGF0aC5leGlzdHMoKSB7DQogICAgICAgIHJldHVybiBFcnIoZm9ybWF0ISgiVGFyZ2V0IFRJRkYgZmlsZSBub3QgZm91bmQ6IHt9IiwgdGlmZl9wYXRoKSk7DQogICAgfQ0KDQogICAgLy8gTG9hZCBhbmQgY29udmVydCB0aGUgVElGRiBpbWFnZQ0KICAgIGxldCBkeW5faW1nID0gaW1hZ2U6Om9wZW4ocGF0aCkubWFwX2Vycih8ZXwgZm9ybWF0ISgiRmFpbGVkIHRvIG9wZW4gVElGRiBpbWFnZToge30iLCBlKSk/Ow0KICAgIGxldCByZ2JfaW1nID0gZHluX2ltZy50b19yZ2I4KCk7DQogICAgbGV0IGltZ193aWR0aCA9IHJnYl9pbWcud2lkdGgoKTsNCiAgICBsZXQgaW1nX2hlaWdodCA9IHJnYl9pbWcuaGVpZ2h0KCk7DQoNCiAgICBpZiBpbWdfd2lkdGggPT0gMCB8fCBpbWdfaGVpZ2h0ID09IDAgew0KICAgICAgICByZXR1cm4gRXJyKCJJbWFnZSBoYXMgemVybyBkaW1lbnNpb25zIi50b19zdHJpbmcoKSk7DQogICAgfQ0KDQogICAgLy8gUHJlcGFyZSAyNC1iaXQgQkdSIERJQiBidWZmZXIgd2l0aCA0LWJ5dGUgcm93IHN0cmlkZSBhbGlnbm1lbnQKICAgIGxldCByb3dfc3RyaWRlID0gKChpbWdfd2lkdGggYXMgdXNpemUgKiAzICsgMykgLyA0KSAqIDQ7DQogICAgbGV0IG11dCBkaWJfYnl0ZXMgPSB2ZWMhWzB1ODsgcm93X3N0cmlkZSAqIGltZ19oZWlnaHQgYXMgdXNpemVdOw0KDQogICAgZm9yIHkgaW4gMC4uaW1nX2hlaWdodCBhcyB1c2l6ZSB7DQogICAgICAgIGZvciB4IGluIDAuLmltZ193aWR0aCBhcyB1c2l6ZSB7DQogICAgICAgICAgICBsZXQgcGl4ZWwgPSByZ2JfaW1nLmdldF9waXhlbCh4IGFzIHUzMiwgeSBhcyB1MzIpOw0KICAgICAgICAgICAgbGV0IGRzdF9pZHggPSB5ICogcm93X3N0cmlkZSArIHggKiAzOw0KICAgICAgICAgICAgZGliX2J5dGVzW2RzdF9pZHhdID0gcGl4ZWxbMl07ICAgICAvLyBCbHVlDQogICAgICAgICAgICBkaWJfYnl0ZXNbZHN0X2lkeCArIDFdID0gcGl4ZWxbMV07IC8vIEdyZWVuDQogICAgICAgICAgICBkaWJfYnl0ZXNbZHN0X2lkeCArIDJdID0gcGl4ZWxbMF07IC8vIFJlZA0KICAgICAgICB9DQogICAgfQ0KDQogICAgbGV0IHByaW50ZXJfd2lkZSA9IHRvX3dpZGUocHJpbnRlcl9uYW1lKTsNCiAgICBsZXQgZG9jX25hbWUgPSBmb3JtYXQhKA0KICAgICAgICAiSUNDZXJ5IFRhcmdldCAtIHt9IiwNCiAgICAgICAgcGF0aC5maWxlX25hbWUoKS5hbmRfdGhlbih8bnwgbi50b19zdHIoKSkudW53cmFwX29yKCJQcm9maWxpbmcgVGFyZ2V0IikNCiAgICApOw0KICAgIGxldCBkb2NfbmFtZV93aWRlID0gdG9fd2lkZSgmZG9jX25hbWUpOw0KDQogICAgdW5zYWZlIHsNCiAgICAgICAgLy8gT3BlbiBwcmludGVyIGhhbmRsZQ0KICAgICAgICBsZXQgbXV0IGhfcHJpbnRlciA9IEhBTkRMRTo6ZGVmYXVsdCgpOw0KICAgICAgICBsZXQgb3Blbl9yZXMgPSBPcGVuUHJpbnRlclcoUENXU1RSKHByaW50ZXJfd2lkZS5hc19wdHIoKSksICZtdXQgaF9wcmludGVyLCBOb25lKTsNCiAgICAgICAgaWYgb3Blbl9yZXMuaXNfZXJyKCkgfHwgaF9wcmludGVyLmlzX2ludmFsaWQoKSB7DQogICAgICAgICAgICByZXR1cm4gRXJyKGZvcm1hdCEoIkZhaWxlZCB0byBvcGVuIHByaW50ZXIgJ3t9JyIsIHByaW50ZXJfbmFtZSkpOw0KICAgICAgICB9DQoNCiAgICAgICAgLy8gQ29uZmlndXJlIERFVk1PREUNCiAgICAgICAgbGV0IGRldm1vZGVfc2l6ZSA9IERvY3VtZW50UHJvcGVydGllc1coDQogICAgICAgICAgICBIV05EOjpkZWZhdWx0KCksDQogICAgICAgICAgICBoX3ByaW50ZXIsDQogICAgICAgICAgICBQQ1dTVFIocHJpbnRlcl93aWRlLmFzX3B0cigpKSwNCiAgICAgICAgICAgIE5vbmUsDQogICAgICAgICAgICBOb25lLA0KICAgICAgICAgICAgMCwNCiAgICAgICAgKTsNCg0KICAgICAgICBsZXQgbXV0IGRldm1vZGVfYnVmID0gaWYgZGV2bW9kZV9zaXplID4gMCB7DQogICAgICAgICAgICBsZXQgbXV0IGJ1ZiA9IGRldm1vZGVfc3RvcmUNCiAgICAgICAgICAgICAgICAuYW5kX3RoZW4ofHN8IHMuZ2V0KHByaW50ZXJfbmFtZSkpDQogICAgICAgICAgICAgICAgLnVud3JhcF9vcl9lbHNlKHx8IHZlYyFbMHU4OyBkZXZtb2RlX3NpemUgYXMgdXNpemVdKTsNCg0KICAgICAgICAgICAgaWYgYnVmLmxlbigpIDwgZGV2bW9kZV9zaXplIGFzIHVzaXplIHsNCiAgICAgICAgICAgICAgICBidWYucmVzaXplKGRldm1vZGVfc2l6ZSBhcyB1c2l6ZSwgMCk7DQogICAgICAgICAgICB9DQoNCiAgICAgICAgICAgIGxldCBwX2Rldm1vZGUgPSBidWYuYXNfbXV0X3B0cigpIGFzICptdXQgREVWTU9ERVc7DQogICAgICAgICAgICBsZXQgcmVzID0gRG9jdW1lbnRQcm9wZXJ0aWVzVygNCiAgICAgICAgICAgICAgICBIV05EOjpkZWZhdWx0KCksDQogICAgICAgICAgICAgICAgaF9wcmludGVyLA0KICAgICAgICAgICAgICAgIFBDV1NUUihwcmludGVyX3dpZGUuYXNfcHRyKCkpLA0KICAgICAgICAgICAgICAgIFNvbWUocF9kZXZtb2RlKSwNCiAgICAgICAgICAgICAgICBOb25lLA0KICAgICAgICAgICAgICAgIERNX09VVF9CVUZGRVIsDQogICAgICAgICAgICApOw0KDQogICAgICAgICAgICBpZiByZXMgPj0gMCB7DQogICAgICAgICAgICAgICAgLy8gQXBwbHkgc3RyaWN0IElDTSBieXBhc3MNCiAgICAgICAgICAgICAgICAoKnBfZGV2bW9kZSkuZG1GaWVsZHMgfD0gREVWTU9ERV9GSUVMRF9GTEFHUyhETV9JQ01NRVRIT0QpOw0KICAgICAgICAgICAgICAgICgqcF9kZXZtb2RlKS5kbUlDTU1ldGhvZCA9IERNSUNNTUVUSE9EX05PTkU7DQoNCiAgICAgICAgICAgICAgICAvLyBBcHBseSBVSSBvcHRpb25zIGlmIHNwZWNpZmllZA0KICAgICAgICAgICAgICAgIGlmIGxldCBTb21lKG9wdHMpID0gb3B0aW9ucyB7DQogICAgICAgICAgICAgICAgICAgIGlmIGxldCBTb21lKHRyYXlfaWQpID0gb3B0cy5wYXBlcl9zb3VyY2Ugew0KICAgICAgICAgICAgICAgICAgICAgICAgKCpwX2Rldm1vZGUpLmRtRmllbGRzIHw9IERFVk1PREVfRklFTERfRkxBR1MoRE1fREVGQVVMVFNPVVJDRSk7DQogICAgICAgICAgICAgICAgICAgICAgICAoKnBfZGV2bW9kZSkuQW5vbnltb3VzMS5Bbm9ueW1vdXMxLmRtRGVmYXVsdFNvdXJjZSA9IHRyYXlfaWQgYXMgaTE2Ow0KICAgICAgICAgICAgICAgICAgICB9DQoNCiAgICAgICAgICAgICAgICAgICAgaWYgbGV0IFNvbWUocmVmIG9yaWVudCkgPSBvcHRzLm9yaWVudGF0aW9uIHsNCiAgICAgICAgICAgICAgICAgICAgICAgICgqcF9kZXZtb2RlKS5kbUZpZWxkcyB8PSBERVZNT0RFX0ZJRUxEX0ZMQUdTKERNX09SSUVOVEFUSU9OKTsNCiAgICAgICAgICAgICAgICAgICAgICAgIGlmIG9yaWVudC5lcV9pZ25vcmVfYXNjaWlfY2FzZSgibGFuZHNjYXBlIikgew0KICAgICAgICAgICAgICAgICAgICAgICAgICAgICgqcF9kZXZtb2RlKS5Bbm9ueW1vdXMxLkFub255bW91czEuZG1PcmllbnRhdGlvbiA9IERNT1JJRU5UX0xBTkRTQ0FQRTsNCiAgICAgICAgICAgICAgICAgICAgICAgIH0gZWxzZSB7DQogICAgICAgICAgICAgICAgICAgICAgICAgICAgKCpwX2Rldm1vZGUpLkFub255bW91czEuQW5vbnltb3VzMS5kbU9yaWVudGF0aW9uID0gRE1PUklFTlRfUE9SVFJBSVQ7DQogICAgICAgICAgICAgICAgICAgICAgICB9DQogICAgICAgICAgICAgICAgICAgIH0NCiAgICAgICAgICAgICAgICB9DQoNCiAgICAgICAgICAgICAgICBTb21lKGJ1ZikNCiAgICAgICAgICAgIH0gZWxzZSB7DQogICAgICAgICAgICAgICAgTm9uZQ0KICAgICAgICAgICAgfQ0KICAgICAgICB9IGVsc2Ugew0KICAgICAgICAgICAgTm9uZQ0KICAgICAgICB9Ow0KDQogICAgICAgIGxldCBwX2Rldm1vZGVfcHRyID0gZGV2bW9kZV9idWYNCiAgICAgICAgICAgIC5hc19tdXQoKQ0KICAgICAgICAgICAgLm1hcCh8YnwgYi5hc19tdXRfcHRyKCkgYXMgKmNvbnN0IERFVk1PREVXKTsNCg0KICAgICAgICAvLyBDcmVhdGUgcHJpbnRlciBEZXZpY2UgQ29udGV4dCAoREMpDQogICAgICAgIGxldCBoZGMgPSBDcmVhdGVEQ1coDQogICAgICAgICAgICBQQ1dTVFI6Om51bGwoKSwNCiAgICAgICAgICAgIFBDV1NUUihwcmludGVyX3dpZGUuYXNfcHRyKCkpLA0KICAgICAgICAgICAgUENXU1RSOjpudWxsKCksDQogICAgICAgICAgICBwX2Rldm1vZGVfcHRyLA0KICAgICAgICApOw0KDQogICAgICAgIGlmIGhkYy5pc19pbnZhbGlkKCkgew0KICAgICAgICAgICAgbGV0IF8gPSBDbG9zZVByaW50ZXIoaF9wcmludGVyKTsNCiAgICAgICAgICAgIHJldHVybiBFcnIoZm9ybWF0ISgiRmFpbGVkIHRvIGNyZWF0ZSBEZXZpY2UgQ29udGV4dCBmb3IgcHJpbnRlciAne30nIiwgcHJpbnRlcl9uYW1lKSk7DQogICAgICAgIH0NCg0KICAgICAgICAvLyBTVFJJQ1QgSUNNIEJZUEFTUzogVHVybiBvZmYgV2luZG93cyBHREkgSW1hZ2UgQ29sb3IgTWFuYWdlbWVudA0KICAgICAgICBsZXQgXyA9IFNldElDTU1vZGUoaGRjLCBJQ01fT0ZGKTsNCg0KICAgICAgICAvLyBTdGFydCBEb2N1bWVudA0KICAgICAgICBsZXQgZG9jX2luZm8gPSBET0NJTkZPVyB7DQogICAgICAgICAgICBjYlNpemU6IHN0ZDo6bWVtOjpzaXplX29mOjo8RE9DSU5GT1c+KCkgYXMgaTMyLA0KICAgICAgICAgICAgbHBzekRvY05hbWU6IFBDV1NUUihkb2NfbmFtZV93aWRlLmFzX3B0cigpKSwNCiAgICAgICAgICAgIGxwc3pPdXRwdXQ6IFBDV1NUUjo6bnVsbCgpLA0KICAgICAgICAgICAgbHBzekRhdGF0eXBlOiBQQ1dTVFI6Om51bGwoKSwNCiAgICAgICAgICAgIGZ3VHlwZTogMCwNCiAgICAgICAgfTsNCg0KICAgICAgICBsZXQgc3RhcnRfZG9jX3JlcyA9IFN0YXJ0RG9jVyhoZGMsICZkb2NfaW5mbyk7DQogICAgICAgIGlmIHN0YXJ0X2RvY19yZXMgPD0gMCB7DQogICAgICAgICAgICBsZXQgXyA9IERlbGV0ZURDKGhkYyk7DQogICAgICAgICAgICBsZXQgXyA9IENsb3NlUHJpbnRlcihoX3ByaW50ZXIpOw0KICAgICAgICAgICAgcmV0dXJuIEVycigiRmFpbGVkIHRvIHN0YXJ0IHByaW50IGRvY3VtZW50IChTdGFydERvY1cpIi50b19zdHJpbmcoKSk7DQogICAgICAgIH0NCg0KICAgICAgICAvLyBTdGFydCBQYWdlDQogICAgICAgIGxldCBzdGFydF9wYWdlX3JlcyA9IFN0YXJ0UGFnZShoZGMpOw0KICAgICAgICBpZiBzdGFydF9wYWdlX3JlcyA8PSAwIHsNCiAgICAgICAgICAgIGxldCBfID0gRW5kRG9jKGhkYyk7DQogICAgICAgICAgICBsZXQgXyA9IERlbGV0ZURDKGhkYyk7DQogICAgICAgICAgICBsZXQgXyA9IENsb3NlUHJpbnRlcihoX3ByaW50ZXIpOw0KICAgICAgICAgICAgcmV0dXJuIEVycigiRmFpbGVkIHRvIHN0YXJ0IHByaW50IHBhZ2UgKFN0YXJ0UGFnZSkiLnRvX3N0cmluZygpKTsNCiAgICAgICAgfQ0KDQogICAgICAgIC8vIFF1ZXJ5IHByaW50YWJsZSBkZXZpY2UgZGltZW5zaW9ucw0KICAgICAgICBsZXQgZHBpX3ggPSBHZXREZXZpY2VDYXBzKGhkYywgTE9HUElYRUxTWCk7DQogICAgICAgIGxldCBkcGlfeSA9IEdldERldmljZUNhcHMoaGRjLCBMT0dQSVhFTFNZKTsNCiAgICAgICAgbGV0IHBhZ2Vfd2lkdGggPSBHZXREZXZpY2VDYXBzKGhkYywgSE9SWlJFUyk7DQogICAgICAgIGxldCBwYWdlX2hlaWdodCA9IEdldERldmljZUNhcHMoaGRjLCBWRVJUUkVTKTsNCg0KICAgICAgICAvLyBBVVRPTUFUSUMgQkVISU5ELVRIRS1TQ0VORVMgUEFHRS1GSVQgU0NBTEVSOg0KICAgICAgICAvLyBQcm9wb3J0aW9uYWxseSBzY2FsZSB0aGUgdGFyZ2V0IFRJRkYgdG8gZmlsbCB0aGUgYXZhaWxhYmxlIHBoeXNpY2FsIHByaW50YWJsZSBhcmVhDQogICAgICAgIGxldCBzY2FsZV94ID0gcGFnZV93aWR0aCBhcyBmNjQgLyBpbWdfd2lkdGggYXMgZjY0Ow0KICAgICAgICBsZXQgc2NhbGVfeSA9IHBhZ2VfaGVpZ2h0IGFzIGY2NCAvIGltZ19oZWlnaHQgYXMgZjY0Ow0KICAgICAgICBsZXQgc2NhbGUgPSBzY2FsZV94Lm1pbihzY2FsZV95KTsNCg0KICAgICAgICBsZXQgZGVzdF93aWR0aCA9IChpbWdfd2lkdGggYXMgZjY0ICogc2NhbGUpLmZsb29yKCkgYXMgaTMyOw0KICAgICAgICBsZXQgZGVzdF9oZWlnaHQgPSAoaW1nX2hlaWdodCBhcyBmNjQgKiBzY2FsZSkuZmxvb3IoKSBhcyBpMzI7DQoNCiAgICAgICAgbGV0IGRlc3RfeCA9IChwYWdlX3dpZHRoIC0gZGVzdF93aWR0aCkubWF4KDApIC8gMjsNCiAgICAgICAgbGV0IGRlc3RfeSA9IChwYWdlX2hlaWdodCAtIGRlc3RfaGVpZ2h0KS5tYXgoMCkgLyAyOw0KDQogICAgICAgIC8vIEJ1aWxkIEJJVE1BUElORk8gc3RydWN0dXJlIGZvciB0b3AtZG93biAyNC1iaXQgRElCDQogICAgICAgIGxldCBibWkgPSBCSVRNQVBJTkZPIHsNCiAgICAgICAgICAgIGJtaUhlYWRlcjogQklUTUFQSU5GT0hFQURFUiB7DQogICAgICAgICAgICAgICAgYmlTaXplOiBzdGQ6Om1lbTo6c2l6ZV9vZjo6PEJJVE1BUElORk9IRUFERVI+KCkgYXMgdTMyLA0KICAgICAgICAgICAgICAgIGJpV2lkdGg6IGltZ193aWR0aCBhcyBpMzIsDQogICAgICAgICAgICAgICAgYmlIZWlnaHQ6IC0oaW1nX2hlaWdodCBhcyBpMzIpLCAvLyBOZWdhdGl2ZSBoZWlnaHQgZGVub3RlcyB0b3AtZG93biBESUINCiAgICAgICAgICAgICAgICBiaVBsYW5lczogMSwNCiAgICAgICAgICAgICAgICBiaUJpdENvdW50OiAyNCwNCiAgICAgICAgICAgICAgICBiaUNvbXByZXNzaW9uOiBCSV9SR0IuMCwNCiAgICAgICAgICAgICAgICBiaVNpemVJbWFnZTogZGliX2J5dGVzLmxlbigpIGFzIHUzMiwNCiAgICAgICAgICAgICAgICBiaVhQZWxzUGVyTWV0ZXI6ICgoZHBpX3ggYXMgZjY0IC8gMC4wMjU0KS5yb3VuZCgpKSBhcyBpMzIsDQogICAgICAgICAgICAgICAgYmlZUGVsc1Blck1ldGVyOiAoKGRwaV95IGFzIGY2NCAvIDAuMDI1NCkucm91bmQoKSkgYXMgaTMyLA0KICAgICAgICAgICAgICAgIGJpQ2xyVXNlZDogMCwNCiAgICAgICAgICAgICAgICBiaUNsckltcG9ydGFudDogMCwNCiAgICAgICAgICAgIH0sDQogICAgICAgICAgICBibWlDb2xvcnM6IFtSR0JRVUFEOjpkZWZhdWx0KCldLA0KICAgICAgICB9Ow0KDQogICAgICAgIC8vIERyYXcgdW5tYW5hZ2VkIERJQiB0byBwcmludGVyIGRldmljZSBjb250ZXh0DQogICAgICAgIGxldCBsaW5lc19kcmF3biA9IFN0cmV0Y2hESUJpdHMoDQogICAgICAgICAgICBoZGMsDQogICAgICAgICAgICBkZXN0X3gsDQogICAgICAgICAgICBkZXN0X3ksDQogICAgICAgICAgICBkZXN0X3dpZHRoLA0KICAgICAgICAgICAgZGVzdF9oZWlnaHQsDQogICAgICAgICAgICAwLA0KICAgICAgICAgICAgMCwNCiAgICAgICAgICAgIGltZ193aWR0aCBhcyBpMzIsDQogICAgICAgICAgICBpbWdfaGVpZ2h0IGFzIGkzMiwNCiAgICAgICAgICAgIFNvbWUoZGliX2J5dGVzLmFzX3B0cigpIGFzICpjb25zdCBjX3ZvaWQpLA0KICAgICAgICAgICAgJmJtaSwNCiAgICAgICAgICAgIERJQl9SR0JfQ09MT1JTLA0KICAgICAgICAgICAgU1JDQ09QWSwNCiAgICAgICAgKTsNCg0KICAgICAgICBpZiBsaW5lc19kcmF3biA8PSAwIHsNCiAgICAgICAgICAgIGxldCBfID0gRW5kUGFnZShoZGMpOw0KICAgICAgICAgICAgbGV0IF8gPSBFbmREb2MoaGRjKTsNCiAgICAgICAgICAgIGxldCBfID0gRGVsZXRlREMoaGRjKTsNCiAgICAgICAgICAgIGxldCBfID0gQ2xvc2VQcmludGVyKGhfcHJpbnRlcik7DQogICAgICAgICAgICByZXR1cm4gRXJyKCJGYWlsZWQgdG8gZHJhdyBESUIgYml0bWFwIHRvIHByaW50ZXIgREMgKFN0cmV0Y2hESUJpdHMpIi50b19zdHJpbmcoKSk7DQogICAgICAgIH0NCg0KICAgICAgICAvLyBGaW5pc2ggUGFnZSBhbmQgRG9jdW1lbnQNCiAgICAgICAgbGV0IF8gPSBFbmRQYWdlKGhkYyk7DQogICAgICAgIGxldCBfID0gRW5kRG9jKGhkYyk7DQogICAgICAgIGxldCBfID0gRGVsZXRlREMoaGRjKTsNCiAgICAgICAgbGV0IF8gPSBDbG9zZVByaW50ZXIoaF9wcmludGVyKTsNCg0KICAgICAgICBPaygoKSkNCiAgICB9DQp9DQoNCg==
+#![allow(non_snake_case, dead_code)]
+
+use std::ffi::{c_void, OsStr};
+use std::os::windows::ffi::OsStrExt;
+use std::path::Path;
+use windows::core::PCWSTR;
+use windows::Win32::Foundation::{HANDLE, HWND};
+use windows::Win32::Graphics::Gdi::{
+    CreateDCW, DeleteDC, GetDeviceCaps, StretchDIBits,
+    BITMAPINFO, BITMAPINFOHEADER, BI_RGB, DEVMODEW, DEVMODE_FIELD_FLAGS,
+    DIB_RGB_COLORS, HDC, HORZRES, LOGPIXELSX, LOGPIXELSY, RGBQUAD, SRCCOPY, VERTRES,
+};
+use windows::Win32::Graphics::Printing::{
+    ClosePrinter, DocumentPropertiesW, EnumPrintersW, OpenPrinterW,
+    PRINTER_ENUM_CONNECTIONS, PRINTER_ENUM_LOCAL, PRINTER_INFO_1W, PRINTER_INFO_4W,
+};
+use windows::Win32::UI::WindowsAndMessaging::GetForegroundWindow;
+
+use crate::print::{
+    PrintOptions, Printer, PrinterCapabilities, PrinterDevModeStore, PrinterPaperSize, PrinterTray,
+};
+
+#[repr(C)]
+struct DOCINFOW {
+    cbSize: i32,
+    lpszDocName: PCWSTR,
+    lpszOutput: PCWSTR,
+    lpszDatatype: PCWSTR,
+    fwType: u32,
+}
+
+extern "system" {
+    fn SetICMMode(hdc: HDC, mode: i32) -> i32;
+    fn StartDocW(hdc: HDC, lpdi: *const DOCINFOW) -> i32;
+    fn StartPage(hdc: HDC) -> i32;
+    fn EndPage(hdc: HDC) -> i32;
+    fn EndDoc(hdc: HDC) -> i32;
+    fn DeviceCapabilitiesW(
+        pdevicename: PCWSTR,
+        pport: PCWSTR,
+        fwcapability: u16,
+        poutput: *mut u16,
+        pdevmode: *const DEVMODEW,
+    ) -> i32;
+}
+
+const ICM_OFF: i32 = 1;
+const DM_IN_PROMPT: u32 = 4;
+const DM_IN_BUFFER: u32 = 8;
+const DM_OUT_BUFFER: u32 = 2;
+const DM_ORIENTATION: u32 = 0x00000001;
+const DM_DEFAULTSOURCE: u32 = 0x00000200;
+const DM_ICMMETHOD: u32 = 0x00800000;
+const DMICMMETHOD_NONE: u32 = 1;
+const DMORIENT_PORTRAIT: i16 = 1;
+const DMORIENT_LANDSCAPE: i16 = 2;
+
+const DC_PAPERS: u16 = 2;
+const DC_BINS: u16 = 6;
+const DC_BINNAMES: u16 = 12;
+const DC_PAPERNAMES: u16 = 16;
+const IDOK: i32 = 1;
+
+fn to_wide(s: &str) -> Vec<u16> {
+    OsStr::new(s).encode_wide().chain(std::iter::once(0)).collect()
+}
+
+fn extract_null_terminated_string(wide_slice: &[u16]) -> String {
+    let len = wide_slice.iter().position(|&c| c == 0).unwrap_or(wide_slice.len());
+    String::from_utf16_lossy(&wide_slice[..len]).trim().to_string()
+}
+
+/// Enumerate available printers on the system
+pub fn get_printers() -> Result<Vec<Printer>, String> {
+    unsafe {
+        let flags = PRINTER_ENUM_LOCAL | PRINTER_ENUM_CONNECTIONS;
+        let mut bytes_needed = 0u32;
+        let mut count = 0u32;
+
+        let _ = EnumPrintersW(
+            flags,
+            PCWSTR::null(),
+            4,
+            None,
+            &mut bytes_needed,
+            &mut count,
+        );
+
+        if bytes_needed == 0 {
+            let _ = EnumPrintersW(
+                flags,
+                PCWSTR::null(),
+                1,
+                None,
+                &mut bytes_needed,
+                &mut count,
+            );
+
+            if bytes_needed == 0 {
+                return Ok(Vec::new());
+            }
+
+            let mut buffer = vec![0u8; bytes_needed as usize];
+            let res = EnumPrintersW(
+                flags,
+                PCWSTR::null(),
+                1,
+                Some(&mut buffer),
+                &mut bytes_needed,
+                &mut count,
+            );
+
+            if res.is_err() {
+                return Err("Failed to enumerate printers (Level 1)".to_string());
+            }
+
+            let p_info = buffer.as_ptr() as *const PRINTER_INFO_1W;
+            let mut printers = Vec::new();
+            for i in 0..count as usize {
+                let info = *p_info.add(i);
+                if !info.pName.is_null() {
+                    let name = info.pName.to_string().map_err(|e| e.to_string())?;
+                    printers.push(Printer {
+                        name,
+                        status: "Ready".to_string(),
+                        is_default: false,
+                    });
+                }
+            }
+            return Ok(printers);
+        }
+
+        let mut buffer = vec![0u8; bytes_needed as usize];
+        let res = EnumPrintersW(
+            flags,
+            PCWSTR::null(),
+            4,
+            Some(&mut buffer),
+            &mut bytes_needed,
+            &mut count,
+        );
+
+        if res.is_err() {
+            return Err("Failed to enumerate printers (Level 4)".to_string());
+        }
+
+        let p_info = buffer.as_ptr() as *const PRINTER_INFO_4W;
+        let mut printers = Vec::new();
+        for i in 0..count as usize {
+            let info = *p_info.add(i);
+            if !info.pPrinterName.is_null() {
+                let name = info.pPrinterName.to_string().map_err(|e| e.to_string())?;
+                printers.push(Printer {
+                    name,
+                    status: "Ready".to_string(),
+                    is_default: false,
+                });
+            }
+        }
+        Ok(printers)
+    }
+}
+
+/// Query hardware capabilities (paper trays and paper sizes) for a given printer
+pub fn get_printer_capabilities(printer_name: &str) -> Result<PrinterCapabilities, String> {
+    let printer_wide = to_wide(printer_name);
+
+    unsafe {
+        // Query trays (bins)
+        let num_bins = DeviceCapabilitiesW(
+            PCWSTR(printer_wide.as_ptr()),
+            PCWSTR::null(),
+            DC_BINS,
+            std::ptr::null_mut(),
+            std::ptr::null(),
+        );
+
+        let mut trays = Vec::new();
+        if num_bins > 0 {
+            let mut bin_ids = vec![0u16; num_bins as usize];
+            let mut bin_names_raw = vec![0u16; num_bins as usize * 24];
+
+            let res_ids = DeviceCapabilitiesW(
+                PCWSTR(printer_wide.as_ptr()),
+                PCWSTR::null(),
+                DC_BINS,
+                bin_ids.as_mut_ptr(),
+                std::ptr::null(),
+            );
+
+            let res_names = DeviceCapabilitiesW(
+                PCWSTR(printer_wide.as_ptr()),
+                PCWSTR::null(),
+                DC_BINNAMES,
+                bin_names_raw.as_mut_ptr(),
+                std::ptr::null(),
+            );
+
+            if res_ids > 0 && res_names > 0 {
+                for i in 0..num_bins as usize {
+                    let id = bin_ids[i];
+                    let name_slice = &bin_names_raw[i * 24..(i + 1) * 24];
+                    let name = extract_null_terminated_string(name_slice);
+                    let display_name = if name.is_empty() {
+                        format!("Tray {}", id)
+                    } else {
+                        name
+                    };
+                    trays.push(PrinterTray {
+                        id,
+                        name: display_name,
+                    });
+                }
+            }
+        }
+
+        // Query paper sizes
+        let num_papers = DeviceCapabilitiesW(
+            PCWSTR(printer_wide.as_ptr()),
+            PCWSTR::null(),
+            DC_PAPERS,
+            std::ptr::null_mut(),
+            std::ptr::null(),
+        );
+
+        let mut paper_sizes = Vec::new();
+        if num_papers > 0 {
+            let mut paper_ids = vec![0u16; num_papers as usize];
+            let mut paper_names_raw = vec![0u16; num_papers as usize * 64];
+
+            let res_ids = DeviceCapabilitiesW(
+                PCWSTR(printer_wide.as_ptr()),
+                PCWSTR::null(),
+                DC_PAPERS,
+                paper_ids.as_mut_ptr(),
+                std::ptr::null(),
+            );
+
+            let res_names = DeviceCapabilitiesW(
+                PCWSTR(printer_wide.as_ptr()),
+                PCWSTR::null(),
+                DC_PAPERNAMES,
+                paper_names_raw.as_mut_ptr(),
+                std::ptr::null(),
+            );
+
+            if res_ids > 0 && res_names > 0 {
+                for i in 0..num_papers as usize {
+                    let id = paper_ids[i];
+                    let name_slice = &paper_names_raw[i * 64..(i + 1) * 64];
+                    let name = extract_null_terminated_string(name_slice);
+                    let display_name = if name.is_empty() {
+                        format!("Paper Size {}", id)
+                    } else {
+                        name
+                    };
+                    paper_sizes.push(PrinterPaperSize {
+                        id,
+                        name: display_name,
+                    });
+                }
+            }
+        }
+
+        Ok(PrinterCapabilities {
+            trays,
+            paper_sizes,
+            supports_orientation: true,
+        })
+    }
+}
+
+/// Open the native modal Printer Properties / Preferences dialog and retain DEVMODE changes
+pub fn show_printer_properties(
+    printer_name: &str,
+    devmode_store: &PrinterDevModeStore,
+) -> Result<(), String> {
+    let printer_wide = to_wide(printer_name);
+
+    unsafe {
+        let mut h_printer = HANDLE::default();
+        let open_res = OpenPrinterW(PCWSTR(printer_wide.as_ptr()), &mut h_printer, None);
+        if open_res.is_err() || h_printer.is_invalid() {
+            return Err(format!("Failed to open printer '{}'", printer_name));
+        }
+
+        let parent_hwnd = GetForegroundWindow();
+
+        let devmode_size = DocumentPropertiesW(
+            parent_hwnd,
+            h_printer,
+            PCWSTR(printer_wide.as_ptr()),
+            None,
+            None,
+            0,
+        );
+
+        if devmode_size <= 0 {
+            let _ = ClosePrinter(h_printer);
+            return Err("Failed to query DEVMODE size for printer properties".to_string());
+        }
+
+        let mut in_buf = devmode_store
+            .get(printer_name)
+            .unwrap_or_else(|| vec![0u8; devmode_size as usize]);
+
+        if in_buf.len() < devmode_size as usize {
+            in_buf.resize(devmode_size as usize, 0);
+        }
+
+        // Populate initial DEVMODE if empty
+        if in_buf.iter().all(|&b| b == 0) {
+            let _ = DocumentPropertiesW(
+                parent_hwnd,
+                h_printer,
+                PCWSTR(printer_wide.as_ptr()),
+                Some(in_buf.as_mut_ptr() as *mut DEVMODEW),
+                None,
+                DM_OUT_BUFFER,
+            );
+        }
+
+        let mut out_buf = vec![0u8; devmode_size as usize];
+
+        let res = DocumentPropertiesW(
+            parent_hwnd,
+            h_printer,
+            PCWSTR(printer_wide.as_ptr()),
+            Some(out_buf.as_mut_ptr() as *mut DEVMODEW),
+            Some(in_buf.as_ptr() as *const DEVMODEW),
+            DM_IN_PROMPT | DM_IN_BUFFER | DM_OUT_BUFFER,
+        );
+
+        let _ = ClosePrinter(h_printer);
+
+        if res == IDOK {
+            devmode_store.set(printer_name, out_buf);
+            Ok(())
+        } else if res == 2 {
+            // Cancelled by user
+            Ok(())
+        } else {
+            Err("Printer properties dialog was dismissed or encountered an error".to_string())
+        }
+    }
+}
+
+/// Print target TIFF file to printer with GDI ICM bypass, DEVMODE overrides, and auto-fit scaling
+pub fn print_target(
+    printer_name: &str,
+    tiff_path: &str,
+    options: Option<&PrintOptions>,
+    devmode_store: Option<&PrinterDevModeStore>,
+) -> Result<(), String> {
+    let path = Path::new(tiff_path);
+    if !path.exists() {
+        return Err(format!("Target TIFF file not found: {}", tiff_path));
+    }
+
+    // Load and convert the TIFF image
+    let dyn_img = image::open(path).map_err(|e| format!("Failed to open TIFF image: {}", e))?;
+    let rgb_img = dyn_img.to_rgb8();
+    let img_width = rgb_img.width();
+    let img_height = rgb_img.height();
+
+    if img_width == 0 || img_height == 0 {
+        return Err("Image has zero dimensions".to_string());
+    }
+
+    // Prepare 24-bit BGR DIB buffer with 4-byte row stride alignment
+    let row_stride = ((img_width as usize * 3 + 3) / 4) * 4;
+    let mut dib_bytes = vec![0u8; row_stride * img_height as usize];
+
+    for y in 0..img_height as usize {
+        for x in 0..img_width as usize {
+            let pixel = rgb_img.get_pixel(x as u32, y as u32);
+            let dst_idx = y * row_stride + x * 3;
+            dib_bytes[dst_idx] = pixel[2];     // Blue
+            dib_bytes[dst_idx + 1] = pixel[1]; // Green
+            dib_bytes[dst_idx + 2] = pixel[0]; // Red
+        }
+    }
+
+    let printer_wide = to_wide(printer_name);
+    let doc_name = format!(
+        "ICCery Target - {}",
+        path.file_name().and_then(|n| n.to_str()).unwrap_or("Profiling Target")
+    );
+    let doc_name_wide = to_wide(&doc_name);
+
+    unsafe {
+        // Open printer handle
+        let mut h_printer = HANDLE::default();
+        let open_res = OpenPrinterW(PCWSTR(printer_wide.as_ptr()), &mut h_printer, None);
+        if open_res.is_err() || h_printer.is_invalid() {
+            return Err(format!("Failed to open printer '{}'", printer_name));
+        }
+
+        // Configure DEVMODE
+        let devmode_size = DocumentPropertiesW(
+            HWND::default(),
+            h_printer,
+            PCWSTR(printer_wide.as_ptr()),
+            None,
+            None,
+            0,
+        );
+
+        let mut devmode_buf = if devmode_size > 0 {
+            let mut buf = devmode_store
+                .and_then(|s| s.get(printer_name))
+                .unwrap_or_else(|| vec![0u8; devmode_size as usize]);
+
+            if buf.len() < devmode_size as usize {
+                buf.resize(devmode_size as usize, 0);
+            }
+
+            let p_devmode = buf.as_mut_ptr() as *mut DEVMODEW;
+            let res = DocumentPropertiesW(
+                HWND::default(),
+                h_printer,
+                PCWSTR(printer_wide.as_ptr()),
+                Some(p_devmode),
+                None,
+                DM_OUT_BUFFER,
+            );
+
+            if res >= 0 {
+                // Apply strict ICM bypass
+                (*p_devmode).dmFields |= DEVMODE_FIELD_FLAGS(DM_ICMMETHOD);
+                (*p_devmode).dmICMMethod = DMICMMETHOD_NONE;
+
+                // Apply UI options if specified
+                if let Some(opts) = options {
+                    if let Some(tray_id) = opts.paper_source {
+                        (*p_devmode).dmFields |= DEVMODE_FIELD_FLAGS(DM_DEFAULTSOURCE);
+                        (*p_devmode).Anonymous1.Anonymous1.dmDefaultSource = tray_id as i16;
+                    }
+
+                    if let Some(ref orient) = opts.orientation {
+                        (*p_devmode).dmFields |= DEVMODE_FIELD_FLAGS(DM_ORIENTATION);
+                        if orient.eq_ignore_ascii_case("landscape") {
+                            (*p_devmode).Anonymous1.Anonymous1.dmOrientation = DMORIENT_LANDSCAPE;
+                        } else {
+                            (*p_devmode).Anonymous1.Anonymous1.dmOrientation = DMORIENT_PORTRAIT;
+                        }
+                    }
+                }
+
+                Some(buf)
+            } else {
+                None
+            }
+        } else {
+            None
+        };
+
+        let p_devmode_ptr = devmode_buf
+            .as_mut()
+            .map(|b| b.as_mut_ptr() as *const DEVMODEW);
+
+        // Create printer Device Context (DC)
+        let hdc = CreateDCW(
+            PCWSTR::null(),
+            PCWSTR(printer_wide.as_ptr()),
+            PCWSTR::null(),
+            p_devmode_ptr,
+        );
+
+        if hdc.is_invalid() {
+            let _ = ClosePrinter(h_printer);
+            return Err(format!("Failed to create Device Context for printer '{}'", printer_name));
+        }
+
+        // STRICT ICM BYPASS: Turn off Windows GDI Image Color Management
+        let _ = SetICMMode(hdc, ICM_OFF);
+
+        // Start Document
+        let doc_info = DOCINFOW {
+            cbSize: std::mem::size_of::<DOCINFOW>() as i32,
+            lpszDocName: PCWSTR(doc_name_wide.as_ptr()),
+            lpszOutput: PCWSTR::null(),
+            lpszDatatype: PCWSTR::null(),
+            fwType: 0,
+        };
+
+        let start_doc_res = StartDocW(hdc, &doc_info);
+        if start_doc_res <= 0 {
+            let _ = DeleteDC(hdc);
+            let _ = ClosePrinter(h_printer);
+            return Err("Failed to start print document (StartDocW)".to_string());
+        }
+
+        // Start Page
+        let start_page_res = StartPage(hdc);
+        if start_page_res <= 0 {
+            let _ = EndDoc(hdc);
+            let _ = DeleteDC(hdc);
+            let _ = ClosePrinter(h_printer);
+            return Err("Failed to start print page (StartPage)".to_string());
+        }
+
+        // Query printable device dimensions
+        let dpi_x = GetDeviceCaps(hdc, LOGPIXELSX);
+        let dpi_y = GetDeviceCaps(hdc, LOGPIXELSY);
+        let page_width = GetDeviceCaps(hdc, HORZRES);
+        let page_height = GetDeviceCaps(hdc, VERTRES);
+
+        // AUTOMATIC BEHIND-THE-SCENES PAGE-FIT SCALER:
+        // Proportionally scale the target TIFF to fill the available physical printable area
+        let scale_x = page_width as f64 / img_width as f64;
+        let scale_y = page_height as f64 / img_height as f64;
+        let scale = scale_x.min(scale_y);
+
+        let dest_width = (img_width as f64 * scale).floor() as i32;
+        let dest_height = (img_height as f64 * scale).floor() as i32;
+
+        let dest_x = (page_width - dest_width).max(0) / 2;
+        let dest_y = (page_height - dest_height).max(0) / 2;
+
+        // Build BITMAPINFO structure for top-down 24-bit DIB
+        let bmi = BITMAPINFO {
+            bmiHeader: BITMAPINFOHEADER {
+                biSize: std::mem::size_of::<BITMAPINFOHEADER>() as u32,
+                biWidth: img_width as i32,
+                biHeight: -(img_height as i32), // Negative height denotes top-down DIB
+                biPlanes: 1,
+                biBitCount: 24,
+                biCompression: BI_RGB.0,
+                biSizeImage: dib_bytes.len() as u32,
+                biXPelsPerMeter: ((dpi_x as f64 / 0.0254).round()) as i32,
+                biYPelsPerMeter: ((dpi_y as f64 / 0.0254).round()) as i32,
+                biClrUsed: 0,
+                biClrImportant: 0,
+            },
+            bmiColors: [RGBQUAD::default()],
+        };
+
+        // Draw unmanaged DIB to printer device context
+        let lines_drawn = StretchDIBits(
+            hdc,
+            dest_x,
+            dest_y,
+            dest_width,
+            dest_height,
+            0,
+            0,
+            img_width as i32,
+            img_height as i32,
+            Some(dib_bytes.as_ptr() as *const c_void),
+            &bmi,
+            DIB_RGB_COLORS,
+            SRCCOPY,
+        );
+
+        if lines_drawn <= 0 {
+            let _ = EndPage(hdc);
+            let _ = EndDoc(hdc);
+            let _ = DeleteDC(hdc);
+            let _ = ClosePrinter(h_printer);
+            return Err("Failed to draw DIB bitmap to printer DC (StretchDIBits)".to_string());
+        }
+
+        // Finish Page and Document
+        let _ = EndPage(hdc);
+        let _ = EndDoc(hdc);
+        let _ = DeleteDC(hdc);
+        let _ = ClosePrinter(h_printer);
+
+        Ok(())
+    }
+}
