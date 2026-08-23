@@ -15,12 +15,14 @@ use windows::Win32::Graphics::Printing::{
     PRINTER_ENUM_LOCAL, PRINTER_INFO_2W, PRINTER_INFO_4W,
 };
 
+use crate::print::Printer;
+
 fn to_wide(s: &str) -> Vec<u16> {
     OsStr::new(s).encode_wide().chain(std::iter::once(0)).collect()
 }
 
 /// Enumerate available printers on the system
-pub fn get_printers() -> Result<Vec<String>, String> {
+pub fn get_printers() -> Result<Vec<Printer>, String> {
     unsafe {
         let flags = PRINTER_ENUM_LOCAL | PRINTER_ENUM_CONNECTIONS;
         let mut bytes_needed = 0u32;
@@ -74,7 +76,11 @@ pub fn get_printers() -> Result<Vec<String>, String> {
                 let info = *p_info.add(i);
                 if !info.pPrinterName.is_null() {
                     let name = info.pPrinterName.to_string().map_err(|e| e.to_string())?;
-                    printers.push(name);
+                    printers.push(Printer {
+                        name,
+                        status: "Ready".to_string(),
+                        is_default: false,
+                    });
                 }
             }
             return Ok(printers);
@@ -101,7 +107,11 @@ pub fn get_printers() -> Result<Vec<String>, String> {
             let info = *p_info.add(i);
             if !info.pPrinterName.is_null() {
                 let name = info.pPrinterName.to_string().map_err(|e| e.to_string())?;
-                printers.push(name);
+                printers.push(Printer {
+                    name,
+                    status: "Ready".to_string(),
+                    is_default: false,
+                });
             }
         }
         Ok(printers)
