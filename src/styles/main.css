@@ -42,8 +42,8 @@ body {
 }
 
 .main-logo {
-  height: 2.8rem;
-  max-width: 200px;
+  height: 3.22rem;
+  max-width: 230px;
   object-fit: contain;
 }
 
@@ -683,10 +683,13 @@ button.danger:hover {
   cursor: pointer;
   padding: 4px;
   border-radius: 4px;
+  color: #d1d5db;
+  transition: color 0.15s ease, background-color 0.15s ease;
 }
 
 .icon-btn:hover {
   background: var(--border-color);
+  color: #ffffff;
 }
 
 .settings-modal {
