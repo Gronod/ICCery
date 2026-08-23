@@ -26,7 +26,7 @@ jobs:
           cache: 'npm'
 
       - name: Install Rust stable
-        shell: pwsh
+        shell: powershell
         run: |
           if (!(Get-Command rustup -ErrorAction SilentlyContinue) -and !(Test-Path "$env:USERPROFILE\.cargo\bin\rustup.exe")) {
             Write-Host "Downloading rustup-init.exe..."
@@ -44,7 +44,7 @@ jobs:
           workspaces: "src-tauri -> target"
 
       - name: Check sidecar binaries
-        shell: pwsh
+        shell: powershell
         run: |
           if (!(Test-Path "src-tauri\argyll\windows-x86_64\argyll-instlist.exe")) {
             Write-Host "Warning: Windows ArgyllCMS binaries not found. Please ensure they are downloaded/committed to src-tauri/argyll/windows-x86_64 before release."
@@ -55,7 +55,7 @@ jobs:
 
       - name: Get App Version
         id: get_version
-        shell: pwsh
+        shell: powershell
         run: |
           $VERSION = node -p "require('./package.json').version"
           if ($env:GITHUB_REF -eq "refs/heads/main") {
