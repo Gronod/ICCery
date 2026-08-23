@@ -17,6 +17,7 @@ jobs:
     env:
       APPIMAGE_EXTRACT_AND_RUN: 1
       NO_STRIP: "true"
+      RUST_BACKTRACE: "1"
     
     steps:
       - name: Checkout repository
@@ -40,7 +41,7 @@ jobs:
       - name: Install Tauri Linux dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y libwebkit2gtk-4.1-dev build-essential curl wget file libxdo-dev libssl-dev libayatana-appindicator3-dev librsvg2-dev patchelf xdg-utils squashfs-tools
+          sudo apt-get install -y libwebkit2gtk-4.1-dev build-essential curl wget file libxdo-dev libssl-dev libayatana-appindicator3-dev librsvg2-dev patchelf xdg-utils squashfs-tools zsync
           sudo apt-get install -y libfuse2 || sudo apt-get install -y libfuse2t64 || true
 
       - name: Install Node dependencies
@@ -60,7 +61,7 @@ jobs:
       - name: Build Tauri App
         env:
           APPIMAGE_EXTRACT_AND_RUN: 1
-        run: npm run tauri build
+        run: npm run tauri build -- -v
 
       - name: Upload Debian Package
         uses: actions/upload-artifact@v4
