@@ -58,7 +58,13 @@ jobs:
             curl wget file patchelf xdg-utils squashfs-tools zsync \
             libayatana-appindicator3-dev \
             librsvg2-dev \
-            libssl-dev
+            libssl-dev \
+            libxss-dev \
+            libxinerama-dev \
+            libxrandr-dev \
+            libxxf86vm-dev \
+            libxcursor-dev \
+            libxi-dev
           sudo apt-get install --no-install-recommends -y libfuse2 || sudo apt-get install --no-install-recommends -y libfuse2t64 || true
 
       - name: Install Node dependencies
