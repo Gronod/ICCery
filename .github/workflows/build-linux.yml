@@ -16,6 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       APPIMAGE_EXTRACT_AND_RUN: 1
+      NO_STRIP: "true"
       RUST_BACKTRACE: "1"
     
     steps:
@@ -77,7 +78,8 @@ jobs:
       - name: Build Tauri App
         env:
           APPIMAGE_EXTRACT_AND_RUN: 1
-        run: npm run tauri build -- --bundles deb,appimage
+          NO_STRIP: "true"
+        run: npm run tauri build -- -v --bundles deb,appimage
 
       - name: Upload Debian Package
         uses: actions/upload-artifact@v4
