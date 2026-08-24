@@ -42,11 +42,17 @@ export function initPrinttarg() {
   const btnOrientLandscape = document.getElementById("btnOrientLandscape");
   const printerStatusBadge = document.getElementById("printerStatusBadge");
   const chkPpdFallback = document.getElementById("chkPpdFallback");
+  const cupsOptionsGroup = document.getElementById("cupsOptionsGroup");
   const btnPrintAll = document.getElementById("btnPrintAll");
   const btnAdvanceToStage3 = document.getElementById("btnAdvanceToStage3");
   const printNotification = document.getElementById("printNotification");
   const printNotificationIcon = document.getElementById("printNotificationIcon");
   const printNotificationText = document.getElementById("printNotificationText");
+
+  const isWindows = navigator.userAgent.includes("Windows") || (navigator.userAgentData && navigator.userAgentData.platform === "Windows");
+  if (isWindows && cupsOptionsGroup) {
+    cupsOptionsGroup.classList.add("hidden");
+  }
 
   let selectedOrientation = "portrait";
 
