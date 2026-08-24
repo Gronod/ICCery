@@ -4,7 +4,6 @@ use std::ffi::{c_void, OsStr};
 use std::os::windows::ffi::OsStrExt;
 use std::path::Path;
 use windows::core::PCWSTR;
-use windows::Win32::Foundation::{HANDLE, HWND};
 use windows::Win32::Graphics::Gdi::{
     CreateDCW, DeleteDC, GetDeviceCaps, StretchDIBits,
     BITMAPINFO, BITMAPINFOHEADER, BI_RGB, DEVMODEW, DEVMODE_FIELD_FLAGS,
@@ -13,6 +12,7 @@ use windows::Win32::Graphics::Gdi::{
 use windows::Win32::Graphics::Printing::{
     ClosePrinter, DocumentPropertiesW, EnumPrintersW, OpenPrinterW,
     PRINTER_ENUM_CONNECTIONS, PRINTER_ENUM_LOCAL, PRINTER_INFO_1W, PRINTER_INFO_4W,
+    PRINTER_HANDLE,
 };
 use windows::Win32::UI::WindowsAndMessaging::GetForegroundWindow;
 
@@ -278,16 +278,16 @@ pub fn show_printer_properties(
     let printer_wide = to_wide(printer_name);
 
     unsafe {
-        let mut h_printer = HANDLE::default();
+        let mut h_printer = PRINTER_HANDLE::default();
         let open_res = OpenPrinterW(PCWSTR(printer_wide.as_ptr()), &mut h_printer, None);
-        if open_res.is_err() || h_printer.is_invalid() {
+        if open_res.is_err() || h_printer.Value.is_null() {
             return Err(format!("Failed to open printer '{}'", printer_name));
         }
 
         let parent_hwnd = GetForegroundWindow();
 
         let devmode_size = DocumentPropertiesW(
-            parent_hwnd,
+            Some(parent_hwnd),
             h_printer,
             PCWSTR(printer_wide.as_ptr()),
             None,
@@ -311,7 +311,7 @@ pub fn show_printer_properties(
         // Populate initial DEVMODE if empty
         if in_buf.iter().all(|&b| b == 0) {
             let _ = DocumentPropertiesW(
-                parent_hwnd,
+                Some(parent_hwnd),
                 h_printer,
                 PCWSTR(printer_wide.as_ptr()),
                 Some(in_buf.as_mut_ptr() as *mut DEVMODEW),
@@ -323,7 +323,7 @@ pub fn show_printer_properties(
         let mut out_buf = vec![0u8; devmode_size as usize];
 
         let res = DocumentPropertiesW(
-            parent_hwnd,
+            Some(parent_hwnd),
             h_printer,
             PCWSTR(printer_wide.as_ptr()),
             Some(out_buf.as_mut_ptr() as *mut DEVMODEW),
@@ -419,15 +419,15 @@ pub fn print_target(
 
     unsafe {
         // Open printer handle
-        let mut h_printer = HANDLE::default();
+        let mut h_printer = PRINTER_HANDLE::default();
         let open_res = OpenPrinterW(PCWSTR(printer_wide.as_ptr()), &mut h_printer, None);
-        if open_res.is_err() || h_printer.is_invalid() {
+        if open_res.is_err() || h_printer.Value.is_null() {
             return Err(format!("Failed to open printer '{}'", printer_name));
         }
 
         // Configure DEVMODE
         let devmode_size = DocumentPropertiesW(
-            HWND::default(),
+            None,
             h_printer,
             PCWSTR(printer_wide.as_ptr()),
             None,
@@ -446,7 +446,7 @@ pub fn print_target(
                 let mut b = vec![0u8; devmode_size as usize];
                 let p_devmode = b.as_mut_ptr() as *mut DEVMODEW;
                 let _ = DocumentPropertiesW(
-                    HWND::default(),
+                    None,
                     h_printer,
                     PCWSTR(printer_wide.as_ptr()),
                     Some(p_devmode),
@@ -510,10 +510,10 @@ pub fn print_target(
         }
 
         // Query printable device dimensions
-        let dpi_x = GetDeviceCaps(hdc, LOGPIXELSX);
-        let dpi_y = GetDeviceCaps(hdc, LOGPIXELSY);
-        let page_width = GetDeviceCaps(hdc, HORZRES);
-        let page_height = GetDeviceCaps(hdc, VERTRES);
+        let dpi_x = GetDeviceCaps(Some(hdc), LOGPIXELSX);
+        let dpi_y = GetDeviceCaps(Some(hdc), LOGPIXELSY);
+        let page_width = GetDeviceCaps(Some(hdc), HORZRES);
+        let page_height = GetDeviceCaps(Some(hdc), VERTRES);
 
         // AUTOMATIC BEHIND-THE-SCENES PAGE-FIT SCALER:
         // Proportionally scale the target TIFF to fill the available physical printable area
