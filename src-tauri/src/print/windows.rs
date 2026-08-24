@@ -345,6 +345,35 @@ pub fn show_printer_properties(
     }
 }
 
+/// Apply ICM bypass and user options onto an active DEVMODE structure
+pub fn apply_print_options_to_devmode(
+    p_devmode: *mut DEVMODEW,
+    options: Option<&PrintOptions>,
+) {
+    unsafe {
+        // Apply strict ICM bypass
+        (*p_devmode).dmFields |= DEVMODE_FIELD_FLAGS(DM_ICMMETHOD);
+        (*p_devmode).dmICMMethod = DMICMMETHOD_NONE;
+
+        // Apply UI options if specified
+        if let Some(opts) = options {
+            if let Some(tray_id) = opts.paper_source {
+                (*p_devmode).dmFields |= DEVMODE_FIELD_FLAGS(DM_DEFAULTSOURCE);
+                (*p_devmode).Anonymous1.Anonymous1.dmDefaultSource = tray_id as i16;
+            }
+
+            if let Some(ref orient) = opts.orientation {
+                (*p_devmode).dmFields |= DEVMODE_FIELD_FLAGS(DM_ORIENTATION);
+                if orient.eq_ignore_ascii_case("landscape") {
+                    (*p_devmode).Anonymous1.Anonymous1.dmOrientation = DMORIENT_LANDSCAPE;
+                } else {
+                    (*p_devmode).Anonymous1.Anonymous1.dmOrientation = DMORIENT_PORTRAIT;
+                }
+            }
+        }
+    }
+}
+
 /// Print target TIFF file to printer with GDI ICM bypass, DEVMODE overrides, and auto-fit scaling
 pub fn print_target(
     printer_name: &str,
@@ -407,50 +436,30 @@ pub fn print_target(
         );
 
         let mut devmode_buf = if devmode_size > 0 {
-            let mut buf = devmode_store
-                .and_then(|s| s.get(printer_name))
-                .unwrap_or_else(|| vec![0u8; devmode_size as usize]);
-
-            if buf.len() < devmode_size as usize {
-                buf.resize(devmode_size as usize, 0);
-            }
+            let mut buf = if let Some(cached) = devmode_store.and_then(|s| s.get(printer_name)) {
+                let mut b = cached;
+                if b.len() < devmode_size as usize {
+                    b.resize(devmode_size as usize, 0);
+                }
+                b
+            } else {
+                let mut b = vec![0u8; devmode_size as usize];
+                let p_devmode = b.as_mut_ptr() as *mut DEVMODEW;
+                let _ = DocumentPropertiesW(
+                    HWND::default(),
+                    h_printer,
+                    PCWSTR(printer_wide.as_ptr()),
+                    Some(p_devmode),
+                    None,
+                    DM_OUT_BUFFER,
+                );
+                b
+            };
 
             let p_devmode = buf.as_mut_ptr() as *mut DEVMODEW;
-            let res = DocumentPropertiesW(
-                HWND::default(),
-                h_printer,
-                PCWSTR(printer_wide.as_ptr()),
-                Some(p_devmode),
-                None,
-                DM_OUT_BUFFER,
-            );
+            apply_print_options_to_devmode(p_devmode, options);
 
-            if res >= 0 {
-                // Apply strict ICM bypass
-                (*p_devmode).dmFields |= DEVMODE_FIELD_FLAGS(DM_ICMMETHOD);
-                (*p_devmode).dmICMMethod = DMICMMETHOD_NONE;
-
-                // Apply UI options if specified
-                if let Some(opts) = options {
-                    if let Some(tray_id) = opts.paper_source {
-                        (*p_devmode).dmFields |= DEVMODE_FIELD_FLAGS(DM_DEFAULTSOURCE);
-                        (*p_devmode).Anonymous1.Anonymous1.dmDefaultSource = tray_id as i16;
-                    }
-
-                    if let Some(ref orient) = opts.orientation {
-                        (*p_devmode).dmFields |= DEVMODE_FIELD_FLAGS(DM_ORIENTATION);
-                        if orient.eq_ignore_ascii_case("landscape") {
-                            (*p_devmode).Anonymous1.Anonymous1.dmOrientation = DMORIENT_LANDSCAPE;
-                        } else {
-                            (*p_devmode).Anonymous1.Anonymous1.dmOrientation = DMORIENT_PORTRAIT;
-                        }
-                    }
-                }
-
-                Some(buf)
-            } else {
-                None
-            }
+            Some(buf)
         } else {
             None
         };

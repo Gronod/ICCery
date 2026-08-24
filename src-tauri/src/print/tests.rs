@@ -186,5 +186,61 @@ printer Custom_Queue unknown state\n\
         let err = res.unwrap_err();
         assert!(err.contains("Target TIFF file not found"));
     }
+
+    #[cfg(windows)]
+    #[test]
+    fn test_windows_devmode_preservation_and_overrides() {
+        use windows::Win32::Graphics::Gdi::DEVMODEW;
+        use crate::print::windows::apply_print_options_to_devmode;
+
+        let devmode_size = std::mem::size_of::<DEVMODEW>() + 128; // Public DEVMODE + 128 bytes private OEM extra
+        let mut buffer = vec![0u8; devmode_size];
+
+        // Simulate OEM private driver payload (e.g. Epson Print Preview flag in private offset)
+        buffer[std::mem::size_of::<DEVMODEW>() + 10] = 0xAA;
+        buffer[std::mem::size_of::<DEVMODEW>() + 11] = 0x55;
+
+        let p_devmode = buffer.as_mut_ptr() as *mut DEVMODEW;
+        unsafe {
+            (*p_devmode).dmSize = std::mem::size_of::<DEVMODEW>() as u16;
+            (*p_devmode).dmDriverExtra = 128;
+        }
+
+        // Store into PrinterDevModeStore
+        let store = PrinterDevModeStore::new();
+        store.set("EPSON-Test-Printer", buffer.clone());
+
+        let retrieved = store.get("EPSON-Test-Printer").expect("Failed to get cached DEVMODE");
+        assert_eq!(retrieved.len(), devmode_size);
+        // Verify private OEM payload is preserved
+        assert_eq!(retrieved[std::mem::size_of::<DEVMODEW>() + 10], 0xAA);
+        assert_eq!(retrieved[std::mem::size_of::<DEVMODEW>() + 11], 0x55);
+
+        // Apply UI overrides
+        let opts = PrintOptions {
+            paper_source: Some(3),
+            orientation: Some("landscape".to_string()),
+            paper_size: None,
+            ppd_uncorrected_passthrough: None,
+        };
+
+        let mut work_buf = retrieved;
+        let p_work_devmode = work_buf.as_mut_ptr() as *mut DEVMODEW;
+        apply_print_options_to_devmode(p_work_devmode, Some(&opts));
+
+        unsafe {
+            // Verify ICM bypass is applied
+            assert_eq!((*p_work_devmode).dmICMMethod, 1); // DMICMMETHOD_NONE = 1
+            // Verify tray override
+            assert_eq!((*p_work_devmode).Anonymous1.Anonymous1.dmDefaultSource, 3);
+            // Verify orientation override
+            assert_eq!((*p_work_devmode).Anonymous1.Anonymous1.dmOrientation, 2); // DMORIENT_LANDSCAPE = 2
+        }
+
+        // Verify private OEM payload was NOT corrupted or overwritten
+        assert_eq!(work_buf[std::mem::size_of::<DEVMODEW>() + 10], 0xAA);
+        assert_eq!(work_buf[std::mem::size_of::<DEVMODEW>() + 11], 0x55);
+    }
 }
+
 
