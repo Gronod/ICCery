@@ -83,7 +83,11 @@ export function initTargen() {
     // Determine patch count
     let patchCount = parseInt(patchCountPreset.value, 10);
     if (patchCountPreset.value === "custom") {
-      patchCount = parseInt(patchCountCustom.value, 10);
+      const customVal = parseInt(patchCountCustom.value, 10);
+      patchCount = (!isNaN(customVal) && customVal > 0) ? customVal : 800;
+    }
+    if (isNaN(patchCount) || patchCount <= 0) {
+      patchCount = 800;
     }
     
     // Determine colour space
@@ -97,6 +101,7 @@ export function initTargen() {
     const config = {
       colour_space: colourSpace,
       patch_count: patchCount,
+      total_patches: patchCount,
       white_patches: whitePatches.value ? parseInt(whitePatches.value, 10) : null,
       black_patches: blackPatches.value ? parseInt(blackPatches.value, 10) : null,
       basename: basename,

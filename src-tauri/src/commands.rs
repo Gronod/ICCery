@@ -106,6 +106,7 @@ pub async fn extract_gamut(
 #[derive(Debug, Deserialize, Serialize)]
 pub struct TargenConfig {
     pub colour_space: String,
+    #[serde(default)]
     pub patch_count: u32,
     pub white_patches: Option<u32>,
     pub black_patches: Option<u32>,
@@ -141,7 +142,13 @@ pub fn build_targen_args(config: &TargenConfig) -> Vec<String> {
         args.push("2".to_string()); // Default to RGB
     }
     
-    if let Some(patches) = config.total_patches {
+    let patches = if config.patch_count > 0 {
+        config.patch_count
+    } else {
+        config.total_patches.unwrap_or(0)
+    };
+    
+    if patches > 0 {
         args.push("-f".to_string());
         args.push(patches.to_string());
     }
@@ -526,7 +533,7 @@ mod tests {
             patch_count: 800,
             white_patches: Some(4),
             black_patches: None,
-            total_patches: Some(800),
+            total_patches: None,
             basename: "my_profile".to_string(),
             cwd: "/tmp".to_string(),
         };
@@ -541,12 +548,27 @@ mod tests {
             patch_count: 1500,
             white_patches: None,
             black_patches: Some(8),
-            total_patches: Some(1500),
+            total_patches: None,
             basename: "cmyk_profile".to_string(),
             cwd: "/tmp".to_string(),
         };
         let args = build_targen_args(&config);
         assert_eq!(args, vec!["-v", "-d", "4", "-f", "1500", "-B", "8", "cmyk_profile"]);
+    }
+
+    #[test]
+    fn test_build_targen_args_total_patches_fallback() {
+        let config = TargenConfig {
+            colour_space: "rgb".to_string(),
+            patch_count: 0,
+            white_patches: None,
+            black_patches: None,
+            total_patches: Some(400),
+            basename: "draft_profile".to_string(),
+            cwd: "/tmp".to_string(),
+        };
+        let args = build_targen_args(&config);
+        assert_eq!(args, vec!["-v", "-d", "2", "-f", "400", "draft_profile"]);
     }
 
     #[test]
