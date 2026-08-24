@@ -5,6 +5,9 @@ use tokio::process::{Child, Command};
 use tokio::sync::Mutex;
 use tauri::AppHandle;
 
+#[cfg(windows)]
+use std::os::windows::process::CommandExt;
+
 use crate::events::{emit_error, emit_stderr, emit_stdout};
 
 use std::sync::Arc;
@@ -29,6 +32,12 @@ impl ProcessManager {
         command.stdout(Stdio::piped());
         command.stderr(Stdio::piped());
         command.stdin(Stdio::piped());
+
+        #[cfg(windows)]
+        {
+            const CREATE_NO_WINDOW: u32 = 0x08000000;
+            command.creation_flags(CREATE_NO_WINDOW);
+        }
 
         match command.spawn() {
             Ok(mut child) => {
