@@ -68,13 +68,13 @@ jobs:
         run: npm run tauri build -- -v
 
       - name: Upload MSI Installer
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: iccery-windows-msi-${{ env.APP_VERSION }}
           path: src-tauri/target/release/bundle/msi/*.msi
 
       - name: Upload NSIS Installer
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: iccery-windows-exe-${{ env.APP_VERSION }}
           path: src-tauri/target/release/bundle/nsis/*.exe
