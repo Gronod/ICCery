@@ -17,7 +17,6 @@ jobs:
     env:
       APPIMAGE_EXTRACT_AND_RUN: 1
       NO_STRIP: "true"
-      RUST_BACKTRACE: "1"
     
     steps:
       - name: Checkout repository
@@ -37,12 +36,35 @@ jobs:
 
       - name: Rust Cache
         uses: Swatinem/rust-cache@v2
+        continue-on-error: true
+        with:
+          workspaces: "src-tauri -> target"
+
+      - name: Cache APT Packages
+        uses: actions/cache@v3
+        with:
+          path: /var/cache/apt/archives
+          key: ${{ runner.os }}-apt-packages-v1
+          restore-keys: |
+            ${{ runner.os }}-apt-packages-
 
       - name: Install Tauri Linux dependencies
         run: |
-          sudo apt-get update
-          sudo apt-get install -y libwebkit2gtk-4.1-dev build-essential curl wget file libxdo-dev libssl-dev libayatana-appindicator3-dev librsvg2-dev patchelf xdg-utils squashfs-tools zsync libxss-dev libxinerama-dev libxrandr-dev libxxf86vm-dev libxcursor-dev libxi-dev
-          sudo apt-get install -y libfuse2 || sudo apt-get install -y libfuse2t64 || true
+          sudo apt-get update -qq
+          sudo apt-get install --no-install-recommends -y \
+            libwebkit2gtk-4.1-dev \
+            build-essential \
+            curl wget file patchelf xdg-utils squashfs-tools zsync \
+            libayatana-appindicator3-dev \
+            librsvg2-dev \
+            libssl-dev \
+            libxss-dev \
+            libxinerama-dev \
+            libxrandr-dev \
+            libxxf86vm-dev \
+            libxcursor-dev \
+            libxi-dev
+          sudo apt-get install --no-install-recommends -y libfuse2 || sudo apt-get install --no-install-recommends -y libfuse2t64 || true
 
       - name: Install Node dependencies
         run: npm ci
@@ -61,7 +83,8 @@ jobs:
       - name: Build Tauri App
         env:
           APPIMAGE_EXTRACT_AND_RUN: 1
-        run: npm run tauri build -- -v
+          NO_STRIP: "true"
+        run: npm run tauri build -- -v --bundles deb,appimage
 
       - name: Upload Debian Package
         uses: actions/upload-artifact@v3
