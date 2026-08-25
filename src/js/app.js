@@ -5,6 +5,7 @@ import { initColprof } from './colprof.js';
 import { initProfcheck } from './profcheck.js';
 import { initSettings } from './settings.js';
 import { initGamutViewer } from './gamut_viewer.js';
+import { initPresets } from './presets.js';
 import { wizardState } from './state.js';
 
 const { invoke } = window.__TAURI__.core;
@@ -89,4 +90,5 @@ document.addEventListener('DOMContentLoaded', () => {
   safeInit('Stage 5 (Profcheck)', initProfcheck);
   safeInit('Settings', initSettings);
   safeInit('Gamut Viewer', initGamutViewer);
+  safeInit('Presets', initPresets);
 });
