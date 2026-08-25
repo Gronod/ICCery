@@ -75,6 +75,27 @@ pub fn get_app_info() -> AppInfo {
     }
 }
 
+pub fn resolve_safe_cwd(app: &AppHandle, cwd_input: &str) -> Result<String, String> {
+    if !cwd_input.trim().is_empty() {
+        let p = std::path::Path::new(cwd_input.trim());
+        if p.is_dir() {
+            return Ok(p.to_string_lossy().to_string());
+        }
+    }
+
+    app.path()
+        .document_dir()
+        .or_else(|_| app.path().home_dir())
+        .or_else(|_| app.path().app_data_dir())
+        .map(|p| p.to_string_lossy().to_string())
+        .map_err(|e| format!("Failed to resolve default working directory: {}", e))
+}
+
+#[tauri::command]
+pub fn get_default_working_dir(app: AppHandle) -> Result<String, String> {
+    resolve_safe_cwd(&app, "")
+}
+
 #[tauri::command]
 pub async fn detect_instruments(app: AppHandle, state: State<'_, ProcessManager>) -> Result<(), String> {
     let binary = resolve_binary(app.clone(), "instlist".to_string()).await?;
@@ -197,14 +218,7 @@ pub async fn run_targen(
     let binary = resolve_binary(app.clone(), "targen".to_string()).await?;
     let args = build_targen_args(&config);
     let id = format!("targen_{}", config.basename);
-    
-    let cwd = if config.cwd.trim().is_empty() {
-        None
-    } else {
-        Some(config.cwd.clone())
-    };
-    
-    println!("DEBUG RUN_TARGEN: binary='{}' args={:?} cwd={:?}", binary, args, cwd);
+    let cwd = Some(resolve_safe_cwd(&app, &config.cwd)?);
     
     state.spawn(app, id, binary, args, cwd).await
 }
@@ -218,12 +232,7 @@ pub async fn run_printtarg(
     let binary = resolve_binary(app.clone(), "printtarg".to_string()).await?;
     let args = build_printtarg_args(&config);
     let id = format!("printtarg_{}", config.basename);
-
-    let cwd = if config.cwd.trim().is_empty() {
-        None
-    } else {
-        Some(config.cwd.clone())
-    };
+    let cwd = Some(resolve_safe_cwd(&app, &config.cwd)?);
 
     state.spawn(app, id, binary, args, cwd).await
 }
@@ -259,12 +268,7 @@ pub async fn run_chartread(
     let binary = resolve_binary(app.clone(), "chartread".to_string()).await?;
     let args = build_chartread_args(&config);
     let id = format!("chartread_{}", config.basename);
-
-    let cwd = if config.cwd.trim().is_empty() {
-        None
-    } else {
-        Some(config.cwd.clone())
-    };
+    let cwd = Some(resolve_safe_cwd(&app, &config.cwd)?);
 
     state.spawn(app, id, binary, args, cwd).await
 }
@@ -323,12 +327,7 @@ pub async fn run_colprof(
     let binary = resolve_binary(app.clone(), "colprof".to_string()).await?;
     let args = build_colprof_args(&config);
     let id = format!("colprof_{}", config.basename);
-
-    let cwd = if config.cwd.trim().is_empty() {
-        None
-    } else {
-        Some(config.cwd.clone())
-    };
+    let cwd = Some(resolve_safe_cwd(&app, &config.cwd)?);
 
     state.spawn(app, id, binary, args, cwd).await
 }
@@ -359,12 +358,7 @@ pub async fn run_profcheck(
     let binary = resolve_binary(app.clone(), "profcheck".to_string()).await?;
     let args = build_profcheck_args(&config);
     let id = format!("profcheck_{}", config.ti3_path);
-
-    let cwd = if config.cwd.trim().is_empty() {
-        None
-    } else {
-        Some(config.cwd.clone())
-    };
+    let cwd = Some(resolve_safe_cwd(&app, &config.cwd)?);
 
     state.spawn(app, id, binary, args, cwd).await
 }

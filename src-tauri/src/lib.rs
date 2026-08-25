@@ -13,6 +13,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             commands::spawn_process,
             commands::get_app_info,
+            commands::get_default_working_dir,
             commands::send_stdin,
             commands::kill_process,
             commands::resolve_binary,
