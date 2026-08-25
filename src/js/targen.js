@@ -77,6 +77,7 @@ export function initTargen() {
   // Generate button clicks
   btnGenerate.addEventListener("click", async () => {
     logPre.textContent = "";
+    logContainer.open = false;
     logContainer.classList.remove("hidden");
     btnGenerate.disabled = true;
     

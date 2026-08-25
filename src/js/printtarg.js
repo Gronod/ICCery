@@ -272,6 +272,7 @@ export function initPrinttarg() {
     }
 
     logPre.textContent = "";
+    logContainer.open = false;
     logContainer.classList.remove("hidden");
     tiffGallery.classList.add("hidden");
     if (rawPrintPanel) rawPrintPanel.classList.add("hidden");

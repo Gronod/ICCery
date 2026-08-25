@@ -90,6 +90,7 @@ export function initChartread() {
       }
 
       logPre.textContent = "";
+      logContainer.open = false;
       logContainer.classList.remove("hidden");
       setState(STATE.CALIBRATING);
       setPrompt("Starting chartread... waiting for instrument calibration prompt.");

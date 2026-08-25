@@ -33,6 +33,7 @@ export function initProfcheck() {
     const iccPath = cwd ? `${cwd}${sep}${basename}.icc` : `${basename}.icc`;
 
     logPre.textContent = "";
+    logContainer.open = false;
     logContainer.classList.remove("hidden");
     reportCard.classList.add("hidden");
     btnVerify.disabled = true;

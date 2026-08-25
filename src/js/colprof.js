@@ -36,6 +36,7 @@ export function initColprof() {
     const description = descInput.value.trim() || basename;
 
     logPre.textContent = "";
+    logContainer.open = false;
     logContainer.classList.remove("hidden");
     spinnerContainer.classList.remove("hidden");
     successCard.classList.add("hidden");
