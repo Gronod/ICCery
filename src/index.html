@@ -156,22 +156,10 @@
             </div>
 
             <div class="form-group">
-              <label>TIFF Output</label>
-              <div class="input-row">
-                <div>
-                  <label class="sub-label">Bit Depth</label>
-                  <div class="radio-group">
-                    <label><input type="radio" name="bitDepth" value="8" checked> 8-bit</label>
-                    <label><input type="radio" name="bitDepth" value="16"> 16-bit</label>
-                  </div>
-                </div>
-                <div>
-                  <label class="sub-label">Automatic Fit Scaling</label>
-                  <div class="auto-scaler-badge" title="Master 300 DPI high-resolution target is automatically scaled to fit the device printable area without distortion or clipping">
-                    <span class="badge-icon">⚡</span>
-                    <span>300 DPI Auto-Fit Scaler (Active)</span>
-                  </div>
-                </div>
+              <label>Bit Depth</label>
+              <div class="radio-group">
+                <label><input type="radio" name="bitDepth" value="8" checked> 8-bit</label>
+                <label><input type="radio" name="bitDepth" value="16"> 16-bit</label>
               </div>
             </div>
           </div>
@@ -197,11 +185,7 @@
                 <span class="print-icon">🖨️</span>
                 <h3>Direct Native Raw Printing</h3>
               </div>
-              <span class="acpu-badge" title="Bypasses OS ICM / ColorSync & CUPS color management, replicating Adobe Color Print Utility">ACPU-Equivalent Mode</span>
             </div>
-            <p class="print-panel-desc">
-              Send the generated profiling target directly to the printer nozzles with all OS and driver color management strictly bypassed.
-            </p>
 
             <!-- Notification / Feedback Banner -->
             <div id="printNotification" class="notification-banner hidden">
