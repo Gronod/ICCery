@@ -245,6 +245,32 @@ pub async fn read_file_base64(path: String) -> Result<String, String> {
     Ok(base64::engine::general_purpose::STANDARD.encode(&bytes))
 }
 
+#[tauri::command]
+pub async fn read_tiff_preview_png(path: String) -> Result<String, String> {
+    use std::fs;
+    use std::io::Cursor;
+    use base64::Engine;
+    use image::ImageFormat;
+
+    let file_bytes = fs::read(&path).map_err(|e| format!("Failed to read {}: {}", path, e))?;
+    let img = image::load_from_memory_with_format(&file_bytes, ImageFormat::Tiff)
+        .map_err(|e| format!("Failed to decode TIFF {}: {}", path, e))?;
+
+    let max_dim = std::cmp::max(img.width(), img.height());
+    let processed_img = if max_dim > 1200 {
+        img.resize(1200, 1200, image::imageops::FilterType::Lanczos3)
+    } else {
+        img
+    };
+
+    let mut png_bytes = Cursor::new(Vec::new());
+    processed_img
+        .write_to(&mut png_bytes, ImageFormat::Png)
+        .map_err(|e| format!("Failed to encode PNG for {}: {}", path, e))?;
+
+    Ok(base64::engine::general_purpose::STANDARD.encode(png_bytes.into_inner()))
+}
+
 #[derive(Debug, Deserialize, Serialize)]
 pub struct ChartreadConfig {
     pub basename: String,

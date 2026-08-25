@@ -511,9 +511,9 @@ export function initPrinttarg() {
       card.appendChild(label);
 
       try {
-        const base64Data = await invoke("read_file_base64", { path: filePath });
+        const pngBase64 = await invoke("read_tiff_preview_png", { path: filePath });
         const img = document.createElement("img");
-        img.src = `data:image/tiff;base64,${base64Data}`;
+        img.src = `data:image/png;base64,${pngBase64}`;
         img.alt = page.filename;
         img.onerror = () => {
           img.remove();
