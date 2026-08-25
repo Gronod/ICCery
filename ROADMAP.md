@@ -9,7 +9,7 @@ This document outlines the architectural roadmap, completed milestones, and upco
 ICCery is a native, cross-platform desktop application built with:
 - **Backend**: Rust + Tauri v2, managing asynchronous process pipes, native printer devmode configurations (Windows GDI & Linux CUPS), and filesystem operations.
 - **Frontend**: Vanilla JS (ES Modules) + HTML5/CSS3 with a modern dark theme and responsive layout.
-- **Visualisation**: Three.js WebGL engine for 3D CIELAB color gamut volumes and sRGB reference comparisons.
+- **Visualization**: Three.js WebGL engine for 3D CIELAB color gamut volumes and sRGB reference comparisons.
 - **Engine**: ArgyllCMS command-line utilities orchestrated over isolated standard stream IPC (`stdin`, `stdout`, `stderr`).
 
 ---
@@ -50,6 +50,10 @@ ICCery is a native, cross-platform desktop application built with:
 - [x] Implemented disk-artefact gating for wizard stepper navigation (`.ti1` → `.ti2` → `.ti3` → `.icc`/`.icm`).
 - [x] Eliminated all hardcoded placeholder and fallback crutches across JavaScript modules.
 - [x] Comprehensive documentation, release testing, and packaging automation.
+
+### Hotfix Release (`v0.2.1`)
+- [x] Resolved P0 process manager deadlock and premature stdin pipe closure affecting interactive `chartread` instrument workflows.
+- [x] Decoupled `ChildStdin` mutex management from child process wait/reap tasks.
 
 ---
 
