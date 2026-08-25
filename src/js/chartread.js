@@ -36,10 +36,69 @@ export function initChartread() {
   const btnRetry = document.getElementById("btnRetry");
   const btnSkip = document.getElementById("btnSkip");
   const btnCancel = document.getElementById("btnCancel");
+  const btnDetectInstruments = document.getElementById("btnDetectInstruments");
+  const instrumentSelect = document.getElementById("chartreadInstrumentSelect");
   const promptText = document.getElementById("chartreadPrompt");
   const stateLabel = document.getElementById("chartreadState");
   const logContainer = document.getElementById("chartreadLogContainer");
   const logPre = document.getElementById("chartreadLog");
+
+  // Instrument detection logic
+  if (btnDetectInstruments && instrumentSelect) {
+    btnDetectInstruments.addEventListener("click", async () => {
+      btnDetectInstruments.disabled = true;
+      btnDetectInstruments.textContent = "Detecting...";
+      setPrompt("Querying connected spectrophotometers and colorimeters via instlist...");
+
+      const detected = [];
+
+      try {
+        const unlistenStdout = await listen("process:stdout", (event) => {
+          if (event.payload.id !== "instlist" || !event.payload.line) return;
+          const line = event.payload.line.trim();
+
+          // Matches Argyll instlist output e.g. "1: 'i1Pro' on 'USB'" or "1: 'ColorMunki'" or "1 = 'i1Display'"
+          const match = line.match(/^(\d+)[\s:=]+'?([^'\n]+)'?(?:\s+on\s+'?([^'\n]+)'?)?/i);
+          if (match) {
+            const index = match[1];
+            const name = match[2].trim();
+            const port = match[3] ? match[3].trim() : "";
+            detected.push({ index, name, port });
+          }
+        });
+
+        const unlistenExit = await listen("process:exit", (event) => {
+          if (event.payload.id !== "instlist") return;
+          unlistenStdout();
+          unlistenExit();
+          btnDetectInstruments.disabled = false;
+          btnDetectInstruments.textContent = "↻ Detect";
+
+          instrumentSelect.innerHTML = `<option value="">Auto-Detect (First Available Instrument)</option>`;
+
+          if (detected.length > 0) {
+            detected.forEach((inst) => {
+              const opt = document.createElement("option");
+              opt.value = inst.index;
+              opt.textContent = `${inst.index}: ${inst.name} ${inst.port ? `(${inst.port})` : ""}`;
+              instrumentSelect.appendChild(opt);
+            });
+            instrumentSelect.value = detected[0].index;
+            setPrompt(`Found ${detected.length} instrument(s): ${detected.map(d => d.name).join(", ")}`);
+          } else {
+            setPrompt("No instruments found via instlist. Ensure USB cable is plugged in.");
+          }
+        });
+
+        await invoke("detect_instruments");
+      } catch (err) {
+        console.error("detect_instruments error:", err);
+        btnDetectInstruments.disabled = false;
+        btnDetectInstruments.textContent = "↻ Detect";
+        setPrompt(`Instrument detection error: ${err}`);
+      }
+    });
+  }
 
   function setState(newState) {
     currentState = newState;
@@ -103,9 +162,12 @@ export function initChartread() {
       setState(STATE.CALIBRATING);
       setPrompt("Starting chartread... waiting for instrument calibration prompt.");
 
+      const selectedPort = instrumentSelect && instrumentSelect.value ? instrumentSelect.value : null;
+
       const config = {
         basename: basename,
         cwd: cwd,
+        port: selectedPort,
       };
 
       currentProcessId = `chartread_${basename}`;
@@ -149,7 +211,7 @@ export function initChartread() {
           }
         });
 
-        const unlistenExit = await listen("process:exit", (event) => {
+        const unlistenExit = await listen("process:exit", async (event) => {
           if (event.payload.id !== currentProcessId) return;
           unlistenStdout();
           unlistenStderr();
@@ -158,11 +220,23 @@ export function initChartread() {
 
           if (event.payload.code === 0) {
             setState(STATE.FINISHED);
-            setPrompt("✅ Measurement complete! .ti3 file has been saved.");
-            logPre.textContent += "\n[SUCCESS] chartread completed. .ti3 file written.\n";
+            setPrompt("✅ Sheet measurement completed!");
+            logPre.textContent += "\n[SUCCESS] chartread sheet measurement completed.\n";
+
+            // Track pass in session
+            currentPassIndex++;
+            recordedPasses.push({
+              index: currentPassIndex,
+              filename: `${basename}.ti3`,
+              time: new Date().toLocaleTimeString(),
+            });
+
+            renderPassesList();
+            if (averagingPanel) averagingPanel.classList.remove("hidden");
+            if (passCounterBadge) passCounterBadge.textContent = `${recordedPasses.length} Pass(es) Recorded`;
+
             wizardState.setTarget(basename, cwd);
             setStage3Result(basename, cwd);
-            advanceToStage4();
           } else {
             setState(STATE.FINISHED);
             setPrompt(`❌ chartread exited with code ${event.payload.code}.`);
@@ -175,6 +249,85 @@ export function initChartread() {
       } catch (err) {
         setPrompt(`Invoke error: ${err}`);
         setState(STATE.IDLE);
+      }
+    });
+  }
+
+  // Multi-pass measurement controls
+  const averagingPanel = document.getElementById("chartreadAveragingPanel");
+  const passesList = document.getElementById("passesList");
+  const passCounterBadge = document.getElementById("passCounterBadge");
+  const btnMeasureAnotherSheet = document.getElementById("btnMeasureAnotherSheet");
+  const btnFinishAndAverage = document.getElementById("btnFinishAndAverage");
+  let currentPassIndex = 0;
+  const recordedPasses = [];
+
+  function renderPassesList() {
+    if (!passesList) return;
+    passesList.innerHTML = "";
+    recordedPasses.forEach((pass, i) => {
+      const item = document.createElement("div");
+      item.style.cssText = "display:flex; justify-content:space-between; align-items:center; background:rgba(255,255,255,0.05); padding:6px 10px; border-radius:4px; font-size:0.85rem;";
+      item.innerHTML = `<span><strong>Sheet Pass #${i + 1}</strong> (${pass.filename})</span><span style="opacity:0.7;">✓ ${pass.time}</span>`;
+      passesList.appendChild(item);
+    });
+  }
+
+  if (btnMeasureAnotherSheet) {
+    btnMeasureAnotherSheet.addEventListener("click", () => {
+      setState(STATE.IDLE);
+      setPrompt(`Ready to measure sheet pass #${recordedPasses.length + 1}. Press 'Start Measurement'.`);
+      if (btnStartRead) btnStartRead.click();
+    });
+  }
+
+  if (btnFinishAndAverage) {
+    btnFinishAndAverage.addEventListener("click", async () => {
+      const basename = stage2Basename || wizardState.basename;
+      const cwd = stage2Cwd || wizardState.cwd;
+
+      if (recordedPasses.length <= 1) {
+        setPrompt("Single pass accepted. Proceeding to Stage 4...");
+        wizardState.setTarget(basename, cwd);
+        setStage3Result(basename, cwd);
+        advanceToStage4();
+        return;
+      }
+
+      setPrompt("Averaging measurement passes with Argyll average utility...");
+      btnFinishAndAverage.disabled = true;
+
+      try {
+        const averageConfig = {
+          inputs: recordedPasses.map(p => p.filename),
+          output: `${basename}.ti3`,
+          cwd: cwd,
+        };
+
+        const unlistenAvgExit = await listen("process:exit", (event) => {
+          if (event.payload.id !== `average_${basename}.ti3`) return;
+          unlistenAvgExit();
+          btnFinishAndAverage.disabled = false;
+
+          if (event.payload.code === 0) {
+            setPrompt(`✅ Successfully averaged ${recordedPasses.length} measurement passes into ${basename}.ti3!`);
+            wizardState.setTarget(basename, cwd);
+            setStage3Result(basename, cwd);
+            advanceToStage4();
+          } else {
+            setPrompt(`⚠️ Argyll average exited with code ${event.payload.code}. Proceeding with primary pass.`);
+            wizardState.setTarget(basename, cwd);
+            setStage3Result(basename, cwd);
+            advanceToStage4();
+          }
+        });
+
+        await invoke("run_average", { config: averageConfig });
+      } catch (e) {
+        console.error("run_average error:", e);
+        btnFinishAndAverage.disabled = false;
+        setStage3Result(basename, cwd);
+        advanceToStage4();
       }
     });
   }

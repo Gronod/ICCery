@@ -30,14 +30,27 @@ pub async fn kill_process(
     state.kill(&id).await
 }
 
+pub fn get_binary_candidates(binary_name: &str) -> Vec<String> {
+    if cfg!(windows) && !binary_name.to_lowercase().ends_with(".exe") {
+        vec![format!("{}.exe", binary_name), binary_name.to_string()]
+    } else {
+        vec![binary_name.to_string()]
+    }
+}
+
 #[tauri::command]
 pub async fn resolve_binary(app: AppHandle, binary_name: String) -> Result<String, String> {
     let settings = crate::settings::load_settings(app.clone()).unwrap_or_default();
+    let candidates = get_binary_candidates(&binary_name);
+
     if let Some(dir) = settings.argyll_binary_dir {
         if !dir.trim().is_empty() {
-            let custom_path = std::path::Path::new(&dir).join(&binary_name);
-            if custom_path.exists() {
-                return Ok(custom_path.to_string_lossy().to_string());
+            let base_dir = std::path::Path::new(&dir);
+            for name in &candidates {
+                let custom_path = base_dir.join(name);
+                if custom_path.exists() {
+                    return Ok(custom_path.to_string_lossy().to_string());
+                }
             }
         }
     }
@@ -50,10 +63,22 @@ pub async fn resolve_binary(app: AppHandle, binary_name: String) -> Result<Strin
         _ => "linux-x86_64",
     };
 
+    for name in &candidates {
+        if let Ok(resource_path) = app.path().resolve(
+            format!("argyll/{}/{}", platform, name),
+            tauri::path::BaseDirectory::Resource,
+        ) {
+            if resource_path.exists() {
+                return Ok(resource_path.to_string_lossy().to_string());
+            }
+        }
+    }
+
+    let primary_name = &candidates[0];
     let resource_path = app
         .path()
         .resolve(
-            format!("argyll/{}/{}", platform, binary_name),
+            format!("argyll/{}/{}", platform, primary_name),
             tauri::path::BaseDirectory::Resource,
         )
         .map_err(|e| e.to_string())?;
@@ -361,14 +386,24 @@ pub async fn read_tiff_preview_png(path: String) -> Result<String, String> {
 pub struct ChartreadConfig {
     pub basename: String,
     pub cwd: String,
+    pub port: Option<String>,
 }
 
 pub fn build_chartread_args(config: &ChartreadConfig) -> Vec<String> {
-    vec![
+    let mut args = vec![
         "-v".to_string(),
         "-u".to_string(),
-        config.basename.clone(),
-    ]
+    ];
+
+    if let Some(ref port) = config.port {
+        if !port.trim().is_empty() {
+            args.push("-c".to_string());
+            args.push(port.trim().to_string());
+        }
+    }
+
+    args.push(config.basename.clone());
+    args
 }
 
 #[tauri::command]
@@ -380,6 +415,36 @@ pub async fn run_chartread(
     let binary = resolve_binary(app.clone(), "chartread".to_string()).await?;
     let args = build_chartread_args(&config);
     let id = format!("chartread_{}", config.basename);
+    let cwd = Some(resolve_safe_cwd(&app, &config.cwd)?);
+
+    state.spawn(app, id, binary, args, cwd).await
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct AverageConfig {
+    pub inputs: Vec<String>,
+    pub output: String,
+    pub cwd: String,
+}
+
+pub fn build_average_args(config: &AverageConfig) -> Vec<String> {
+    let mut args = vec!["-v".to_string()];
+    for input in &config.inputs {
+        args.push(input.clone());
+    }
+    args.push(config.output.clone());
+    args
+}
+
+#[tauri::command]
+pub async fn run_average(
+    app: AppHandle,
+    state: State<'_, ProcessManager>,
+    config: AverageConfig,
+) -> Result<(), String> {
+    let binary = resolve_binary(app.clone(), "average".to_string()).await?;
+    let args = build_average_args(&config);
+    let id = format!("average_{}", config.output);
     let cwd = Some(resolve_safe_cwd(&app, &config.cwd)?);
 
     state.spawn(app, id, binary, args, cwd).await
@@ -674,9 +739,32 @@ mod tests {
         let config = ChartreadConfig {
             basename: "my_profile".to_string(),
             cwd: "/home/user".to_string(),
+            port: None,
         };
         let args = build_chartread_args(&config);
         assert_eq!(args, vec!["-v", "-u", "my_profile"]);
+    }
+
+    #[test]
+    fn test_build_chartread_args_with_port() {
+        let config = ChartreadConfig {
+            basename: "my_profile".to_string(),
+            cwd: "/home/user".to_string(),
+            port: Some("1".to_string()),
+        };
+        let args = build_chartread_args(&config);
+        assert_eq!(args, vec!["-v", "-u", "-c", "1", "my_profile"]);
+    }
+
+    #[test]
+    fn test_build_average_args() {
+        let config = AverageConfig {
+            inputs: vec!["pass1.ti3".to_string(), "pass2.ti3".to_string()],
+            output: "avg.ti3".to_string(),
+            cwd: "/home/user".to_string(),
+        };
+        let args = build_average_args(&config);
+        assert_eq!(args, vec!["-v", "pass1.ti3", "pass2.ti3", "avg.ti3"]);
     }
 
     #[test]
@@ -706,5 +794,18 @@ mod tests {
         };
         let args = build_profcheck_args(&config);
         assert_eq!(args, vec!["-v", "-k", "-s", "my_profile.ti3", "my_profile.icc"]);
+    }
+
+    #[test]
+    fn test_get_binary_candidates() {
+        let candidates = get_binary_candidates("targen");
+        if cfg!(windows) {
+            assert_eq!(candidates, vec!["targen.exe", "targen"]);
+        } else {
+            assert_eq!(candidates, vec!["targen"]);
+        }
+
+        let candidates_exe = get_binary_candidates("targen.exe");
+        assert_eq!(candidates_exe, vec!["targen.exe"]);
     }
 }

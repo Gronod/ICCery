@@ -8,7 +8,6 @@
     <link rel="stylesheet" href="./styles/main.css" />
     <script src="./js/three.min.js"></script>
     <script src="./js/OrbitControls.js"></script>
-    <script src="./js/delaunator.min.js"></script>
     <script type="module" src="./js/app.js" defer></script>
   </head>
   <body>
@@ -32,6 +31,21 @@
             </button>
           </div>
         </div>
+
+        <!-- Profiling Preset Selector -->
+        <div class="preset-selector-container" style="padding: 0 16px 12px; border-bottom: 1px solid var(--border-color, #2a2a30);">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            <label for="presetSelect" style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; opacity: 0.7; font-weight: 600;">Profiling Preset</label>
+            <div style="display: flex; gap: 4px;">
+              <button type="button" id="btnSavePresetModal" class="icon-btn" title="Save current settings as Preset" style="font-size: 0.85rem; padding: 2px 4px; border: 1px solid var(--border-color, #333); border-radius: 4px; background: transparent; cursor: pointer;">💾</button>
+              <button type="button" id="btnOpenPresetsDialog" class="icon-btn" title="Manage Presets (Import/Export/Delete)" style="font-size: 0.85rem; padding: 2px 4px; border: 1px solid var(--border-color, #333); border-radius: 4px; background: transparent; cursor: pointer;">⚙️</button>
+            </div>
+          </div>
+          <select id="presetSelect" style="width: 100%; font-size: 0.85rem; padding: 6px 8px; border-radius: 6px; background: var(--bg-card, #1a1a22); color: var(--text-color, #eee); border: 1px solid var(--border-color, #333); cursor: pointer;">
+            <option value="" disabled selected>Loading presets...</option>
+          </select>
+        </div>
+
         <nav class="stepper">
           <button class="step active" data-step="1">1. Generate Target</button>
           <button class="step" data-step="2">2. Print Layout</button>
@@ -249,6 +263,19 @@
           <h2>Measure Target</h2>
           <p>Read the printed target patches with your spectrophotometer.</p>
 
+          <!-- Instrument & Hardware Port Selector -->
+          <div class="form-container" style="margin-bottom: 16px;">
+            <div class="form-group">
+              <label for="chartreadInstrumentSelect">Instrument / Hardware Port</label>
+              <div class="input-row" style="display: flex; gap: 8px; align-items: center;">
+                <select id="chartreadInstrumentSelect" style="flex: 1;">
+                  <option value="">Auto-Detect (First Available Instrument)</option>
+                </select>
+                <button type="button" class="secondary" id="btnDetectInstruments" title="Detect connected instruments via instlist">↻ Detect</button>
+              </div>
+            </div>
+          </div>
+
           <!-- State & Prompt Area -->
           <div class="chartread-status">
             <div class="status-label">State: <span id="chartreadState">IDLE</span></div>
@@ -277,6 +304,20 @@
 
           <!-- Swatch Grid -->
           <div class="swatch-grid" id="swatchGrid"></div>
+
+          <!-- Multi-Pass Session & Averaging Controls -->
+          <div class="averaging-panel hidden" id="chartreadAveragingPanel" style="margin-top: 16px; padding: 14px; border: 1px solid var(--border-color, #333); border-radius: 8px; background: rgba(255, 255, 255, 0.03);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <h3 style="margin: 0; font-size: 1rem;">Multi-Pass Target Averaging</h3>
+              <span id="passCounterBadge" class="status-badge badge-idle">Pass 1 Complete</span>
+            </div>
+            <p class="sub-label" style="margin-bottom: 12px;">You can measure additional printed copies to reduce measurement and printing noise before computing the profile.</p>
+            <div id="passesList" class="passes-list" style="display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px;"></div>
+            <div style="display: flex; gap: 8px;">
+              <button type="button" class="secondary" id="btnMeasureAnotherSheet">➕ Measure Another Sheet</button>
+              <button type="button" class="primary" id="btnFinishAndAverage">✓ Average Passes &amp; Proceed →</button>
+            </div>
+          </div>
 
           <!-- Process Log -->
           <details class="log-container hidden" id="chartreadLogContainer">
@@ -469,7 +510,7 @@
 
           <h5>Three.js</h5>
           <p>Copyright (c) 2010-2023 three.js authors</p>
-          <p class="license-legal-block">Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:<br/><br/>The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.<br/><br/>THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.</p>
+          <p class="license-legal-block">Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:<br/><br/>The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.<br/><br/>THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.</p>
 
           <h5>Delaunator</h5>
           <p>Copyright (c) 2017, Mapbox</p>
@@ -481,6 +522,44 @@
         </div>
         <div class="modal-actions">
           <button id="closeAboutBtn" class="primary">Close</button>
+        </div>
+      </div>
+    </dialog>
+
+    <!-- Save Preset Dialog -->
+    <dialog id="savePresetDialog" class="settings-modal">
+      <div class="modal-content">
+        <h2>Save Profiling Preset</h2>
+        <p style="font-size: 0.9rem; opacity: 0.8; margin-bottom: 16px;">Save the current settings from Stage 1, 2, and 4 as a reusable profiling preset.</p>
+        <div class="form-group">
+          <label for="savePresetName">Preset Name</label>
+          <input type="text" id="savePresetName" placeholder="e.g. My Custom FineArt Preset">
+        </div>
+        <div class="form-group">
+          <label for="savePresetDesc">Description (Optional)</label>
+          <input type="text" id="savePresetDesc" placeholder="e.g. Optimized for 300gsm Cotton Rag with 1500 patches">
+        </div>
+        <div class="modal-actions">
+          <button id="btnConfirmSavePreset" class="primary">Save Preset</button>
+          <button id="btnCloseSavePresetDialog" class="secondary">Cancel</button>
+        </div>
+      </div>
+    </dialog>
+
+    <!-- Manage Presets Dialog -->
+    <dialog id="managePresetsDialog" class="settings-modal" style="max-width: 600px;">
+      <div class="modal-content">
+        <h2>Manage Profiling Presets</h2>
+        <p style="font-size: 0.9rem; opacity: 0.8; margin-bottom: 14px;">View built-in and custom presets, or import and export preset configurations in JSON format.</p>
+        
+        <div id="managePresetsList" style="display: flex; flex-direction: column; gap: 8px; max-height: 240px; overflow-y: auto; margin-bottom: 16px; padding: 4px;"></div>
+
+        <div style="display: flex; gap: 8px; justify-content: space-between; border-top: 1px solid var(--border-color, #333); padding-top: 14px;">
+          <div style="display: flex; gap: 8px;">
+            <button type="button" id="btnExportActivePreset" class="secondary" title="Export currently selected preset to JSON file">📤 Export Active</button>
+            <button type="button" id="btnImportPreset" class="secondary" title="Import preset from JSON file">📥 Import Preset</button>
+          </div>
+          <button id="btnCloseManagePresetsDialog" class="primary">Done</button>
         </div>
       </div>
     </dialog>
