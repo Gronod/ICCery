@@ -276,9 +276,8 @@ pub struct ColprofConfig {
     pub intent: Option<String>,
     pub copyright: Option<String>,
     pub description: Option<String>,
+    pub basename: String,
     pub cwd: String,
-    pub ti3_path: String,
-    pub icc_path: String,
 }
 
 pub fn build_colprof_args(config: &ColprofConfig) -> Vec<String> {
@@ -311,8 +310,7 @@ pub fn build_colprof_args(config: &ColprofConfig) -> Vec<String> {
         }
     }
 
-    args.push(config.ti3_path.clone());
-    args.push(config.icc_path.clone());
+    args.push(config.basename.clone());
     args
 }
 
@@ -324,7 +322,7 @@ pub async fn run_colprof(
 ) -> Result<(), String> {
     let binary = resolve_binary(app.clone(), "colprof".to_string()).await?;
     let args = build_colprof_args(&config);
-    let id = format!("colprof_{}", config.icc_path);
+    let id = format!("colprof_{}", config.basename);
 
     let cwd = if config.cwd.trim().is_empty() {
         None
@@ -631,14 +629,13 @@ mod tests {
             intent: None,
             description: Some("My Profile".to_string()),
             copyright: Some("2026 ACME".to_string()),
-            ti3_path: "my_profile.ti3".to_string(),
-            icc_path: "my_profile.icc".to_string(),
+            basename: "my_profile".to_string(),
             cwd: "/home/user".to_string(),
         };
         let args = build_colprof_args(&config);
         assert_eq!(
             args,
-            vec!["-v", "-a", "l", "-q", "h", "-C", "2026 ACME", "-D", "My Profile", "my_profile.ti3", "my_profile.icc"]
+            vec!["-v", "-a", "l", "-q", "h", "-C", "2026 ACME", "-D", "My Profile", "my_profile"]
         );
     }
 
