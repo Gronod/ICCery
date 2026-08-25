@@ -4,6 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>ICCery</title>
+    <link rel="icon" type="image/svg+xml" href="./assets/app-icon.svg" />
     <link rel="stylesheet" href="./styles/main.css" />
     <script src="./js/three.min.js"></script>
     <script src="./js/OrbitControls.js"></script>
@@ -14,19 +15,19 @@
     <div class="app-container">
       <aside class="sidebar">
         <div class="brand">
-          <h1>ICCery</h1>
+          <img src="./assets/ICCery-logo.svg" alt="ICCery" class="main-logo" />
           <div class="brand-actions">
+            <button id="openSettingsBtn" class="icon-btn" title="Settings" style="display: flex; align-items: center; justify-content: center;">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="3"></circle>
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+              </svg>
+            </button>
             <button id="openAboutBtn" class="icon-btn" title="About" style="display: flex; align-items: center; justify-content: center;">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <circle cx="12" cy="12" r="10"></circle>
                 <line x1="12" y1="16" x2="12" y2="12"></line>
                 <line x1="12" y1="8" x2="12.01" y2="8"></line>
-              </svg>
-            </button>
-            <button id="openSettingsBtn" class="icon-btn" title="Settings" style="display: flex; align-items: center; justify-content: center;">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <circle cx="12" cy="12" r="3"></circle>
-                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
               </svg>
             </button>
           </div>
@@ -93,10 +94,10 @@
 
           <button class="primary" id="btnGenerate" disabled>Generate (.ti1)</button>
           
-          <div class="log-container hidden" id="targenLogContainer">
-            <h4>Process Output</h4>
+          <details class="log-container hidden" id="targenLogContainer">
+            <summary>Process Output</summary>
             <pre id="targenLog"></pre>
-          </div>
+          </details>
         </section>
 
         <!-- Stage 2: printtarg -->
@@ -108,8 +109,8 @@
           <div class="warning-banner" id="cmWarningBanner">
             <span class="warning-icon">⚠️</span>
             <div class="warning-text">
-              <strong>CRITICAL: Disable ALL printer driver colour management when printing these targets.</strong>
-              <p>Set your printer driver to "No Colour Adjustment" (Epson), "Off (No Colour Adjustment)" (Canon), or the equivalent setting for your printer. Failure to do this will produce an incorrect profile.</p>
+              <strong>Disable Colour Management</strong>
+              <p>Set your printer driver to "No Colour Adjustment" (Epson), "Off (No Colour Adjustment)" (Canon), or the equivalent setting for your printer.</p>
             </div>
           </div>
 
@@ -155,40 +156,91 @@
             </div>
 
             <div class="form-group">
-              <label>TIFF Output</label>
-              <div class="input-row">
-                <div>
-                  <label class="sub-label">Bit Depth</label>
-                  <div class="radio-group">
-                    <label><input type="radio" name="bitDepth" value="8" checked> 8-bit</label>
-                    <label><input type="radio" name="bitDepth" value="16"> 16-bit</label>
-                  </div>
-                </div>
-                <div>
-                  <label for="tiffDpi" class="sub-label">Resolution (DPI)</label>
-                  <select id="tiffDpi">
-                    <option value="100">100 DPI (Draft)</option>
-                    <option value="200" selected>200 DPI (Standard)</option>
-                    <option value="300">300 DPI (High Quality)</option>
-                    <option value="600">600 DPI (Ultra)</option>
-                  </select>
-                </div>
+              <label>Bit Depth</label>
+              <div class="radio-group">
+                <label><input type="radio" name="bitDepth" value="8" checked> 8-bit</label>
+                <label><input type="radio" name="bitDepth" value="16"> 16-bit</label>
               </div>
             </div>
           </div>
 
           <button class="primary" id="btnCreateLayout">Create Layout (.ti2 + .tif)</button>
 
-          <div class="log-container hidden" id="printtargLogContainer">
-            <h4>Process Output</h4>
+          <details class="log-container hidden" id="printtargLogContainer">
+            <summary>Process Output</summary>
             <pre id="printtargLog"></pre>
-          </div>
+          </details>
 
           <!-- TIFF preview gallery (populated dynamically after generation) -->
           <div class="tiff-gallery hidden" id="tiffGallery">
             <h3>Generated Target Pages</h3>
             <div class="gallery-info" id="galleryInfo"></div>
             <div class="gallery-grid" id="galleryGrid"></div>
+          </div>
+
+          <!-- Native Raw Printing Engine (Bypass Colour Management) -->
+          <div class="print-panel hidden" id="rawPrintPanel">
+            <div class="print-panel-header">
+              <div class="print-panel-title">
+                <span class="print-icon">🖨️</span>
+                <h3>Direct Native Raw Printing</h3>
+              </div>
+            </div>
+
+            <!-- Notification / Feedback Banner -->
+            <div id="printNotification" class="notification-banner hidden">
+              <span class="notification-icon" id="printNotificationIcon">ℹ️</span>
+              <div class="notification-text" id="printNotificationText"></div>
+            </div>
+
+            <div class="printer-controls-row">
+              <div class="form-group printer-select-group">
+                <label for="printerSelect">Destination Printer</label>
+                <div class="printer-select-wrapper">
+                  <select id="printerSelect">
+                    <option value="" disabled selected>Detecting printers...</option>
+                  </select>
+                  <button type="button" class="btn-icon" id="btnRefreshPrinters" title="Refresh printer list">↻</button>
+                  <button type="button" class="btn-properties" id="btnPrinterProperties" title="Open native printer driver preferences (disable colour management, set media type, etc.)">⚙️ Preferences</button>
+                  <span id="printerStatusBadge" class="status-badge badge-idle hidden">Idle</span>
+                </div>
+              </div>
+
+              <div class="form-group print-options-group" id="cupsOptionsGroup">
+                <label class="checkbox-label" title="Enable for printers that do not accept raw TIFF streams (uses uncorrected CUPS passthrough)">
+                  <input type="checkbox" id="chkPpdFallback">
+                  <span>PPD Uncorrected Passthrough (Fallback)</span>
+                </label>
+              </div>
+            </div>
+
+            <!-- Media & Print Job Configuration Row -->
+            <div class="printer-media-row">
+              <div class="form-group media-group">
+                <label for="printerTraySelect">Paper Source / Tray</label>
+                <select id="printerTraySelect">
+                  <option value="" selected>Default / Auto Select</option>
+                </select>
+              </div>
+
+              <div class="form-group orientation-group">
+                <label>Orientation</label>
+                <div class="orientation-toggle-group">
+                  <button type="button" class="btn-toggle active" id="btnOrientPortrait" data-orient="portrait" title="Portrait orientation">📄 Portrait</button>
+                  <button type="button" class="btn-toggle" id="btnOrientLandscape" data-orient="landscape" title="Landscape orientation">📄 Landscape</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="print-actions-row">
+              <button class="primary btn-print" id="btnPrintAll">
+                <span class="btn-text">🖨️ Print All Pages (Bypass CM)</span>
+                <span class="btn-spinner hidden"></span>
+              </button>
+              <button class="secondary" id="btnAdvanceToStage3">
+                <span>Proceed to Measurement (Stage 3) →</span>
+              </button>
+            </div>
           </div>
         </section>
 
@@ -227,10 +279,10 @@
           <div class="swatch-grid" id="swatchGrid"></div>
 
           <!-- Process Log -->
-          <div class="log-container hidden" id="chartreadLogContainer">
-            <h4>Process Output</h4>
+          <details class="log-container hidden" id="chartreadLogContainer">
+            <summary>Process Output</summary>
             <pre id="chartreadLog"></pre>
-          </div>
+          </details>
         </section>
 
         <!-- Stage 4: colprof -->
@@ -286,10 +338,10 @@
           </div>
 
           <!-- Process Log -->
-          <div class="log-container hidden" id="colprofLogContainer">
-            <h4>Process Output</h4>
+          <details class="log-container hidden" id="colprofLogContainer">
+            <summary>Process Output</summary>
             <pre id="colprofLog"></pre>
-          </div>
+          </details>
         </section>
 
         <!-- Stage 5: profcheck -->
@@ -333,10 +385,10 @@
           </div>
 
           <!-- Process Log -->
-          <div class="log-container hidden" id="profcheckLogContainer">
-            <h4>Verification Output</h4>
+          <details class="log-container hidden" id="profcheckLogContainer">
+            <summary>Verification Output</summary>
             <pre id="profcheckLog"></pre>
-          </div>
+          </details>
         </section>
       </main>
     </div>
@@ -363,6 +415,9 @@
     <!-- About Dialog -->
     <dialog id="aboutDialog" class="settings-modal about-modal">
       <div class="modal-content">
+        <div class="about-logo-container">
+          <img src="./assets/ICCery-logo.svg" alt="ICCery Logo" class="about-logo" />
+        </div>
         <h2>About ICCery</h2>
         <p><strong>Version:</strong> <span id="aboutVersion">v0.1.0</span> &bull; <strong>Build Date:</strong> <span id="aboutBuildDate">August 2026</span></p>
         <p><strong>Copyright &copy; 2026 Gordon Bolton. All rights reserved.</strong></p>

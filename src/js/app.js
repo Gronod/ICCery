@@ -5,6 +5,7 @@ import { initColprof } from './colprof.js';
 import { initProfcheck } from './profcheck.js';
 import { initSettings } from './settings.js';
 import { initGamutViewer } from './gamut_viewer.js';
+import { wizardState } from './state.js';
 
 const { invoke } = window.__TAURI__.core;
 
@@ -13,8 +14,15 @@ document.addEventListener('DOMContentLoaded', () => {
   const steps = document.querySelectorAll('.step');
   const stages = document.querySelectorAll('.stage');
 
+  // Initialize gating on load
+  wizardState.updateGating();
+
   steps.forEach(step => {
     step.addEventListener('click', () => {
+      if (step.classList.contains('disabled')) {
+        return;
+      }
+
       const targetStep = step.getAttribute('data-step');
       
       // Update UI

@@ -1,26 +1,32 @@
 use std::collections::HashMap;
 use std::process::Stdio;
+use std::sync::Arc;
+use tauri::AppHandle;
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 use tokio::process::{Child, Command};
 use tokio::sync::Mutex;
-use tauri::AppHandle;
 
 use crate::events::{emit_error, emit_stderr, emit_stdout};
 
-use std::sync::Arc;
-
 pub struct ProcessManager {
-    processes: Mutex<HashMap<String, Arc<Mutex<Child>>>>,
+    processes: Arc<Mutex<HashMap<String, Arc<Mutex<Child>>>>>,
 }
 
 impl ProcessManager {
     pub fn new() -> Self {
         Self {
-            processes: Mutex::new(HashMap::new()),
+            processes: Arc::new(Mutex::new(HashMap::new())),
         }
     }
 
-    pub async fn spawn(&self, app: AppHandle, id: String, binary: String, args: Vec<String>, cwd: Option<String>) -> Result<(), String> {
+    pub async fn spawn(
+        &self,
+        app: AppHandle,
+        id: String,
+        binary: String,
+        args: Vec<String>,
+        cwd: Option<String>,
+    ) -> Result<(), String> {
         let mut command = Command::new(&binary);
         command.args(args);
         if let Some(dir) = cwd {
@@ -30,11 +36,17 @@ impl ProcessManager {
         command.stderr(Stdio::piped());
         command.stdin(Stdio::piped());
 
+        #[cfg(windows)]
+        {
+            const CREATE_NO_WINDOW: u32 = 0x08000000;
+            command.creation_flags(CREATE_NO_WINDOW);
+        }
+
         match command.spawn() {
             Ok(mut child) => {
                 let stdout = child.stdout.take().expect("Failed to open stdout");
                 let stderr = child.stderr.take().expect("Failed to open stderr");
-                
+
                 let id_clone = id.clone();
                 let app_clone = app.clone();
                 tokio::spawn(async move {
@@ -58,24 +70,34 @@ impl ProcessManager {
                         emit_stderr(&app_clone2, &id_clone2, line);
                     }
                 });
-                
+
                 let child_arc = Arc::new(Mutex::new(child));
-                let mut processes = self.processes.lock().await;
-                processes.insert(id.clone(), child_arc.clone());
-                
+                {
+                    let mut processes = self.processes.lock().await;
+                    processes.insert(id.clone(), child_arc.clone());
+                }
+
                 let id_clone_exit = id.clone();
                 let app_clone_exit = app.clone();
+                let processes_clone = self.processes.clone();
                 tokio::spawn(async move {
-                    loop {
-                        tokio::time::sleep(std::time::Duration::from_millis(100)).await;
+                    let exit_code = {
                         let mut c = child_arc.lock().await;
-                        if let Ok(Some(status)) = c.try_wait() {
-                            crate::events::emit_exit(&app_clone_exit, &id_clone_exit, status.code().unwrap_or(1));
-                            break;
+                        match c.wait().await {
+                            Ok(status) => status.code().unwrap_or(0),
+                            Err(_) => 1,
                         }
+                    };
+
+                    // Reap child from process manager map upon exit
+                    {
+                        let mut processes = processes_clone.lock().await;
+                        processes.remove(&id_clone_exit);
                     }
+
+                    crate::events::emit_exit(&app_clone_exit, &id_clone_exit, exit_code);
                 });
-                
+
                 Ok(())
             }
             Err(e) => {

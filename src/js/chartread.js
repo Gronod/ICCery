@@ -2,6 +2,7 @@ const { invoke } = window.__TAURI__.core;
 const { listen } = window.__TAURI__.event;
 import { startSwatchListener, stopSwatchListener } from './swatch_grid.js';
 import { setStage3Result } from './colprof.js';
+import { wizardState } from './state.js';
 
 // Module-level state: set by Stage 2 when it completes
 let stage2Basename = "";
@@ -11,8 +12,9 @@ let stage2Cwd = "";
  * Called by printtarg.js after Stage 2 completes.
  */
 export function setStage2Result(basename, cwd) {
-  stage2Basename = basename;
-  stage2Cwd = cwd;
+  stage2Basename = basename || wizardState.basename;
+  stage2Cwd = cwd || wizardState.cwd;
+  wizardState.setTarget(stage2Basename, stage2Cwd);
 }
 
 // State machine states
@@ -84,22 +86,29 @@ export function initChartread() {
   // Start reading button
   if (btnStartRead) {
     btnStartRead.addEventListener("click", async () => {
-      if (!stage2Basename) {
+      const basename = stage2Basename || wizardState.basename;
+      const cwd = stage2Cwd || wizardState.cwd;
+
+      if (!basename || !cwd) {
         setPrompt("Error: No .ti2 file available. Complete Stage 2 first.");
         return;
       }
 
+      stage2Basename = basename;
+      stage2Cwd = cwd;
+
       logPre.textContent = "";
+      logContainer.open = false;
       logContainer.classList.remove("hidden");
       setState(STATE.CALIBRATING);
       setPrompt("Starting chartread... waiting for instrument calibration prompt.");
 
       const config = {
-        basename: stage2Basename,
-        cwd: stage2Cwd,
+        basename: basename,
+        cwd: cwd,
       };
 
-      currentProcessId = `chartread_${stage2Basename}`;
+      currentProcessId = `chartread_${basename}`;
 
       // Start swatch grid listener
       await startSwatchListener(currentProcessId);
@@ -151,7 +160,8 @@ export function initChartread() {
             setState(STATE.FINISHED);
             setPrompt("✅ Measurement complete! .ti3 file has been saved.");
             logPre.textContent += "\n[SUCCESS] chartread completed. .ti3 file written.\n";
-            setStage3Result(stage2Basename, stage2Cwd);
+            wizardState.setTarget(basename, cwd);
+            setStage3Result(basename, cwd);
             advanceToStage4();
           } else {
             setState(STATE.FINISHED);

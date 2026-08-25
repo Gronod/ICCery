@@ -2,6 +2,7 @@ const { invoke } = window.__TAURI__.core;
 const { listen } = window.__TAURI__.event;
 const { save } = window.__TAURI__.dialog;
 import { setStage1Result } from './printtarg.js';
+import { wizardState } from './state.js';
 
 export function initTargen() {
   const colourSpaceRadios = document.querySelectorAll('input[name="colourSpace"]');
@@ -19,6 +20,25 @@ export function initTargen() {
   let currentWorkingDir = "";
   let currentBasename = "";
 
+  function updateGenerateButton() {
+    const hasBasename = targetBasename.value.trim().length > 0;
+    const hasCwd = currentWorkingDir.trim().length > 0;
+    btnGenerate.disabled = !(hasBasename && hasCwd);
+  }
+
+  // Load sensible default working directory on startup
+  invoke("get_default_working_dir")
+    .then((defaultDir) => {
+      if (defaultDir && !currentWorkingDir) {
+        currentWorkingDir = defaultDir;
+        selectedPathDisplay.textContent = `Directory: ${currentWorkingDir}`;
+        updateGenerateButton();
+      }
+    })
+    .catch((err) => {
+      console.warn("Could not retrieve default working directory:", err);
+    });
+
   // Handle patch count preset changes
   patchCountPreset.addEventListener("change", (e) => {
     if (e.target.value === "custom") {
@@ -28,13 +48,9 @@ export function initTargen() {
     }
   });
 
-  // Enable generate button if text is entered manually
+  // Enable generate button only when both basename and directory are valid
   targetBasename.addEventListener("input", () => {
-    if (targetBasename.value.trim() !== "") {
-      btnGenerate.disabled = false;
-    } else {
-      btnGenerate.disabled = true;
-    }
+    updateGenerateButton();
   });
 
   // Browse button opens save dialog
@@ -65,9 +81,7 @@ export function initTargen() {
         
         targetBasename.value = basename;
         selectedPathDisplay.textContent = `Directory: ${currentWorkingDir}`;
-        
-        // Enable generate button
-        btnGenerate.disabled = false;
+        updateGenerateButton();
       }
     } catch (err) {
       console.error("Failed to open save dialog:", err);
@@ -76,14 +90,28 @@ export function initTargen() {
 
   // Generate button clicks
   btnGenerate.addEventListener("click", async () => {
+    const basename = targetBasename.value.trim();
+    if (!currentWorkingDir || !basename) {
+      logPre.textContent = "[ERROR] Please specify both a target basename and a working directory.\n";
+      logContainer.open = true;
+      logContainer.classList.remove("hidden");
+      btnGenerate.disabled = false;
+      return;
+    }
+
     logPre.textContent = "";
+    logContainer.open = false;
     logContainer.classList.remove("hidden");
     btnGenerate.disabled = true;
     
     // Determine patch count
     let patchCount = parseInt(patchCountPreset.value, 10);
     if (patchCountPreset.value === "custom") {
-      patchCount = parseInt(patchCountCustom.value, 10);
+      const customVal = parseInt(patchCountCustom.value, 10);
+      patchCount = (!isNaN(customVal) && customVal > 0) ? customVal : 800;
+    }
+    if (isNaN(patchCount) || patchCount <= 0) {
+      patchCount = 800;
     }
     
     // Determine colour space
@@ -97,6 +125,7 @@ export function initTargen() {
     const config = {
       colour_space: colourSpace,
       patch_count: patchCount,
+      total_patches: patchCount,
       white_patches: whitePatches.value ? parseInt(whitePatches.value, 10) : null,
       black_patches: blackPatches.value ? parseInt(blackPatches.value, 10) : null,
       basename: basename,
@@ -129,9 +158,8 @@ export function initTargen() {
           
           if (event.payload.code === 0) {
             logPre.textContent += "\n[SUCCESS] Targen completed successfully.\n";
-            // In a real app we'd dispatch an event to advance the stepper here.
-            // For now, we'll manually unlock stage 2 in the state.
             btnGenerate.disabled = false;
+            wizardState.setTarget(basename, currentWorkingDir);
             setStage1Result(basename, currentWorkingDir);
             advanceToStage2();
           } else {

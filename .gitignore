@@ -23,6 +23,4 @@ dist-ssr
 *.sln
 *.sw?
 
-argyll/linux-x86_64/*
-argyll/macos-aarch64/*  
-argyll/windows-x86_64/*
+

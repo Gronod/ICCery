@@ -1,6 +1,8 @@
 const { invoke } = window.__TAURI__.core;
 const { listen } = window.__TAURI__.event;
 import { setStage4Result } from './profcheck.js';
+import { loadGamutMesh } from './gamut_viewer.js';
+import { wizardState } from './state.js';
 
 let chartreadBasename = "";
 let chartreadCwd = "";
@@ -9,8 +11,9 @@ let chartreadCwd = "";
  * Called by chartread.js after Stage 3 completes.
  */
 export function setStage3Result(basename, cwd) {
-  chartreadBasename = basename;
-  chartreadCwd = cwd;
+  chartreadBasename = basename || wizardState.basename;
+  chartreadCwd = cwd || wizardState.cwd;
+  wizardState.setTarget(chartreadBasename, chartreadCwd);
 }
 
 export function initColprof() {
@@ -30,12 +33,24 @@ export function initColprof() {
   if (!btnCreateProfile) return;
 
   btnCreateProfile.addEventListener("click", async () => {
-    const basename = chartreadBasename || "test_target";
-    const cwd = chartreadCwd || "";
+    const basename = chartreadBasename || wizardState.basename;
+    const cwd = chartreadCwd || wizardState.cwd;
+
+    if (!basename || !cwd) {
+      logPre.textContent = "[ERROR] No .ti3 measurement file available. Please complete Stage 3 first.\n";
+      logContainer.open = true;
+      logContainer.classList.remove("hidden");
+      btnCreateProfile.disabled = false;
+      return;
+    }
+
+    chartreadBasename = basename;
+    chartreadCwd = cwd;
 
     const description = descInput.value.trim() || basename;
 
     logPre.textContent = "";
+    logContainer.open = false;
     logContainer.classList.remove("hidden");
     spinnerContainer.classList.remove("hidden");
     successCard.classList.add("hidden");
@@ -79,7 +94,7 @@ export function initColprof() {
         }
       });
 
-      const unlistenExit = await listen("process:exit", (event) => {
+      const unlistenExit = await listen("process:exit", async (event) => {
         if (event.payload.id === processId) {
           unlistenStdout();
           unlistenStderr();
@@ -89,11 +104,24 @@ export function initColprof() {
 
           if (event.payload.code === 0) {
             logPre.textContent += "\n[SUCCESS] colprof completed. Profile generated.\n";
-            const iccFilename = `${basename}.icc`;
-            successInfo.textContent = `Profile: ${iccFilename} (${description})`;
+            
+            // Resolve real profile path (.icm on Windows, .icc on Unix)
+            let profilePath = cwd ? `${cwd}/${basename}.icc` : `${basename}.icc`;
+            try {
+              profilePath = await invoke("get_profile_path", { cwd, basename });
+            } catch (e) {
+              console.warn("Could not query platform profile path:", e);
+            }
+
+            const displayFilename = profilePath.split(/[\\/]/).pop() || `${basename}.icc`;
+            successInfo.textContent = `Profile: ${displayFilename} (${description})`;
             successCard.classList.remove("hidden");
 
+            wizardState.setTarget(basename, cwd);
             setStage4Result(basename, cwd);
+
+            // Automatically extract gamut mesh for 3D visualization
+            triggerGamutExtraction(basename, cwd, profilePath);
           } else {
             logPre.textContent += `\n[ERROR] colprof exited with code ${event.payload.code}.\n`;
           }
@@ -112,6 +140,26 @@ export function initColprof() {
     btnGoToVerify.addEventListener("click", () => {
       advanceToStage5();
     });
+  }
+}
+
+async function triggerGamutExtraction(basename, cwd, profilePath) {
+  try {
+    const processId = `iccgamut_${basename}`;
+    const unlistenExit = await listen("process:exit", (event) => {
+      if (event.payload.id === processId) {
+        unlistenExit();
+        if (event.payload.code === 0) {
+          const sep = cwd.includes('\\') ? '\\' : '/';
+          const gamFilePath = cwd ? `${cwd}${sep}${basename}.gam` : `${basename}.gam`;
+          loadGamutMesh(gamFilePath, 0x3b82f6);
+        }
+      }
+    });
+
+    await invoke("extract_gamut", { iccPath: profilePath });
+  } catch (err) {
+    console.warn("Automated gamut extraction notice:", err);
   }
 }
 
