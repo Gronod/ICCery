@@ -477,14 +477,13 @@ export function initPrinttarg() {
    */
   function extractManifest(stdout) {
     try {
-      const jsonStart = stdout.lastIndexOf('{\n  "event": "manifest"');
-      if (jsonStart === -1) return null;
-      const jsonEnd = stdout.indexOf('\n}', jsonStart);
-      if (jsonEnd === -1) return null;
-      const jsonStr = stdout.substring(jsonStart, jsonEnd + 2);
-      return JSON.parse(jsonStr);
+      const match = stdout.match(/\{[\s\S]*?"event"\s*:\s*"manifest"[\s\S]*?\n\}/);
+      if (match) {
+        return JSON.parse(match[0]);
+      }
+      return null;
     } catch (e) {
-      console.error("Failed to parse printtarg manifest:", e);
+      console.error("Failed to parse printtarg manifest JSON:", e);
       return null;
     }
   }
