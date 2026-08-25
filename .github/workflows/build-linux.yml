@@ -117,6 +117,7 @@ jobs:
           SERVER_URL: ${{ github.server_url }}
           REPO: ${{ github.repository }}
         run: |
+          set +e
           echo "Finding release for tag ${RELEASE_TAG}..."
           RELEASE_RESP=$(curl -s -H "Authorization: token ${GITEA_TOKEN}" "${SERVER_URL}/api/v1/repos/${REPO}/releases/tags/${RELEASE_TAG}")
           RELEASE_ID=$(echo "${RELEASE_RESP}" | grep -o '"id":[0-9]*' | head -n 1 | cut -d: -f2)
