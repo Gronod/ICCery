@@ -18,6 +18,7 @@ pub fn run() {
             commands::kill_process,
             commands::resolve_binary,
             commands::detect_instruments,
+            commands::get_profile_path,
             commands::extract_gamut,
             commands::run_targen,
             commands::run_printtarg,

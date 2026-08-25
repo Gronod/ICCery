@@ -102,6 +102,32 @@ pub async fn detect_instruments(app: AppHandle, state: State<'_, ProcessManager>
     state.spawn(app, "instlist".to_string(), binary, vec![], None).await
 }
 
+pub fn resolve_profile_extension(cwd: &str, basename: &str) -> (String, std::path::PathBuf) {
+    let p_icc = std::path::Path::new(cwd).join(format!("{}.icc", basename));
+    let p_icm = std::path::Path::new(cwd).join(format!("{}.icm", basename));
+
+    if p_icm.exists() && !p_icc.exists() {
+        ("icm".to_string(), p_icm)
+    } else if p_icc.exists() {
+        ("icc".to_string(), p_icc)
+    } else {
+        #[cfg(windows)]
+        {
+            ("icm".to_string(), p_icm)
+        }
+        #[cfg(not(windows))]
+        {
+            ("icc".to_string(), p_icc)
+        }
+    }
+}
+
+#[tauri::command]
+pub fn get_profile_path(cwd: String, basename: String) -> String {
+    let (_, path) = resolve_profile_extension(&cwd, &basename);
+    path.to_string_lossy().to_string()
+}
+
 #[tauri::command]
 pub async fn extract_gamut(
     app: AppHandle,
@@ -110,18 +136,41 @@ pub async fn extract_gamut(
 ) -> Result<(), String> {
     let binary = resolve_binary(app.clone(), "iccgamut".to_string()).await?;
     let path = std::path::Path::new(&icc_path);
-    let basename = path.file_stem().unwrap().to_str().unwrap();
-    let parent_dir = path.parent().map(|p| p.to_str().unwrap()).unwrap_or("");
+    let basename = path.file_stem().map(|s| s.to_string_lossy().to_string()).unwrap_or_else(|| "profile".to_string());
+    let parent_dir = path.parent().map(|p| p.to_string_lossy().to_string()).unwrap_or_default();
     
-    let mut args = vec!["-w".to_string()];
-    if !parent_dir.is_empty() {
-        args.push("-d".to_string());
-        args.push(parent_dir.to_string());
-    }
-    args.push(icc_path.clone());
+    // Auto-detect .icc vs .icm if the specified path does not exist directly
+    let resolved_path = if path.exists() {
+        icc_path.clone()
+    } else {
+        let alt = if icc_path.ends_with(".icc") {
+            icc_path.replace(".icc", ".icm")
+        } else if icc_path.ends_with(".icm") {
+            icc_path.replace(".icm", ".icc")
+        } else {
+            icc_path.clone()
+        };
+        if std::path::Path::new(&alt).exists() {
+            alt
+        } else {
+            icc_path.clone()
+        }
+    };
+
+    let args = vec![
+        "-v".to_string(),
+        "-d".to_string(),
+        "50.0".to_string(),
+        resolved_path,
+    ];
+    let cwd = if parent_dir.is_empty() {
+        resolve_safe_cwd(&app, "").ok()
+    } else {
+        Some(parent_dir)
+    };
     
     let id = format!("iccgamut_{}", basename);
-    state.spawn(app, id, binary, args, None).await
+    state.spawn(app, id, binary, args, cwd).await
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -379,9 +428,24 @@ pub fn build_profcheck_args(config: &ProfcheckConfig) -> Vec<String> {
 pub async fn run_profcheck(
     app: AppHandle,
     state: State<'_, ProcessManager>,
-    config: ProfcheckConfig,
+    mut config: ProfcheckConfig,
 ) -> Result<(), String> {
     let binary = resolve_binary(app.clone(), "profcheck".to_string()).await?;
+
+    // Auto-detect .icc vs .icm if the specified icc_path does not exist directly
+    if !std::path::Path::new(&config.icc_path).exists() {
+        let alt = if config.icc_path.ends_with(".icc") {
+            config.icc_path.replace(".icc", ".icm")
+        } else if config.icc_path.ends_with(".icm") {
+            config.icc_path.replace(".icm", ".icc")
+        } else {
+            config.icc_path.clone()
+        };
+        if std::path::Path::new(&alt).exists() {
+            config.icc_path = alt;
+        }
+    }
+
     let args = build_profcheck_args(&config);
     let id = format!("profcheck_{}", config.ti3_path);
     let cwd = Some(resolve_safe_cwd(&app, &config.cwd)?);

@@ -1,6 +1,7 @@
 const { invoke } = window.__TAURI__.core;
 const { listen } = window.__TAURI__.event;
 import { setStage4Result } from './profcheck.js';
+import { loadGamutMesh } from './gamut_viewer.js';
 
 let chartreadBasename = "";
 let chartreadCwd = "";
@@ -80,7 +81,7 @@ export function initColprof() {
         }
       });
 
-      const unlistenExit = await listen("process:exit", (event) => {
+      const unlistenExit = await listen("process:exit", async (event) => {
         if (event.payload.id === processId) {
           unlistenStdout();
           unlistenStderr();
@@ -90,11 +91,23 @@ export function initColprof() {
 
           if (event.payload.code === 0) {
             logPre.textContent += "\n[SUCCESS] colprof completed. Profile generated.\n";
-            const iccFilename = `${basename}.icc`;
-            successInfo.textContent = `Profile: ${iccFilename} (${description})`;
+            
+            // Resolve real profile path (.icm on Windows, .icc on Unix)
+            let profilePath = cwd ? `${cwd}/${basename}.icc` : `${basename}.icc`;
+            try {
+              profilePath = await invoke("get_profile_path", { cwd, basename });
+            } catch (e) {
+              console.warn("Could not query platform profile path:", e);
+            }
+
+            const displayFilename = profilePath.split(/[\\/]/).pop() || `${basename}.icc`;
+            successInfo.textContent = `Profile: ${displayFilename} (${description})`;
             successCard.classList.remove("hidden");
 
             setStage4Result(basename, cwd);
+
+            // Automatically extract gamut mesh for 3D visualization
+            triggerGamutExtraction(basename, cwd, profilePath);
           } else {
             logPre.textContent += `\n[ERROR] colprof exited with code ${event.payload.code}.\n`;
           }
@@ -113,6 +126,26 @@ export function initColprof() {
     btnGoToVerify.addEventListener("click", () => {
       advanceToStage5();
     });
+  }
+}
+
+async function triggerGamutExtraction(basename, cwd, profilePath) {
+  try {
+    const processId = `iccgamut_${basename}`;
+    const unlistenExit = await listen("process:exit", (event) => {
+      if (event.payload.id === processId) {
+        unlistenExit();
+        if (event.payload.code === 0) {
+          const sep = cwd.includes('\\') ? '\\' : '/';
+          const gamFilePath = cwd ? `${cwd}${sep}${basename}.gam` : `${basename}.gam`;
+          loadGamutMesh(gamFilePath, 0x3b82f6);
+        }
+      }
+    });
+
+    await invoke("extract_gamut", { iccPath: profilePath });
+  } catch (err) {
+    console.warn("Automated gamut extraction notice:", err);
   }
 }
 
