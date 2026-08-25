@@ -2,10 +2,99 @@ use serde::{Deserialize, Serialize};
 use std::fs;
 use tauri::{AppHandle, Manager};
 
+#[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
+pub struct ProfilingPreset {
+    pub id: String,
+    pub name: String,
+    pub description: Option<String>,
+    pub colour_space: String,
+    pub patch_count: u32,
+    pub white_patches: Option<u32>,
+    pub black_patches: Option<u32>,
+    pub instrument: String,
+    pub page_size: String,
+    pub bit_depth: u8,
+    pub dpi: u32,
+    pub colprof_algorithm: String,
+    pub colprof_quality: String,
+    pub colprof_intent: Option<String>,
+}
+
 #[derive(Debug, Deserialize, Serialize, Default, Clone)]
 pub struct AppSettings {
     pub argyll_binary_dir: Option<String>,
     pub default_instrument: Option<String>,
+    #[serde(default)]
+    pub custom_presets: Vec<ProfilingPreset>,
+}
+
+pub fn get_default_presets() -> Vec<ProfilingPreset> {
+    vec![
+        ProfilingPreset {
+            id: "preset-std-rgb".to_string(),
+            name: "Standard RGB Photo (800 patches)".to_string(),
+            description: Some("Recommended for standard fine-art and photographic RGB printing on inkjet printers.".to_string()),
+            colour_space: "rgb".to_string(),
+            patch_count: 800,
+            white_patches: Some(4),
+            black_patches: None,
+            instrument: "i1".to_string(),
+            page_size: "A4".to_string(),
+            bit_depth: 8,
+            dpi: 300,
+            colprof_algorithm: "l".to_string(),
+            colprof_quality: "m".to_string(),
+            colprof_intent: None,
+        },
+        ProfilingPreset {
+            id: "preset-hq-cmyk".to_string(),
+            name: "High-Gamut CMYK Proofing (1500 patches)".to_string(),
+            description: Some("High-precision CMYK press and RIP proofing profiling with deep shadow neutral boost.".to_string()),
+            colour_space: "cmyk".to_string(),
+            patch_count: 1500,
+            white_patches: None,
+            black_patches: Some(8),
+            instrument: "i1".to_string(),
+            page_size: "A3".to_string(),
+            bit_depth: 16,
+            dpi: 300,
+            colprof_algorithm: "l".to_string(),
+            colprof_quality: "h".to_string(),
+            colprof_intent: None,
+        },
+        ProfilingPreset {
+            id: "preset-draft-rgb".to_string(),
+            name: "Fast RGB Draft (400 patches)".to_string(),
+            description: Some("Quick turn-around draft profiling for testing new media.".to_string()),
+            colour_space: "rgb".to_string(),
+            patch_count: 400,
+            white_patches: None,
+            black_patches: None,
+            instrument: "i1".to_string(),
+            page_size: "A4".to_string(),
+            bit_depth: 8,
+            dpi: 150,
+            colprof_algorithm: "l".to_string(),
+            colprof_quality: "l".to_string(),
+            colprof_intent: None,
+        },
+        ProfilingPreset {
+            id: "preset-ultra-rgb".to_string(),
+            name: "Ultra Precision RGB (2500 patches)".to_string(),
+            description: Some("Maximum precision lookup table profile for exhibition and master printmaking.".to_string()),
+            colour_space: "rgb".to_string(),
+            patch_count: 2500,
+            white_patches: Some(6),
+            black_patches: Some(6),
+            instrument: "i1".to_string(),
+            page_size: "A3".to_string(),
+            bit_depth: 16,
+            dpi: 300,
+            colprof_algorithm: "l".to_string(),
+            colprof_quality: "u".to_string(),
+            colprof_intent: None,
+        },
+    ]
 }
 
 #[tauri::command]
@@ -24,4 +113,82 @@ pub fn save_settings(app: AppHandle, settings: AppSettings) -> Result<(), String
     fs::create_dir_all(&path).map_err(|e| e.to_string())?;
     let json = serde_json::to_string_pretty(&settings).unwrap();
     fs::write(path.join("settings.json"), json).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn get_all_presets(app: AppHandle) -> Vec<ProfilingPreset> {
+    let mut presets = get_default_presets();
+    let settings = load_settings(app).unwrap_or_default();
+    presets.extend(settings.custom_presets);
+    presets
+}
+
+#[tauri::command]
+pub fn save_preset(app: AppHandle, preset: ProfilingPreset) -> Result<Vec<ProfilingPreset>, String> {
+    let mut settings = load_settings(app.clone()).unwrap_or_default();
+    if let Some(pos) = settings.custom_presets.iter().position(|p| p.id == preset.id) {
+        settings.custom_presets[pos] = preset;
+    } else {
+        settings.custom_presets.push(preset);
+    }
+    save_settings(app.clone(), settings)?;
+    Ok(get_all_presets(app))
+}
+
+#[tauri::command]
+pub fn delete_preset(app: AppHandle, id: String) -> Result<Vec<ProfilingPreset>, String> {
+    let mut settings = load_settings(app.clone()).unwrap_or_default();
+    settings.custom_presets.retain(|p| p.id != id);
+    save_settings(app.clone(), settings)?;
+    Ok(get_all_presets(app))
+}
+
+#[tauri::command]
+pub fn export_preset_json(preset: ProfilingPreset) -> Result<String, String> {
+    serde_json::to_string_pretty(&preset).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn import_preset_json(json: String) -> Result<ProfilingPreset, String> {
+    serde_json::from_str::<ProfilingPreset>(&json).map_err(|e| format!("Invalid preset format: {}", e))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_get_default_presets() {
+        let defaults = get_default_presets();
+        assert_eq!(defaults.len(), 4);
+        assert_eq!(defaults[0].id, "preset-std-rgb");
+        assert_eq!(defaults[0].colour_space, "rgb");
+        assert_eq!(defaults[0].patch_count, 800);
+        assert_eq!(defaults[1].colour_space, "cmyk");
+        assert_eq!(defaults[1].patch_count, 1500);
+    }
+
+    #[test]
+    fn test_preset_json_export_and_import() {
+        let preset = ProfilingPreset {
+            id: "custom-test".to_string(),
+            name: "Custom Test Preset".to_string(),
+            description: Some("Test description".to_string()),
+            colour_space: "rgb".to_string(),
+            patch_count: 1200,
+            white_patches: Some(2),
+            black_patches: Some(4),
+            instrument: "i1".to_string(),
+            page_size: "A4".to_string(),
+            bit_depth: 16,
+            dpi: 300,
+            colprof_algorithm: "l".to_string(),
+            colprof_quality: "h".to_string(),
+            colprof_intent: None,
+        };
+
+        let json = export_preset_json(preset.clone()).expect("Export failed");
+        let imported = import_preset_json(json).expect("Import failed");
+        assert_eq!(preset, imported);
+    }
 }

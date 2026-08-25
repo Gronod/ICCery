@@ -35,6 +35,11 @@ pub fn run() {
             commands::print_target_native,
             settings::load_settings,
             settings::save_settings,
+            settings::get_all_presets,
+            settings::save_preset,
+            settings::delete_preset,
+            settings::export_preset_json,
+            settings::import_preset_json,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
