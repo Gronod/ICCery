@@ -22,6 +22,7 @@ pub fn run() {
             commands::run_targen,
             commands::run_printtarg,
             commands::read_file_base64,
+            commands::read_tiff_preview_png,
             commands::run_chartread,
             commands::run_colprof,
             commands::run_profcheck,
