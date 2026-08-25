@@ -386,14 +386,24 @@ pub async fn read_tiff_preview_png(path: String) -> Result<String, String> {
 pub struct ChartreadConfig {
     pub basename: String,
     pub cwd: String,
+    pub port: Option<String>,
 }
 
 pub fn build_chartread_args(config: &ChartreadConfig) -> Vec<String> {
-    vec![
+    let mut args = vec![
         "-v".to_string(),
         "-u".to_string(),
-        config.basename.clone(),
-    ]
+    ];
+
+    if let Some(ref port) = config.port {
+        if !port.trim().is_empty() {
+            args.push("-c".to_string());
+            args.push(port.trim().to_string());
+        }
+    }
+
+    args.push(config.basename.clone());
+    args
 }
 
 #[tauri::command]
@@ -699,9 +709,21 @@ mod tests {
         let config = ChartreadConfig {
             basename: "my_profile".to_string(),
             cwd: "/home/user".to_string(),
+            port: None,
         };
         let args = build_chartread_args(&config);
         assert_eq!(args, vec!["-v", "-u", "my_profile"]);
+    }
+
+    #[test]
+    fn test_build_chartread_args_with_port() {
+        let config = ChartreadConfig {
+            basename: "my_profile".to_string(),
+            cwd: "/home/user".to_string(),
+            port: Some("1".to_string()),
+        };
+        let args = build_chartread_args(&config);
+        assert_eq!(args, vec!["-v", "-u", "-c", "1", "my_profile"]);
     }
 
     #[test]
