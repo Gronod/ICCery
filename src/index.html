@@ -32,6 +32,21 @@
             </button>
           </div>
         </div>
+
+        <!-- Profiling Preset Selector -->
+        <div class="preset-selector-container" style="padding: 0 16px 12px; border-bottom: 1px solid var(--border-color, #2a2a30);">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            <label for="presetSelect" style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; opacity: 0.7; font-weight: 600;">Profiling Preset</label>
+            <div style="display: flex; gap: 4px;">
+              <button type="button" id="btnSavePresetModal" class="icon-btn" title="Save current settings as Preset" style="font-size: 0.85rem; padding: 2px 4px; border: 1px solid var(--border-color, #333); border-radius: 4px; background: transparent; cursor: pointer;">💾</button>
+              <button type="button" id="btnOpenPresetsDialog" class="icon-btn" title="Manage Presets (Import/Export/Delete)" style="font-size: 0.85rem; padding: 2px 4px; border: 1px solid var(--border-color, #333); border-radius: 4px; background: transparent; cursor: pointer;">⚙️</button>
+            </div>
+          </div>
+          <select id="presetSelect" style="width: 100%; font-size: 0.85rem; padding: 6px 8px; border-radius: 6px; background: var(--bg-card, #1a1a22); color: var(--text-color, #eee); border: 1px solid var(--border-color, #333); cursor: pointer;">
+            <option value="" disabled selected>Loading presets...</option>
+          </select>
+        </div>
+
         <nav class="stepper">
           <button class="step active" data-step="1">1. Generate Target</button>
           <button class="step" data-step="2">2. Print Layout</button>
@@ -508,6 +523,44 @@
         </div>
         <div class="modal-actions">
           <button id="closeAboutBtn" class="primary">Close</button>
+        </div>
+      </div>
+    </dialog>
+
+    <!-- Save Preset Dialog -->
+    <dialog id="savePresetDialog" class="settings-modal">
+      <div class="modal-content">
+        <h2>Save Profiling Preset</h2>
+        <p style="font-size: 0.9rem; opacity: 0.8; margin-bottom: 16px;">Save the current settings from Stage 1, 2, and 4 as a reusable profiling preset.</p>
+        <div class="form-group">
+          <label for="savePresetName">Preset Name</label>
+          <input type="text" id="savePresetName" placeholder="e.g. My Custom FineArt Preset">
+        </div>
+        <div class="form-group">
+          <label for="savePresetDesc">Description (Optional)</label>
+          <input type="text" id="savePresetDesc" placeholder="e.g. Optimized for 300gsm Cotton Rag with 1500 patches">
+        </div>
+        <div class="modal-actions">
+          <button id="btnConfirmSavePreset" class="primary">Save Preset</button>
+          <button id="btnCloseSavePresetDialog" class="secondary">Cancel</button>
+        </div>
+      </div>
+    </dialog>
+
+    <!-- Manage Presets Dialog -->
+    <dialog id="managePresetsDialog" class="settings-modal" style="max-width: 600px;">
+      <div class="modal-content">
+        <h2>Manage Profiling Presets</h2>
+        <p style="font-size: 0.9rem; opacity: 0.8; margin-bottom: 14px;">View built-in and custom presets, or import and export preset configurations in JSON format.</p>
+        
+        <div id="managePresetsList" style="display: flex; flex-direction: column; gap: 8px; max-height: 240px; overflow-y: auto; margin-bottom: 16px; padding: 4px;"></div>
+
+        <div style="display: flex; gap: 8px; justify-content: space-between; border-top: 1px solid var(--border-color, #333); padding-top: 14px;">
+          <div style="display: flex; gap: 8px;">
+            <button type="button" id="btnExportActivePreset" class="secondary" title="Export currently selected preset to JSON file">📤 Export Active</button>
+            <button type="button" id="btnImportPreset" class="secondary" title="Import preset from JSON file">📥 Import Preset</button>
+          </div>
+          <button id="btnCloseManagePresetsDialog" class="primary">Done</button>
         </div>
       </div>
     </dialog>
