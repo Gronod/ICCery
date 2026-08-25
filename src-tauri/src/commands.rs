@@ -30,14 +30,27 @@ pub async fn kill_process(
     state.kill(&id).await
 }
 
+pub fn get_binary_candidates(binary_name: &str) -> Vec<String> {
+    if cfg!(windows) && !binary_name.to_lowercase().ends_with(".exe") {
+        vec![format!("{}.exe", binary_name), binary_name.to_string()]
+    } else {
+        vec![binary_name.to_string()]
+    }
+}
+
 #[tauri::command]
 pub async fn resolve_binary(app: AppHandle, binary_name: String) -> Result<String, String> {
     let settings = crate::settings::load_settings(app.clone()).unwrap_or_default();
+    let candidates = get_binary_candidates(&binary_name);
+
     if let Some(dir) = settings.argyll_binary_dir {
         if !dir.trim().is_empty() {
-            let custom_path = std::path::Path::new(&dir).join(&binary_name);
-            if custom_path.exists() {
-                return Ok(custom_path.to_string_lossy().to_string());
+            let base_dir = std::path::Path::new(&dir);
+            for name in &candidates {
+                let custom_path = base_dir.join(name);
+                if custom_path.exists() {
+                    return Ok(custom_path.to_string_lossy().to_string());
+                }
             }
         }
     }
@@ -50,10 +63,22 @@ pub async fn resolve_binary(app: AppHandle, binary_name: String) -> Result<Strin
         _ => "linux-x86_64",
     };
 
+    for name in &candidates {
+        if let Ok(resource_path) = app.path().resolve(
+            format!("argyll/{}/{}", platform, name),
+            tauri::path::BaseDirectory::Resource,
+        ) {
+            if resource_path.exists() {
+                return Ok(resource_path.to_string_lossy().to_string());
+            }
+        }
+    }
+
+    let primary_name = &candidates[0];
     let resource_path = app
         .path()
         .resolve(
-            format!("argyll/{}/{}", platform, binary_name),
+            format!("argyll/{}/{}", platform, primary_name),
             tauri::path::BaseDirectory::Resource,
         )
         .map_err(|e| e.to_string())?;
@@ -706,5 +731,18 @@ mod tests {
         };
         let args = build_profcheck_args(&config);
         assert_eq!(args, vec!["-v", "-k", "-s", "my_profile.ti3", "my_profile.icc"]);
+    }
+
+    #[test]
+    fn test_get_binary_candidates() {
+        let candidates = get_binary_candidates("targen");
+        if cfg!(windows) {
+            assert_eq!(candidates, vec!["targen.exe", "targen"]);
+        } else {
+            assert_eq!(candidates, vec!["targen"]);
+        }
+
+        let candidates_exe = get_binary_candidates("targen.exe");
+        assert_eq!(candidates_exe, vec!["targen.exe"]);
     }
 }
