@@ -1,5 +1,6 @@
 const { invoke } = window.__TAURI__.core;
 const { listen } = window.__TAURI__.event;
+import { loadGamutMesh } from './gamut_viewer.js';
 
 let profileBasename = "";
 let profileCwd = "";
@@ -30,7 +31,14 @@ export function initProfcheck() {
 
     const sep = cwd.includes('\\') ? '\\' : '/';
     const ti3Path = cwd ? `${cwd}${sep}${basename}.ti3` : `${basename}.ti3`;
-    const iccPath = cwd ? `${cwd}${sep}${basename}.icc` : `${basename}.icc`;
+
+    // Query platform-aware profile path (.icm on Windows, .icc on Unix)
+    let iccPath = cwd ? `${cwd}${sep}${basename}.icc` : `${basename}.icc`;
+    try {
+      iccPath = await invoke("get_profile_path", { cwd, basename });
+    } catch (e) {
+      console.warn("Could not query platform profile path:", e);
+    }
 
     logPre.textContent = "";
     logContainer.open = false;
@@ -63,7 +71,7 @@ export function initProfcheck() {
         }
       });
 
-      const unlistenExit = await listen("process:exit", (event) => {
+      const unlistenExit = await listen("process:exit", async (event) => {
         if (event.payload.id === processId) {
           unlistenStdout();
           unlistenStderr();
@@ -73,6 +81,10 @@ export function initProfcheck() {
           if (event.payload.code === 0) {
             logPre.textContent += "\n[SUCCESS] profcheck verification finished.\n";
             parseAndRenderReport(stdoutAccumulator);
+
+            // Ensure gamut mesh is loaded into 3D viewer
+            const gamFilePath = cwd ? `${cwd}${sep}${basename}.gam` : `${basename}.gam`;
+            loadGamutMesh(gamFilePath, 0x3b82f6);
           } else {
             logPre.textContent += `\n[ERROR] profcheck exited with code ${event.payload.code}.\n`;
           }
