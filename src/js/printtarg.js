@@ -1,6 +1,7 @@
 const { invoke } = window.__TAURI__.core;
 const { listen } = window.__TAURI__.event;
 import { setStage2Result } from './chartread.js';
+import { wizardState } from './state.js';
 
 // Module-level state: set by Stage 1 when it completes
 let stage1Basename = "";
@@ -13,8 +14,9 @@ let discoveredPrinters = [];
  * Passes the basename and working directory forward.
  */
 export function setStage1Result(basename, cwd) {
-  stage1Basename = basename;
-  stage1Cwd = cwd;
+  stage1Basename = basename || wizardState.basename;
+  stage1Cwd = cwd || wizardState.cwd;
+  wizardState.setTarget(stage1Basename, stage1Cwd);
 }
 
 export function initPrinttarg() {
@@ -347,6 +349,7 @@ export function initPrinttarg() {
               showNotification("info", "Target pages generated. Select your destination printer below and print with color management strictly bypassed.");
             }
 
+            wizardState.setTarget(stage1Basename, stage1Cwd);
             setStage2Result(stage1Basename, stage1Cwd);
           } else {
             logPre.textContent += `\n[ERROR] printtarg exited with code ${event.payload.code}.\n`;

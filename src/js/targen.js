@@ -2,6 +2,7 @@ const { invoke } = window.__TAURI__.core;
 const { listen } = window.__TAURI__.event;
 const { save } = window.__TAURI__.dialog;
 import { setStage1Result } from './printtarg.js';
+import { wizardState } from './state.js';
 
 export function initTargen() {
   const colourSpaceRadios = document.querySelectorAll('input[name="colourSpace"]');
@@ -157,9 +158,8 @@ export function initTargen() {
           
           if (event.payload.code === 0) {
             logPre.textContent += "\n[SUCCESS] Targen completed successfully.\n";
-            // In a real app we'd dispatch an event to advance the stepper here.
-            // For now, we'll manually unlock stage 2 in the state.
             btnGenerate.disabled = false;
+            wizardState.setTarget(basename, currentWorkingDir);
             setStage1Result(basename, currentWorkingDir);
             advanceToStage2();
           } else {

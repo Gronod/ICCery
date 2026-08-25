@@ -1,6 +1,7 @@
 const { invoke } = window.__TAURI__.core;
 const { listen } = window.__TAURI__.event;
 import { loadGamutMesh } from './gamut_viewer.js';
+import { wizardState } from './state.js';
 
 let profileBasename = "";
 let profileCwd = "";
@@ -9,8 +10,9 @@ let profileCwd = "";
  * Called by colprof.js after Stage 4 completes.
  */
 export function setStage4Result(basename, cwd) {
-  profileBasename = basename;
-  profileCwd = cwd;
+  profileBasename = basename || wizardState.basename;
+  profileCwd = cwd || wizardState.cwd;
+  wizardState.setTarget(profileBasename, profileCwd);
 }
 
 export function initProfcheck() {
@@ -26,8 +28,19 @@ export function initProfcheck() {
   if (!btnVerify) return;
 
   btnVerify.addEventListener("click", async () => {
-    const basename = profileBasename || "test_target";
-    const cwd = profileCwd || "";
+    const basename = profileBasename || wizardState.basename;
+    const cwd = profileCwd || wizardState.cwd;
+
+    if (!basename || !cwd) {
+      logPre.textContent = "[ERROR] No profile available to verify. Please complete Stage 4 first.\n";
+      logContainer.open = true;
+      logContainer.classList.remove("hidden");
+      btnVerify.disabled = false;
+      return;
+    }
+
+    profileBasename = basename;
+    profileCwd = cwd;
 
     const sep = cwd.includes('\\') ? '\\' : '/';
     const ti3Path = cwd ? `${cwd}${sep}${basename}.ti3` : `${basename}.ti3`;
