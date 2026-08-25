@@ -211,7 +211,7 @@ export function initChartread() {
           }
         });
 
-        const unlistenExit = await listen("process:exit", (event) => {
+        const unlistenExit = await listen("process:exit", async (event) => {
           if (event.payload.id !== currentProcessId) return;
           unlistenStdout();
           unlistenStderr();
@@ -220,11 +220,23 @@ export function initChartread() {
 
           if (event.payload.code === 0) {
             setState(STATE.FINISHED);
-            setPrompt("✅ Measurement complete! .ti3 file has been saved.");
-            logPre.textContent += "\n[SUCCESS] chartread completed. .ti3 file written.\n";
+            setPrompt("✅ Sheet measurement completed!");
+            logPre.textContent += "\n[SUCCESS] chartread sheet measurement completed.\n";
+
+            // Track pass in session
+            currentPassIndex++;
+            recordedPasses.push({
+              index: currentPassIndex,
+              filename: `${basename}.ti3`,
+              time: new Date().toLocaleTimeString(),
+            });
+
+            renderPassesList();
+            if (averagingPanel) averagingPanel.classList.remove("hidden");
+            if (passCounterBadge) passCounterBadge.textContent = `${recordedPasses.length} Pass(es) Recorded`;
+
             wizardState.setTarget(basename, cwd);
             setStage3Result(basename, cwd);
-            advanceToStage4();
           } else {
             setState(STATE.FINISHED);
             setPrompt(`❌ chartread exited with code ${event.payload.code}.`);
@@ -237,6 +249,85 @@ export function initChartread() {
       } catch (err) {
         setPrompt(`Invoke error: ${err}`);
         setState(STATE.IDLE);
+      }
+    });
+  }
+
+  // Multi-pass measurement controls
+  const averagingPanel = document.getElementById("chartreadAveragingPanel");
+  const passesList = document.getElementById("passesList");
+  const passCounterBadge = document.getElementById("passCounterBadge");
+  const btnMeasureAnotherSheet = document.getElementById("btnMeasureAnotherSheet");
+  const btnFinishAndAverage = document.getElementById("btnFinishAndAverage");
+  let currentPassIndex = 0;
+  const recordedPasses = [];
+
+  function renderPassesList() {
+    if (!passesList) return;
+    passesList.innerHTML = "";
+    recordedPasses.forEach((pass, i) => {
+      const item = document.createElement("div");
+      item.style.cssText = "display:flex; justify-content:space-between; align-items:center; background:rgba(255,255,255,0.05); padding:6px 10px; border-radius:4px; font-size:0.85rem;";
+      item.innerHTML = `<span><strong>Sheet Pass #${i + 1}</strong> (${pass.filename})</span><span style="opacity:0.7;">✓ ${pass.time}</span>`;
+      passesList.appendChild(item);
+    });
+  }
+
+  if (btnMeasureAnotherSheet) {
+    btnMeasureAnotherSheet.addEventListener("click", () => {
+      setState(STATE.IDLE);
+      setPrompt(`Ready to measure sheet pass #${recordedPasses.length + 1}. Press 'Start Measurement'.`);
+      if (btnStartRead) btnStartRead.click();
+    });
+  }
+
+  if (btnFinishAndAverage) {
+    btnFinishAndAverage.addEventListener("click", async () => {
+      const basename = stage2Basename || wizardState.basename;
+      const cwd = stage2Cwd || wizardState.cwd;
+
+      if (recordedPasses.length <= 1) {
+        setPrompt("Single pass accepted. Proceeding to Stage 4...");
+        wizardState.setTarget(basename, cwd);
+        setStage3Result(basename, cwd);
+        advanceToStage4();
+        return;
+      }
+
+      setPrompt("Averaging measurement passes with Argyll average utility...");
+      btnFinishAndAverage.disabled = true;
+
+      try {
+        const averageConfig = {
+          inputs: recordedPasses.map(p => p.filename),
+          output: `${basename}.ti3`,
+          cwd: cwd,
+        };
+
+        const unlistenAvgExit = await listen("process:exit", (event) => {
+          if (event.payload.id !== `average_${basename}.ti3`) return;
+          unlistenAvgExit();
+          btnFinishAndAverage.disabled = false;
+
+          if (event.payload.code === 0) {
+            setPrompt(`✅ Successfully averaged ${recordedPasses.length} measurement passes into ${basename}.ti3!`);
+            wizardState.setTarget(basename, cwd);
+            setStage3Result(basename, cwd);
+            advanceToStage4();
+          } else {
+            setPrompt(`⚠️ Argyll average exited with code ${event.payload.code}. Proceeding with primary pass.`);
+            wizardState.setTarget(basename, cwd);
+            setStage3Result(basename, cwd);
+            advanceToStage4();
+          }
+        });
+
+        await invoke("run_average", { config: averageConfig });
+      } catch (e) {
+        console.error("run_average error:", e);
+        btnFinishAndAverage.disabled = false;
+        setStage3Result(basename, cwd);
+        advanceToStage4();
       }
     });
   }
