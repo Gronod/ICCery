@@ -80,6 +80,11 @@ jobs:
             echo "APP_VERSION=${VERSION}-dev" >> $GITHUB_ENV
           fi
 
+      - name: Prepare platform-specific resources
+        run: |
+          echo "Removing Windows ArgyllCMS binaries to avoid bundling them in Linux packages..."
+          rm -rf src-tauri/argyll/windows-x86_64
+
       - name: Build Tauri App
         env:
           APPIMAGE_EXTRACT_AND_RUN: 1
