@@ -5,7 +5,7 @@
 [![Release](https://img.shields.io/badge/version-v0.2.0-blue.svg)](https://git.i3omb.com/gronod/ICCery)
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux-lightgrey.svg)](https://git.i3omb.com/gronod/ICCery)
 [![Framework](https://img.shields.io/badge/framework-Tauri%20v2%20%2B%20Rust-orange.svg)](https://tauri.app)
-[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+[![License](https://img.shields.io/badge/license-Proprietary%20%2F%20EULA-blue.svg)](LICENCE.md)
 
 **ICCery** is a native GUI frontend designed to make creating custom ICC/ICM printer profiles seamless, visual, and reliable. It wraps the powerful color management capabilities of [ArgyllCMS](https://www.argyllcms.com/) within an intuitive, artefact-gated 5-stage wizard.
 
@@ -35,7 +35,7 @@ flowchart TD
         UI[Wizard UI & Swatch Grid]
         ThreeJS[3D CIELAB Gamut Viewer]
         State[Wizard State & Artefact Verifier]
-        PrintEngine[Raw Print Subsystem (GDI / CUPS)]
+        PrintEngine["Raw Print Subsystem (GDI / CUPS)"]
         ProcMgr[Async Subprocess IPC Manager]
 
         UI <--> State
@@ -95,4 +95,4 @@ npm run tauri build
 
 ## Licence
 
-ICCery is licensed under the [MIT Licence](LICENSE). ArgyllCMS binaries and source code are licensed under the GNU Affero General Public License (AGPLv3).
+The ICCery GUI application is proprietary software licensed under the terms of the [EULA](LICENCE.md). ArgyllCMS binaries and source code are licensed under the GNU Affero General Public License (AGPLv3).
