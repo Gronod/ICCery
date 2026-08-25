@@ -93,6 +93,15 @@ body {
   border-left: 4px solid var(--accent-color);
 }
 
+.step.disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.step.disabled:hover {
+  background-color: transparent;
+}
+
 .content {
   flex: 1;
   padding: 24px 32px;

@@ -2,6 +2,7 @@ const { invoke } = window.__TAURI__.core;
 const { listen } = window.__TAURI__.event;
 import { setStage4Result } from './profcheck.js';
 import { loadGamutMesh } from './gamut_viewer.js';
+import { wizardState } from './state.js';
 
 let chartreadBasename = "";
 let chartreadCwd = "";
@@ -10,8 +11,9 @@ let chartreadCwd = "";
  * Called by chartread.js after Stage 3 completes.
  */
 export function setStage3Result(basename, cwd) {
-  chartreadBasename = basename;
-  chartreadCwd = cwd;
+  chartreadBasename = basename || wizardState.basename;
+  chartreadCwd = cwd || wizardState.cwd;
+  wizardState.setTarget(chartreadBasename, chartreadCwd);
 }
 
 export function initColprof() {
@@ -31,8 +33,19 @@ export function initColprof() {
   if (!btnCreateProfile) return;
 
   btnCreateProfile.addEventListener("click", async () => {
-    const basename = chartreadBasename || "test_target";
-    const cwd = chartreadCwd || "";
+    const basename = chartreadBasename || wizardState.basename;
+    const cwd = chartreadCwd || wizardState.cwd;
+
+    if (!basename || !cwd) {
+      logPre.textContent = "[ERROR] No .ti3 measurement file available. Please complete Stage 3 first.\n";
+      logContainer.open = true;
+      logContainer.classList.remove("hidden");
+      btnCreateProfile.disabled = false;
+      return;
+    }
+
+    chartreadBasename = basename;
+    chartreadCwd = cwd;
 
     const description = descInput.value.trim() || basename;
 
@@ -104,6 +117,7 @@ export function initColprof() {
             successInfo.textContent = `Profile: ${displayFilename} (${description})`;
             successCard.classList.remove("hidden");
 
+            wizardState.setTarget(basename, cwd);
             setStage4Result(basename, cwd);
 
             // Automatically extract gamut mesh for 3D visualization

@@ -122,6 +122,43 @@ pub fn resolve_profile_extension(cwd: &str, basename: &str) -> (String, std::pat
     }
 }
 
+#[derive(Serialize)]
+pub struct StageStatus {
+    pub stage1_complete: bool,
+    pub stage2_complete: bool,
+    pub stage3_complete: bool,
+    pub stage4_complete: bool,
+    pub profile_path: Option<String>,
+}
+
+#[tauri::command]
+pub fn verify_stage_artefacts(cwd: String, basename: String) -> StageStatus {
+    if cwd.trim().is_empty() || basename.trim().is_empty() {
+        return StageStatus {
+            stage1_complete: false,
+            stage2_complete: false,
+            stage3_complete: false,
+            stage4_complete: false,
+            profile_path: None,
+        };
+    }
+
+    let base_path = std::path::Path::new(&cwd);
+    let ti1 = base_path.join(format!("{}.ti1", basename)).exists();
+    let ti2 = base_path.join(format!("{}.ti2", basename)).exists();
+    let ti3 = base_path.join(format!("{}.ti3", basename)).exists();
+    let (_, prof_p) = resolve_profile_extension(&cwd, &basename);
+    let prof_exists = prof_p.exists();
+
+    StageStatus {
+        stage1_complete: ti1,
+        stage2_complete: ti2,
+        stage3_complete: ti3,
+        stage4_complete: prof_exists,
+        profile_path: if prof_exists { Some(prof_p.to_string_lossy().to_string()) } else { None },
+    }
+}
+
 #[tauri::command]
 pub fn get_profile_path(cwd: String, basename: String) -> String {
     let (_, path) = resolve_profile_extension(&cwd, &basename);
