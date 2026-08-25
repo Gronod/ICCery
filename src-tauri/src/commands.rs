@@ -421,6 +421,36 @@ pub async fn run_chartread(
 }
 
 #[derive(Debug, Deserialize, Serialize)]
+pub struct AverageConfig {
+    pub inputs: Vec<String>,
+    pub output: String,
+    pub cwd: String,
+}
+
+pub fn build_average_args(config: &AverageConfig) -> Vec<String> {
+    let mut args = vec!["-v".to_string()];
+    for input in &config.inputs {
+        args.push(input.clone());
+    }
+    args.push(config.output.clone());
+    args
+}
+
+#[tauri::command]
+pub async fn run_average(
+    app: AppHandle,
+    state: State<'_, ProcessManager>,
+    config: AverageConfig,
+) -> Result<(), String> {
+    let binary = resolve_binary(app.clone(), "average".to_string()).await?;
+    let args = build_average_args(&config);
+    let id = format!("average_{}", config.output);
+    let cwd = Some(resolve_safe_cwd(&app, &config.cwd)?);
+
+    state.spawn(app, id, binary, args, cwd).await
+}
+
+#[derive(Debug, Deserialize, Serialize)]
 pub struct ColprofConfig {
     pub algorithm: String,
     pub quality: String,
@@ -724,6 +754,17 @@ mod tests {
         };
         let args = build_chartread_args(&config);
         assert_eq!(args, vec!["-v", "-u", "-c", "1", "my_profile"]);
+    }
+
+    #[test]
+    fn test_build_average_args() {
+        let config = AverageConfig {
+            inputs: vec!["pass1.ti3".to_string(), "pass2.ti3".to_string()],
+            output: "avg.ti3".to_string(),
+            cwd: "/home/user".to_string(),
+        };
+        let args = build_average_args(&config);
+        assert_eq!(args, vec!["-v", "pass1.ti3", "pass2.ti3", "avg.ti3"]);
     }
 
     #[test]
