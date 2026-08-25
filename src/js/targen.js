@@ -1,6 +1,5 @@
 const { invoke } = window.__TAURI__.core;
 const { listen } = window.__TAURI__.event;
-const { save } = window.__TAURI__.dialog;
 import { setStage1Result } from './printtarg.js';
 import { wizardState } from './state.js';
 
@@ -18,20 +17,23 @@ export function initTargen() {
   const logPre = document.getElementById("targenLog");
 
   let currentWorkingDir = "";
-  let currentBasename = "";
 
   function updateGenerateButton() {
-    const hasBasename = targetBasename.value.trim().length > 0;
-    const hasCwd = currentWorkingDir.trim().length > 0;
-    btnGenerate.disabled = !(hasBasename && hasCwd);
+    const hasBasename = targetBasename && targetBasename.value.trim().length > 0;
+    const hasCwd = currentWorkingDir && currentWorkingDir.trim().length > 0;
+    if (btnGenerate) {
+      btnGenerate.disabled = !(hasBasename && hasCwd);
+    }
   }
 
   // Load sensible default working directory on startup
   invoke("get_default_working_dir")
     .then((defaultDir) => {
-      if (defaultDir && !currentWorkingDir) {
+      if (defaultDir) {
         currentWorkingDir = defaultDir;
-        selectedPathDisplay.textContent = `Directory: ${currentWorkingDir}`;
+        if (selectedPathDisplay) {
+          selectedPathDisplay.textContent = `Directory: ${currentWorkingDir}`;
+        }
         updateGenerateButton();
       }
     })
@@ -40,155 +42,179 @@ export function initTargen() {
     });
 
   // Handle patch count preset changes
-  patchCountPreset.addEventListener("change", (e) => {
-    if (e.target.value === "custom") {
-      patchCountCustom.classList.remove("hidden");
-    } else {
-      patchCountCustom.classList.add("hidden");
-    }
-  });
+  if (patchCountPreset && patchCountCustom) {
+    patchCountPreset.addEventListener("change", (e) => {
+      if (e.target.value === "custom") {
+        patchCountCustom.classList.remove("hidden");
+      } else {
+        patchCountCustom.classList.add("hidden");
+      }
+    });
+  }
 
-  // Enable generate button only when both basename and directory are valid
-  targetBasename.addEventListener("input", () => {
-    updateGenerateButton();
-  });
-
-  // Browse button opens save dialog
-  btnBrowse.addEventListener("click", async () => {
-    try {
-      let filePath = await save({
-        title: "Save Target File As...",
-        filters: [{
-          name: "ArgyllCMS Target",
-          extensions: ["ti1"]
-        }]
-      });
-      
-      if (filePath) {
-        // Ensure .ti1 suffix is present in the display if the OS dialog didn't append it
-        if (!filePath.toLowerCase().endsWith('.ti1')) {
-          filePath += '.ti1';
-        }
-
-        // Simple extraction of directory and basename. 
-        const isWindows = filePath.includes('\\');
-        const sep = isWindows ? '\\' : '/';
-        const parts = filePath.split(sep);
-        const fileName = parts.pop();
-        
-        currentWorkingDir = parts.join(sep);
-        const basename = fileName.replace(/\.ti1$/i, '');
-        
-        targetBasename.value = basename;
-        selectedPathDisplay.textContent = `Directory: ${currentWorkingDir}`;
+  // Enable generate button when basename is input
+  if (targetBasename) {
+    targetBasename.addEventListener("input", () => {
+      if (!currentWorkingDir) {
+        invoke("get_default_working_dir")
+          .then((defaultDir) => {
+            if (defaultDir) {
+              currentWorkingDir = defaultDir;
+              if (selectedPathDisplay) {
+                selectedPathDisplay.textContent = `Directory: ${currentWorkingDir}`;
+              }
+            }
+            updateGenerateButton();
+          })
+          .catch(() => updateGenerateButton());
+      } else {
         updateGenerateButton();
       }
-    } catch (err) {
-      console.error("Failed to open save dialog:", err);
-    }
-  });
+    });
+  }
+
+  // Browse button opens save dialog via backend command
+  if (btnBrowse) {
+    btnBrowse.addEventListener("click", async () => {
+      try {
+        const filePath = await invoke("select_target_file", {
+          defaultDir: currentWorkingDir || null,
+          defaultName: targetBasename ? targetBasename.value.trim() || null : null,
+        });
+
+        if (filePath) {
+          // Normalize separators to locate directory and filename
+          const isWindows = filePath.includes('\\');
+          const sep = isWindows ? '\\' : '/';
+          const parts = filePath.split(sep);
+          const fileName = parts.pop();
+
+          currentWorkingDir = parts.join(sep);
+          const basename = fileName.replace(/\.ti1$/i, '');
+
+          if (targetBasename) {
+            targetBasename.value = basename;
+          }
+          if (selectedPathDisplay) {
+            selectedPathDisplay.textContent = `Directory: ${currentWorkingDir}`;
+          }
+          updateGenerateButton();
+        }
+      } catch (err)
+ {
+        console.error("Failed to open file dialog:", err);
+      }
+    });
+  }
 
   // Generate button clicks
-  btnGenerate.addEventListener("click", async () => {
-    const basename = targetBasename.value.trim();
-    if (!currentWorkingDir || !basename) {
-      logPre.textContent = "[ERROR] Please specify both a target basename and a working directory.\n";
-      logContainer.open = true;
-      logContainer.classList.remove("hidden");
-      btnGenerate.disabled = false;
-      return;
-    }
-
-    logPre.textContent = "";
-    logContainer.open = false;
-    logContainer.classList.remove("hidden");
-    btnGenerate.disabled = true;
-    
-    // Determine patch count
-    let patchCount = parseInt(patchCountPreset.value, 10);
-    if (patchCountPreset.value === "custom") {
-      const customVal = parseInt(patchCountCustom.value, 10);
-      patchCount = (!isNaN(customVal) && customVal > 0) ? customVal : 800;
-    }
-    if (isNaN(patchCount) || patchCount <= 0) {
-      patchCount = 800;
-    }
-    
-    // Determine colour space
-    let colourSpace = "rgb";
-    colourSpaceRadios.forEach(radio => {
-      if (radio.checked) colourSpace = radio.value;
-    });
-
-    const basename = targetBasename.value.trim();
-
-    const config = {
-      colour_space: colourSpace,
-      patch_count: patchCount,
-      total_patches: patchCount,
-      white_patches: whitePatches.value ? parseInt(whitePatches.value, 10) : null,
-      black_patches: blackPatches.value ? parseInt(blackPatches.value, 10) : null,
-      basename: basename,
-      cwd: currentWorkingDir
-    };
-
-    try {
-      // Set up listeners just for this run
-      const processId = `targen_${basename}`;
-      
-      const unlistenStdout = await listen("process:stdout", (event) => {
-        if (event.payload.id === processId && event.payload.line) {
-          logPre.textContent += event.payload.line + "\n";
-          logPre.scrollTop = logPre.scrollHeight;
+  if (btnGenerate) {
+    btnGenerate.addEventListener("click", async () => {
+      const basename = targetBasename ? targetBasename.value.trim() : "";
+      if (!currentWorkingDir || !basename) {
+        if (logPre) {
+          logPre.textContent = "[ERROR] Please specify both a target basename and a working directory.\n";
         }
-      });
-      
-      const unlistenStderr = await listen("process:stderr", (event) => {
-        if (event.payload.id === processId && event.payload.line) {
-          logPre.textContent += "ERR: " + event.payload.line + "\n";
-          logPre.scrollTop = logPre.scrollHeight;
+        if (logContainer) {
+          logContainer.open = true;
+          logContainer.classList.remove("hidden");
         }
+        btnGenerate.disabled = false;
+        return;
+      }
+
+      if (logPre) logPre.textContent = "";
+      if (logContainer) {
+        logContainer.open = false;
+        logContainer.classList.remove("hidden");
+      }
+      btnGenerate.disabled = true;
+
+      // Determine patch count
+      let patchCount = 800;
+      if (patchCountPreset) {
+        patchCount = parseInt(patchCountPreset.value, 10);
+        if (patchCountPreset.value === "custom" && patchCountCustom) {
+          const customVal = parseInt(patchCountCustom.value, 10);
+          patchCount = (!isNaN(customVal) && customVal > 0) ? customVal : 800;
+        }
+      }
+      if (isNaN(patchCount) || patchCount <= 0) {
+        patchCount = 800;
+      }
+
+      // Determine colour space
+      let colourSpace = "rgb";
+      colourSpaceRadios.forEach((radio) => {
+        if (radio.checked) colourSpace = radio.value;
       });
 
-      const unlistenExit = await listen("process:exit", (event) => {
-        if (event.payload.id === processId) {
-          unlistenStdout();
-          unlistenStderr();
-          unlistenExit();
-          
-          if (event.payload.code === 0) {
-            logPre.textContent += "\n[SUCCESS] Targen completed successfully.\n";
-            btnGenerate.disabled = false;
-            wizardState.setTarget(basename, currentWorkingDir);
-            setStage1Result(basename, currentWorkingDir);
-            advanceToStage2();
-          } else {
-            logPre.textContent += `\n[ERROR] Targen exited with code ${event.payload.code}.\n`;
-            btnGenerate.disabled = false;
+      const config = {
+        colour_space: colourSpace,
+        patch_count: patchCount,
+        total_patches: patchCount,
+        white_patches: (whitePatches && whitePatches.value) ? parseInt(whitePatches.value, 10) : null,
+        black_patches: (blackPatches && blackPatches.value) ? parseInt(blackPatches.value, 10) : null,
+        basename: basename,
+        cwd: currentWorkingDir,
+      };
+
+      try {
+        const processId = `targen_${basename}`;
+
+        const unlistenStdout = await listen("process:stdout", (event) => {
+          if (event.payload.id === processId && event.payload.line && logPre) {
+            logPre.textContent += event.payload.line + "\n";
+            logPre.scrollTop = logPre.scrollHeight;
           }
-        }
-      });
+        });
 
-      logPre.textContent = "Starting targen...\n";
-      await invoke("run_targen", { config });
-      
-    } catch (err) {
-      logPre.textContent += `\n[INVOKE ERROR] ${err}\n`;
-      btnGenerate.disabled = false;
-    }
-  });
+        const unlistenStderr = await listen("process:stderr", (event) => {
+          if (event.payload.id === processId && event.payload.line && logPre) {
+            logPre.textContent += "ERR: " + event.payload.line + "\n";
+            logPre.scrollTop = logPre.scrollHeight;
+          }
+        });
+
+        const unlistenExit = await listen("process:exit", (event) => {
+          if (event.payload.id === processId) {
+            unlistenStdout();
+            unlistenStderr();
+            unlistenExit();
+
+            if (event.payload.code === 0) {
+              if (logPre) logPre.textContent += "\n[SUCCESS] Targen completed successfully.\n";
+              btnGenerate.disabled = false;
+              wizardState.setTarget(basename, currentWorkingDir);
+              setStage1Result(basename, currentWorkingDir);
+              advanceToStage2();
+            } else {
+              if (logPre) logPre.textContent += `\n[ERROR] Targen exited with code ${event.payload.code}.\n`;
+              btnGenerate.disabled = false;
+            }
+          }
+        });
+
+        if (logPre) logPre.textContent = "Starting targen...\n";
+        await invoke("run_targen", { config });
+      } catch (err) {
+        if (logPre) logPre.textContent += `\n[INVOKE ERROR] ${err}\n`;
+        btnGenerate.disabled = false;
+      }
+    });
+  }
 }
 
 function advanceToStage2() {
   const steps = document.querySelectorAll('.step');
   const stages = document.querySelectorAll('.stage');
-  
+
   // Update stepper
-  steps.forEach(s => s.classList.remove('active'));
+  steps.forEach((s) => s.classList.remove('active'));
   if (steps[1]) steps[1].classList.add('active');
-  
+
   // Update sections
-  stages.forEach(s => {
+  stages.forEach((s) => {
     s.classList.remove('active');
     s.classList.add('hidden');
   });
