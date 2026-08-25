@@ -491,69 +491,6 @@ pub async fn run_profcheck(
 }
 
 #[tauri::command]
-pub async fn get_windows_printers() -> Result<Vec<String>, String> {
-    #[cfg(windows)]
-    {
-        crate::print::windows::get_printers().map(|list| list.into_iter().map(|p| p.name).collect())
-    }
-    #[cfg(not(windows))]
-    {
-        Err("Windows native printing is only supported on Windows.".to_string())
-    }
-}
-
-#[tauri::command]
-pub async fn print_target_windows(
-    state: State<'_, crate::print::PrinterDevModeStore>,
-    printer_name: String,
-    tiff_path: String,
-    options: Option<crate::print::PrintOptions>,
-) -> Result<(), String> {
-    #[cfg(windows)]
-    {
-        crate::print::windows::print_target(&printer_name, &tiff_path, options.as_ref(), Some(&state))
-    }
-    #[cfg(not(windows))]
-    {
-        let _ = (state, printer_name, tiff_path, options);
-        Err("Windows native printing is only supported on Windows.".to_string())
-    }
-}
-
-#[tauri::command]
-pub async fn get_cups_printers() -> Result<Vec<crate::print::Printer>, String> {
-    #[cfg(unix)]
-    {
-        crate::print::unix::get_printers()
-    }
-    #[cfg(not(unix))]
-    {
-        Err("CUPS printing is only supported on macOS and Linux.".to_string())
-    }
-}
-
-#[tauri::command]
-pub async fn print_target_cups(
-    printer_name: String,
-    tiff_path: String,
-    options: Option<crate::print::PrintOptions>,
-) -> Result<(), String> {
-    #[cfg(unix)]
-    {
-        crate::print::unix::print_target(
-            &printer_name,
-            &tiff_path,
-            options.as_ref(),
-        )
-    }
-    #[cfg(not(unix))]
-    {
-        let _ = (printer_name, tiff_path, options);
-        Err("CUPS printing is only supported on macOS and Linux.".to_string())
-    }
-}
-
-#[tauri::command]
 pub async fn get_printers() -> Result<Vec<crate::print::Printer>, String> {
     #[cfg(windows)]
     {
