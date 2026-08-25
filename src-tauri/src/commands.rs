@@ -122,6 +122,63 @@ pub fn get_default_working_dir(app: AppHandle) -> Result<String, String> {
 }
 
 #[tauri::command]
+pub async fn select_target_file(
+    app: AppHandle,
+    default_dir: Option<String>,
+    default_name: Option<String>,
+) -> Result<Option<String>, String> {
+    use tauri_plugin_dialog::DialogExt;
+
+    let mut builder = app.dialog().file().add_filter("ArgyllCMS Target", &["ti1"]);
+    if let Some(ref dir) = default_dir {
+        if !dir.trim().is_empty() {
+            builder = builder.set_directory(std::path::PathBuf::from(dir));
+        }
+    }
+    if let Some(ref name) = default_name {
+        if !name.trim().is_empty() {
+            let filename = if name.to_lowercase().ends_with(".ti1") {
+                name.to_string()
+            } else {
+                format!("{}.ti1", name)
+            };
+            builder = builder.set_file_name(filename);
+        }
+    }
+
+    let (tx, rx) = tokio::sync::oneshot::channel();
+    builder.save_file(move |file_path| {
+        let res = file_path.map(|p| p.to_string());
+        let _ = tx.send(res);
+    });
+
+    rx.await.map_err(|e| format!("Dialog channel error: {}", e))
+}
+
+#[tauri::command]
+pub async fn select_directory(
+    app: AppHandle,
+    default_dir: Option<String>,
+) -> Result<Option<String>, String> {
+    use tauri_plugin_dialog::DialogExt;
+
+    let mut builder = app.dialog().file();
+    if let Some(ref dir) = default_dir {
+        if !dir.trim().is_empty() {
+            builder = builder.set_directory(std::path::PathBuf::from(dir));
+        }
+    }
+
+    let (tx, rx) = tokio::sync::oneshot::channel();
+    builder.pick_folder(move |folder_path| {
+        let res = folder_path.map(|p| p.to_string());
+        let _ = tx.send(res);
+    });
+
+    rx.await.map_err(|e| format!("Dialog channel error: {}", e))
+}
+
+#[tauri::command]
 pub async fn detect_instruments(app: AppHandle, state: State<'_, ProcessManager>) -> Result<(), String> {
     let binary = resolve_binary(app.clone(), "instlist".to_string()).await?;
     state.spawn(app, "instlist".to_string(), binary, vec![], None).await

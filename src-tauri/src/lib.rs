@@ -14,6 +14,8 @@ pub fn run() {
             commands::spawn_process,
             commands::get_app_info,
             commands::get_default_working_dir,
+            commands::select_target_file,
+            commands::select_directory,
             commands::send_stdin,
             commands::kill_process,
             commands::resolve_binary,
