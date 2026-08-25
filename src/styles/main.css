@@ -864,7 +864,7 @@ button.danger:hover {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 8px;
+  margin-bottom: 16px;
 }
 
 .print-panel-title {
@@ -877,25 +877,6 @@ button.danger:hover {
   margin: 0;
   color: #fff;
   font-size: 1.1rem;
-}
-
-.acpu-badge {
-  background: rgba(0, 122, 204, 0.15);
-  border: 1px solid rgba(0, 122, 204, 0.4);
-  color: #4fc3f7;
-  font-size: 0.75rem;
-  font-weight: 600;
-  padding: 3px 8px;
-  border-radius: 12px;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.print-panel-desc {
-  margin: 0 0 16px 0;
-  font-size: 0.85rem;
-  color: #aaa;
-  line-height: 1.4;
 }
 
 .printer-controls-row {
@@ -922,24 +903,6 @@ button.danger:hover {
 .printer-select-wrapper select {
   flex: 1;
   max-width: 100%;
-}
-
-.auto-scaler-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  background: rgba(0, 122, 204, 0.12);
-  border: 1px solid rgba(0, 122, 204, 0.35);
-  color: #4fc3f7;
-  font-size: 0.8rem;
-  font-weight: 500;
-  padding: 6px 12px;
-  border-radius: 6px;
-  margin-top: 4px;
-}
-
-.auto-scaler-badge .badge-icon {
-  font-size: 0.9rem;
 }
 
 .btn-properties {
