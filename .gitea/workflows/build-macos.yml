@@ -1,4 +1,4 @@
-name: Build Linux Packages
+name: Build macOS Packages
 
 on:
   push:
@@ -13,12 +13,20 @@ on:
       - development
 
 jobs:
-  build-linux:
-    name: Build Linux
-    runs-on: ubuntu-latest
-    env:
-      APPIMAGE_EXTRACT_AND_RUN: 1
-      NO_STRIP: "true"
+  build-macos:
+    name: Build macOS (${{ matrix.platform.name }})
+    runs-on: ${{ matrix.platform.os }}
+    strategy:
+      matrix:
+        platform:
+          - name: Intel
+            os: macos-13
+            target: x86_64-apple-darwin
+            binary_dir: macos-x86_64
+          - name: Apple Silicon
+            os: macos-14
+            target: aarch64-apple-darwin
+            binary_dir: macos-aarch64
     
     steps:
       - name: Checkout repository
@@ -34,39 +42,16 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
         with:
           toolchain: stable
-          targets: x86_64-unknown-linux-gnu
+          targets: ${{ matrix.platform.target }}
 
       - name: Rust Cache
         uses: Swatinem/rust-cache@v2
-        continue-on-error: true
-        with:
-          workspaces: "src-tauri -> target"
 
-      - name: Cache APT Packages
-        uses: actions/cache@v3
-        with:
-          path: /var/cache/apt/archives
-          key: ${{ runner.os }}-apt-packages-v1
-          restore-keys: |
-            ${{ runner.os }}-apt-packages-
-
-      - name: Install Tauri Linux dependencies
+      - name: Check sidecar binaries
         run: |
-          sudo apt-get update -qq
-          sudo apt-get install --no-install-recommends -y \
-            libwebkit2gtk-4.1-dev \
-            build-essential \
-            curl wget file patchelf xdg-utils squashfs-tools zsync \
-            libayatana-appindicator3-dev \
-            librsvg2-dev \
-            libssl-dev \
-            libxss-dev \
-            libxinerama-dev \
-            libxrandr-dev \
-            libxxf86vm-dev \
-            libxcursor-dev \
-            libxi-dev
-          sudo apt-get install --no-install-recommends -y libfuse2 || sudo apt-get install --no-install-recommends -y libfuse2t64 || true
+          if [ ! -d "src-tauri/argyll/${{ matrix.platform.binary_dir }}" ]; then
+            echo "Warning: macOS ArgyllCMS binaries not found. Please ensure they are downloaded/committed to src-tauri/argyll/${{ matrix.platform.binary_dir }} before release."
+          fi
 
       - name: Install Node dependencies
         run: npm ci
@@ -87,28 +72,20 @@ jobs:
             echo "APP_VERSION=${VERSION}-dev" >> $GITHUB_ENV
           fi
 
-      - name: Prepare platform-specific resources
-        run: |
-          echo "Removing Windows ArgyllCMS binaries to avoid bundling them in Linux packages..."
-          rm -rf src-tauri/argyll/windows-x86_64
-
       - name: Build Tauri App
-        env:
-          APPIMAGE_EXTRACT_AND_RUN: 1
-          NO_STRIP: "true"
-        run: npm run tauri build -- -v --bundles deb,appimage
+        run: npm run tauri build
 
-      - name: Upload Debian Package
-        uses: actions/upload-artifact@v4
+      - name: Upload DMG
+        uses: actions/upload-artifact@v3
         with:
-          name: iccery-linux-deb-${{ env.APP_VERSION }}
-          path: src-tauri/target/release/bundle/deb/*.deb
+          name: iccery-macos-${{ matrix.platform.name }}-dmg-${{ env.APP_VERSION }}
+          path: src-tauri/target/release/bundle/dmg/*.dmg
 
-      - name: Upload AppImage
-        uses: actions/upload-artifact@v4
+      - name: Upload App Bundle
+        uses: actions/upload-artifact@v3
         with:
-          name: iccery-linux-appimage-${{ env.APP_VERSION }}
-          path: src-tauri/target/release/bundle/appimage/*.AppImage
+          name: iccery-macos-${{ matrix.platform.name }}-app-${{ env.APP_VERSION }}
+          path: src-tauri/target/release/bundle/macos/*.app
 
       - name: Upload Release Assets to Gitea
         if: (startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/main') && !cancelled()
@@ -117,14 +94,13 @@ jobs:
           SERVER_URL: ${{ github.server_url }}
           REPO: ${{ github.repository }}
         run: |
-          set +e
           echo "Finding release for tag ${RELEASE_TAG}..."
           RELEASE_RESP=$(curl -s -H "Authorization: token ${GITEA_TOKEN}" "${SERVER_URL}/api/v1/repos/${REPO}/releases/tags/${RELEASE_TAG}")
           RELEASE_ID=$(echo "${RELEASE_RESP}" | grep -o '"id":[0-9]*' | head -n 1 | cut -d: -f2)
           if [ -n "${RELEASE_ID}" ]; then
-            echo "Found Release ID: ${RELEASE_ID}. Uploading Linux assets..."
-            for f in src-tauri/target/release/bundle/deb/*.deb src-tauri/target/release/bundle/appimage/*.AppImage; do
-              if [ -f "$f" ]; then
+            echo "Found Release ID: ${RELEASE_ID}. Uploading macOS assets..."
+            for f in src-tauri/target/release/bundle/dmg/*.dmg src-tauri/target/release/bundle/macos/*.app; do
+              if [ -e "$f" ]; then
                 FILENAME=$(basename "$f")
                 echo "Uploading $FILENAME to release ${RELEASE_ID}..."
                 curl -s -X POST \

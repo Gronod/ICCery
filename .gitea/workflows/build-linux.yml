@@ -99,13 +99,13 @@ jobs:
         run: npm run tauri build -- -v --bundles deb,appimage
 
       - name: Upload Debian Package
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v3
         with:
           name: iccery-linux-deb-${{ env.APP_VERSION }}
           path: src-tauri/target/release/bundle/deb/*.deb
 
       - name: Upload AppImage
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v3
         with:
           name: iccery-linux-appimage-${{ env.APP_VERSION }}
           path: src-tauri/target/release/bundle/appimage/*.AppImage
