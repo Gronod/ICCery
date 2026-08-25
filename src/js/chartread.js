@@ -36,10 +36,69 @@ export function initChartread() {
   const btnRetry = document.getElementById("btnRetry");
   const btnSkip = document.getElementById("btnSkip");
   const btnCancel = document.getElementById("btnCancel");
+  const btnDetectInstruments = document.getElementById("btnDetectInstruments");
+  const instrumentSelect = document.getElementById("chartreadInstrumentSelect");
   const promptText = document.getElementById("chartreadPrompt");
   const stateLabel = document.getElementById("chartreadState");
   const logContainer = document.getElementById("chartreadLogContainer");
   const logPre = document.getElementById("chartreadLog");
+
+  // Instrument detection logic
+  if (btnDetectInstruments && instrumentSelect) {
+    btnDetectInstruments.addEventListener("click", async () => {
+      btnDetectInstruments.disabled = true;
+      btnDetectInstruments.textContent = "Detecting...";
+      setPrompt("Querying connected spectrophotometers and colorimeters via instlist...");
+
+      const detected = [];
+
+      try {
+        const unlistenStdout = await listen("process:stdout", (event) => {
+          if (event.payload.id !== "instlist" || !event.payload.line) return;
+          const line = event.payload.line.trim();
+
+          // Matches Argyll instlist output e.g. "1: 'i1Pro' on 'USB'" or "1: 'ColorMunki'" or "1 = 'i1Display'"
+          const match = line.match(/^(\d+)[\s:=]+'?([^'\n]+)'?(?:\s+on\s+'?([^'\n]+)'?)?/i);
+          if (match) {
+            const index = match[1];
+            const name = match[2].trim();
+            const port = match[3] ? match[3].trim() : "";
+            detected.push({ index, name, port });
+          }
+        });
+
+        const unlistenExit = await listen("process:exit", (event) => {
+          if (event.payload.id !== "instlist") return;
+          unlistenStdout();
+          unlistenExit();
+          btnDetectInstruments.disabled = false;
+          btnDetectInstruments.textContent = "↻ Detect";
+
+          instrumentSelect.innerHTML = `<option value="">Auto-Detect (First Available Instrument)</option>`;
+
+          if (detected.length > 0) {
+            detected.forEach((inst) => {
+              const opt = document.createElement("option");
+              opt.value = inst.index;
+              opt.textContent = `${inst.index}: ${inst.name} ${inst.port ? `(${inst.port})` : ""}`;
+              instrumentSelect.appendChild(opt);
+            });
+            instrumentSelect.value = detected[0].index;
+            setPrompt(`Found ${detected.length} instrument(s): ${detected.map(d => d.name).join(", ")}`);
+          } else {
+            setPrompt("No instruments found via instlist. Ensure USB cable is plugged in.");
+          }
+        });
+
+        await invoke("detect_instruments");
+      } catch (err) {
+        console.error("detect_instruments error:", err);
+        btnDetectInstruments.disabled = false;
+        btnDetectInstruments.textContent = "↻ Detect";
+        setPrompt(`Instrument detection error: ${err}`);
+      }
+    });
+  }
 
   function setState(newState) {
     currentState = newState;
@@ -103,9 +162,12 @@ export function initChartread() {
       setState(STATE.CALIBRATING);
       setPrompt("Starting chartread... waiting for instrument calibration prompt.");
 
+      const selectedPort = instrumentSelect && instrumentSelect.value ? instrumentSelect.value : null;
+
       const config = {
         basename: basename,
         cwd: cwd,
+        port: selectedPort,
       };
 
       currentProcessId = `chartread_${basename}`;
