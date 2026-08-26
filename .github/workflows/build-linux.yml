@@ -11,7 +11,7 @@ permissions:
 jobs:
   build-linux:
     name: Build Linux
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     env:
       APPIMAGE_EXTRACT_AND_RUN: 1
       NO_STRIP: "true"
