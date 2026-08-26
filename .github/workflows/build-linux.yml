@@ -2,15 +2,8 @@ name: Build Linux Packages
 
 on:
   push:
-    branches:
-      - main
-      - development
     tags:
       - 'v*'
-  pull_request:
-    branches:
-      - main
-      - development
 
 permissions:
   contents: write
@@ -74,21 +67,15 @@ jobs:
       - name: Install Node dependencies
         run: npm ci
 
-      - name: Get App Version
-        id: get_version
+      - name: Set Release Environment
+        id: set_env
         shell: bash
         run: |
-          VERSION=$(node -p "require('./package.json').version")
-          if [[ "${{ github.ref }}" == refs/tags/* ]]; then
-            TAG="${{ github.ref_name }}"
-            echo "APP_VERSION=${TAG#v}" >> $GITHUB_ENV
-            echo "RELEASE_TAG=${TAG}" >> $GITHUB_ENV
-          elif [ "${{ github.ref }}" = "refs/heads/main" ]; then
-            echo "APP_VERSION=${VERSION}" >> $GITHUB_ENV
-            echo "RELEASE_TAG=v${VERSION}" >> $GITHUB_ENV
-          else
-            echo "APP_VERSION=${VERSION}-dev" >> $GITHUB_ENV
-          fi
+          TAG="${{ github.ref_name }}"
+          SHORT_SHA=$(git rev-parse --short HEAD)
+          echo "TAG=${TAG}" >> $GITHUB_ENV
+          echo "SHORT_SHA=${SHORT_SHA}" >> $GITHUB_ENV
+          echo "PREFIX=ICCery_${TAG}-${SHORT_SHA}-linux-x86_64" >> $GITHUB_ENV
 
       - name: Prepare platform-specific resources
         run: |
@@ -101,24 +88,34 @@ jobs:
           NO_STRIP: "true"
         run: npm run tauri build -- -v --bundles deb,appimage
 
-      - name: Upload Debian Package
-        uses: actions/upload-artifact@v4
-        with:
-          name: iccery-linux-deb-${{ env.APP_VERSION }}
-          path: src-tauri/target/release/bundle/deb/*.deb
+      - name: Prepare Release Assets
+        shell: bash
+        run: |
+          mkdir -p release-assets
 
-      - name: Upload AppImage
+          # Stage Debian package
+          for deb in src-tauri/target/release/bundle/deb/*.deb; do
+            if [ -f "$deb" ]; then
+              cp "$deb" "release-assets/${PREFIX}.deb"
+            fi
+          done
+
+          # Stage AppImage package
+          for appimage in src-tauri/target/release/bundle/appimage/*.AppImage; do
+            if [ -f "$appimage" ]; then
+              cp "$appimage" "release-assets/${PREFIX}.AppImage"
+            fi
+          done
+
+      - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: iccery-linux-appimage-${{ env.APP_VERSION }}
-          path: src-tauri/target/release/bundle/appimage/*.AppImage
+          name: ${{ env.PREFIX }}
+          path: release-assets/*
 
       - name: Release on GitHub
-        if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
-          files: |
-            src-tauri/target/release/bundle/deb/*.deb
-            src-tauri/target/release/bundle/appimage/*.AppImage
+          files: release-assets/*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
