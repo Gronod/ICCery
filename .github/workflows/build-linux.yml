@@ -36,15 +36,8 @@ jobs:
         uses: Swatinem/rust-cache@v2
         continue-on-error: true
         with:
-          workspaces: "src-tauri -> target"
-
-      - name: Cache APT Packages
-        uses: actions/cache@v3
-        with:
-          path: /var/cache/apt/archives
-          key: ${{ runner.os }}-apt-packages-v1
-          restore-keys: |
-            ${{ runner.os }}-apt-packages-
+          workspaces: "src-tauri"
+          prefix-key: "v2-ubuntu-22.04"
 
       - name: Install Tauri Linux dependencies
         run: |
