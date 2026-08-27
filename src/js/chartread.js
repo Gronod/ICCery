@@ -277,7 +277,7 @@ export function initChartread() {
               const filename = await invoke("snapshot_ti3", {
                 cwd: cwd,
                 basename: basename,
-                passIndex: passIndex,
+                pass_index: passIndex,
               });
 
               currentPassIndex = passIndex;
@@ -452,10 +452,15 @@ export function initChartread() {
       try {
         await invoke("kill_process", { id: currentProcessId });
         stopSwatchListener();
-        setMeasurementBusy(false);
         setState(recordedPasses.length > 0 ? STATE.FINISHED : STATE.IDLE);
         setPrompt("Measurement cancelled.");
-      } catch (e) { console.error("kill_process error:", e); }
+      } catch (e) {
+        console.error("kill_process error:", e);
+        setPrompt(`Cancel failed: ${e}`);
+      } finally {
+        setMeasurementBusy(false);
+        stopSwatchListener();
+      }
     });
   }
 
