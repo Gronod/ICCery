@@ -29,6 +29,9 @@ const STATE = {
 
 let currentState = STATE.IDLE;
 let currentProcessId = "";
+let measurementInProgress = false;
+let currentPassIndex = 0;
+const recordedPasses = [];
 
 export function initChartread() {
   const btnStartRead = document.getElementById("btnStartRead");
@@ -42,6 +45,47 @@ export function initChartread() {
   const stateLabel = document.getElementById("chartreadState");
   const logContainer = document.getElementById("chartreadLogContainer");
   const logPre = document.getElementById("chartreadLog");
+  const averagingPanel = document.getElementById("chartreadAveragingPanel");
+  const passesList = document.getElementById("passesList");
+  const passCounterBadge = document.getElementById("passCounterBadge");
+  const btnMeasureAnotherSheet = document.getElementById("btnMeasureAnotherSheet");
+  const btnFinishAndAverage = document.getElementById("btnFinishAndAverage");
+
+  function setMeasurementBusy(busy) {
+    measurementInProgress = busy;
+    if (btnStartRead) btnStartRead.disabled = busy;
+    if (btnMeasureAnotherSheet) btnMeasureAnotherSheet.disabled = busy;
+    if (btnFinishAndAverage) {
+      btnFinishAndAverage.disabled = busy || recordedPasses.length === 0;
+    }
+  }
+
+  function renderPassesList() {
+    if (!passesList) return;
+    passesList.innerHTML = "";
+    recordedPasses.forEach((pass, i) => {
+      const item = document.createElement("div");
+      item.style.cssText = "display:flex; justify-content:space-between; align-items:center; background:rgba(255,255,255,0.05); padding:6px 10px; border-radius:4px; font-size:0.85rem;";
+      const label = document.createElement("span");
+      const strong = document.createElement("strong");
+      strong.textContent = `Sheet Pass #${i + 1}`;
+      label.appendChild(strong);
+      label.appendChild(document.createTextNode(` (${pass.filename})`));
+      const time = document.createElement("span");
+      time.style.opacity = "0.7";
+      time.textContent = `✓ ${pass.time}`;
+      item.appendChild(label);
+      item.appendChild(time);
+      passesList.appendChild(item);
+    });
+  }
+
+  function acceptStage3(basename, cwd) {
+    wizardState.setTarget(basename, cwd);
+    setStage3Result(basename, cwd);
+    wizardState.updateGating();
+    advanceToStage4();
+  }
 
   // Instrument detection logic
   if (btnDetectInstruments && instrumentSelect) {
@@ -133,7 +177,10 @@ export function initChartread() {
         btnCancel.classList.remove("hidden");
         break;
       case STATE.FINISHED:
-        btnStartRead.classList.remove("hidden");
+        // After a recorded pass, further sheets go through "Measure Another Sheet"
+        if (recordedPasses.length === 0) {
+          btnStartRead.classList.remove("hidden");
+        }
         break;
     }
   }
@@ -145,6 +192,11 @@ export function initChartread() {
   // Start reading button
   if (btnStartRead) {
     btnStartRead.addEventListener("click", async () => {
+      if (measurementInProgress) {
+        setPrompt("A measurement is already running. Wait for it to finish.");
+        return;
+      }
+
       const basename = stage2Basename || wizardState.basename;
       const cwd = stage2Cwd || wizardState.cwd;
 
@@ -159,6 +211,7 @@ export function initChartread() {
       logPre.textContent = "";
       logContainer.open = false;
       logContainer.classList.remove("hidden");
+      setMeasurementBusy(true);
       setState(STATE.CALIBRATING);
       setPrompt("Starting chartread... waiting for instrument calibration prompt.");
 
@@ -219,29 +272,41 @@ export function initChartread() {
           stopSwatchListener();
 
           if (event.payload.code === 0) {
-            setState(STATE.FINISHED);
-            setPrompt("✅ Sheet measurement completed!");
-            logPre.textContent += "\n[SUCCESS] chartread sheet measurement completed.\n";
+            try {
+              const passIndex = currentPassIndex + 1;
+              const filename = await invoke("snapshot_ti3", {
+                cwd: cwd,
+                basename: basename,
+                passIndex: passIndex,
+              });
 
-            // Track pass in session
-            currentPassIndex++;
-            recordedPasses.push({
-              index: currentPassIndex,
-              filename: `${basename}.ti3`,
-              time: new Date().toLocaleTimeString(),
-            });
+              currentPassIndex = passIndex;
+              recordedPasses.push({
+                index: currentPassIndex,
+                filename: filename,
+                time: new Date().toLocaleTimeString(),
+              });
 
-            renderPassesList();
-            if (averagingPanel) averagingPanel.classList.remove("hidden");
-            if (passCounterBadge) passCounterBadge.textContent = `${recordedPasses.length} Pass(es) Recorded`;
+              setState(STATE.FINISHED);
+              setPrompt(`Sheet pass #${currentPassIndex} saved as ${filename}. Stage 4 stays locked until you finish.`);
+              logPre.textContent += `\n[SUCCESS] chartread completed. Snapshotted ${filename} (canonical ${basename}.ti3 removed until Finish).\n`;
 
-            wizardState.setTarget(basename, cwd);
-            setStage3Result(basename, cwd);
+              renderPassesList();
+              if (averagingPanel) averagingPanel.classList.remove("hidden");
+              if (passCounterBadge) passCounterBadge.textContent = `${recordedPasses.length} Pass(es) Recorded`;
+              // Do not call setStage3Result / wizardState.setTarget here (#110)
+            } catch (snapErr) {
+              setState(STATE.FINISHED);
+              setPrompt(`Measurement finished but pass snapshot failed: ${snapErr}`);
+              logPre.textContent += `\n[ERROR] snapshot_ti3 failed: ${snapErr}\n`;
+            }
           } else {
             setState(STATE.FINISHED);
             setPrompt(`❌ chartread exited with code ${event.payload.code}.`);
             logPre.textContent += `\n[ERROR] chartread exited with code ${event.payload.code}.\n`;
           }
+
+          setMeasurementBusy(false);
         });
 
         await invoke("run_chartread", { config });
@@ -249,34 +314,19 @@ export function initChartread() {
       } catch (err) {
         setPrompt(`Invoke error: ${err}`);
         setState(STATE.IDLE);
+        setMeasurementBusy(false);
       }
-    });
-  }
-
-  // Multi-pass measurement controls
-  const averagingPanel = document.getElementById("chartreadAveragingPanel");
-  const passesList = document.getElementById("passesList");
-  const passCounterBadge = document.getElementById("passCounterBadge");
-  const btnMeasureAnotherSheet = document.getElementById("btnMeasureAnotherSheet");
-  const btnFinishAndAverage = document.getElementById("btnFinishAndAverage");
-  let currentPassIndex = 0;
-  const recordedPasses = [];
-
-  function renderPassesList() {
-    if (!passesList) return;
-    passesList.innerHTML = "";
-    recordedPasses.forEach((pass, i) => {
-      const item = document.createElement("div");
-      item.style.cssText = "display:flex; justify-content:space-between; align-items:center; background:rgba(255,255,255,0.05); padding:6px 10px; border-radius:4px; font-size:0.85rem;";
-      item.innerHTML = `<span><strong>Sheet Pass #${i + 1}</strong> (${pass.filename})</span><span style="opacity:0.7;">✓ ${pass.time}</span>`;
-      passesList.appendChild(item);
     });
   }
 
   if (btnMeasureAnotherSheet) {
     btnMeasureAnotherSheet.addEventListener("click", () => {
+      if (measurementInProgress) {
+        setPrompt("Wait for the current measurement to finish and be snapshotted.");
+        return;
+      }
       setState(STATE.IDLE);
-      setPrompt(`Ready to measure sheet pass #${recordedPasses.length + 1}. Press 'Start Measurement'.`);
+      setPrompt(`Ready to measure sheet pass #${recordedPasses.length + 1}. Starting chartread...`);
       if (btnStartRead) btnStartRead.click();
     });
   }
@@ -286,11 +336,36 @@ export function initChartread() {
       const basename = stage2Basename || wizardState.basename;
       const cwd = stage2Cwd || wizardState.cwd;
 
-      if (recordedPasses.length <= 1) {
-        setPrompt("Single pass accepted. Proceeding to Stage 4...");
-        wizardState.setTarget(basename, cwd);
-        setStage3Result(basename, cwd);
-        advanceToStage4();
+      if (!basename || !cwd) {
+        setPrompt("Error: No working directory or basename.");
+        return;
+      }
+
+      if (measurementInProgress) {
+        setPrompt("Wait for the current measurement to finish.");
+        return;
+      }
+
+      if (recordedPasses.length === 0) {
+        setPrompt("No measurement passes recorded yet.");
+        return;
+      }
+
+      if (recordedPasses.length === 1) {
+        setPrompt("Single pass accepted. Restoring canonical .ti3 and proceeding to Stage 4...");
+        btnFinishAndAverage.disabled = true;
+        try {
+          await invoke("promote_ti3", {
+            cwd: cwd,
+            source: recordedPasses[0].filename,
+            basename: basename,
+          });
+          logPre.textContent += `\n[SUCCESS] Promoted ${recordedPasses[0].filename} → ${basename}.ti3 (single pass, average not invoked).\n`;
+          acceptStage3(basename, cwd);
+        } catch (e) {
+          btnFinishAndAverage.disabled = false;
+          setPrompt(`Failed to restore ${basename}.ti3: ${e}`);
+        }
         return;
       }
 
@@ -304,21 +379,30 @@ export function initChartread() {
           cwd: cwd,
         };
 
-        const unlistenAvgExit = await listen("process:exit", (event) => {
+        logPre.textContent += `\n[average] average -v ${averageConfig.inputs.join(" ")} ${averageConfig.output}\n`;
+
+        const unlistenAvgExit = await listen("process:exit", async (event) => {
           if (event.payload.id !== `average_${basename}.ti3`) return;
           unlistenAvgExit();
-          btnFinishAndAverage.disabled = false;
 
           if (event.payload.code === 0) {
             setPrompt(`✅ Successfully averaged ${recordedPasses.length} measurement passes into ${basename}.ti3!`);
-            wizardState.setTarget(basename, cwd);
-            setStage3Result(basename, cwd);
-            advanceToStage4();
+            logPre.textContent += `\n[SUCCESS] average wrote ${basename}.ti3\n`;
+            acceptStage3(basename, cwd);
           } else {
-            setPrompt(`⚠️ Argyll average exited with code ${event.payload.code}. Proceeding with primary pass.`);
-            wizardState.setTarget(basename, cwd);
-            setStage3Result(basename, cwd);
-            advanceToStage4();
+            setPrompt(`⚠️ Argyll average exited with code ${event.payload.code}. Promoting pass 1 as fallback.`);
+            logPre.textContent += `\n[ERROR] average exited ${event.payload.code}. Promoting ${recordedPasses[0].filename}.\n`;
+            try {
+              await invoke("promote_ti3", {
+                cwd: cwd,
+                source: recordedPasses[0].filename,
+                basename: basename,
+              });
+              acceptStage3(basename, cwd);
+            } catch (e) {
+              btnFinishAndAverage.disabled = false;
+              setPrompt(`Average failed and fallback promote failed: ${e}`);
+            }
           }
         });
 
@@ -326,8 +410,7 @@ export function initChartread() {
       } catch (e) {
         console.error("run_average error:", e);
         btnFinishAndAverage.disabled = false;
-        setStage3Result(basename, cwd);
-        advanceToStage4();
+        setPrompt(`run_average error: ${e}`);
       }
     });
   }
@@ -369,7 +452,8 @@ export function initChartread() {
       try {
         await invoke("kill_process", { id: currentProcessId });
         stopSwatchListener();
-        setState(STATE.IDLE);
+        setMeasurementBusy(false);
+        setState(recordedPasses.length > 0 ? STATE.FINISHED : STATE.IDLE);
         setPrompt("Measurement cancelled.");
       } catch (e) { console.error("kill_process error:", e); }
     });
@@ -385,7 +469,10 @@ function advanceToStage4() {
   const stages = document.querySelectorAll('.stage');
 
   steps.forEach(s => s.classList.remove('active'));
-  if (steps[3]) steps[3].classList.add('active');
+  if (steps[3]) {
+    steps[3].classList.add('active');
+    steps[3].classList.remove('disabled');
+  }
 
   stages.forEach(s => {
     s.classList.remove('active');
