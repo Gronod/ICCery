@@ -854,11 +854,22 @@ mod tests {
     }
 
     #[test]
-    fn test_build_chartread_args() {
+    fn test_build_chartread_args_auto() {
         let config = ChartreadConfig {
             basename: "my_profile".to_string(),
             cwd: "/home/user".to_string(),
             port: None,
+        };
+        let args = build_chartread_args(&config);
+        assert_eq!(args, vec!["-v", "-u", "my_profile"]);
+    }
+
+    #[test]
+    fn test_build_chartread_args_empty_port() {
+        let config = ChartreadConfig {
+            basename: "my_profile".to_string(),
+            cwd: "/home/user".to_string(),
+            port: Some("".to_string()),
         };
         let args = build_chartread_args(&config);
         assert_eq!(args, vec!["-v", "-u", "my_profile"]);

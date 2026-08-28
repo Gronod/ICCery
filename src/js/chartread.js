@@ -102,12 +102,15 @@ export function initChartread() {
           const line = event.payload.line.trim();
 
           // Matches Argyll instlist output e.g. "1: 'i1Pro' on 'USB'" or "1: 'ColorMunki'" or "1 = 'i1Display'"
+          const KNOWN_INST_TOKENS = /i1|ColorMunki|Spyder|spectro|Display|Huey|DTP|SpectroScan|Smile|Klein/i;
           const match = line.match(/^(\d+)[\s:=]+'?([^'\n]+)'?(?:\s+on\s+'?([^'\n]+)'?)?/i);
           if (match) {
             const index = match[1];
             const name = match[2].trim();
             const port = match[3] ? match[3].trim() : "";
-            detected.push({ index, name, port });
+            if (KNOWN_INST_TOKENS.test(name) || port.length > 0) {
+              detected.push({ index, name, port });
+            }
           }
         });
 
@@ -116,18 +119,19 @@ export function initChartread() {
           unlistenStdout();
           unlistenExit();
           btnDetectInstruments.disabled = false;
-          btnDetectInstruments.textContent = "↻ Detect";
+          btnDetectInstruments.textContent = "↺ Detect";
 
-          instrumentSelect.innerHTML = `<option value="">Auto-Detect (First Available Instrument)</option>`;
+          instrumentSelect.innerHTML = `<option value="">Auto (First available port)</option>`;
 
           if (detected.length > 0) {
             detected.forEach((inst) => {
               const opt = document.createElement("option");
-              opt.value = inst.index;
-              opt.textContent = `${inst.index}: ${inst.name} ${inst.port ? `(${inst.port})` : ""}`;
+              // Do not pass instlist ordinal as -c comm port; use empty value for auto-port (#111)
+              opt.value = "";
+              opt.textContent = `${inst.name}${inst.port ? ` on ${inst.port}` : ""}`;
               instrumentSelect.appendChild(opt);
             });
-            instrumentSelect.value = detected[0].index;
+            instrumentSelect.value = "";
             setPrompt(`Found ${detected.length} instrument(s): ${detected.map(d => d.name).join(", ")}`);
           } else {
             setPrompt("No instruments found via instlist. Ensure USB cable is plugged in.");
