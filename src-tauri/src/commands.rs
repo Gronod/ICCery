@@ -247,6 +247,15 @@ pub fn get_profile_path(cwd: String, basename: String) -> String {
     path.to_string_lossy().to_string()
 }
 
+pub fn build_iccgamut_args(resolved_path: &str) -> Vec<String> {
+    vec![
+        "-v".to_string(),
+        "-d".to_string(),
+        "10".to_string(),
+        resolved_path.to_string(),
+    ]
+}
+
 #[tauri::command]
 pub async fn extract_gamut(
     app: AppHandle,
@@ -276,12 +285,7 @@ pub async fn extract_gamut(
         }
     };
 
-    let args = vec![
-        "-v".to_string(),
-        "-d".to_string(),
-        "50.0".to_string(),
-        resolved_path,
-    ];
+    let args = build_iccgamut_args(&resolved_path);
     let cwd = if parent_dir.is_empty() {
         resolve_safe_cwd(&app, "").ok()
     } else {
@@ -765,6 +769,12 @@ pub async fn print_target_native(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_build_iccgamut_args() {
+        let args = build_iccgamut_args("/path/to/profile.icc");
+        assert_eq!(args, vec!["-v", "-d", "10", "/path/to/profile.icc"]);
+    }
 
     #[test]
     fn test_build_targen_args_rgb() {
