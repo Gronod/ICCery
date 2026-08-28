@@ -247,6 +247,15 @@ pub fn get_profile_path(cwd: String, basename: String) -> String {
     path.to_string_lossy().to_string()
 }
 
+pub fn build_iccgamut_args(resolved_path: &str) -> Vec<String> {
+    vec![
+        "-v".to_string(),
+        "-d".to_string(),
+        "10".to_string(),
+        resolved_path.to_string(),
+    ]
+}
+
 #[tauri::command]
 pub async fn extract_gamut(
     app: AppHandle,
@@ -276,12 +285,7 @@ pub async fn extract_gamut(
         }
     };
 
-    let args = vec![
-        "-v".to_string(),
-        "-d".to_string(),
-        "50.0".to_string(),
-        resolved_path,
-    ];
+    let args = build_iccgamut_args(&resolved_path);
     let cwd = if parent_dir.is_empty() {
         resolve_safe_cwd(&app, "").ok()
     } else {
@@ -507,6 +511,68 @@ pub async fn run_average(
     state.spawn(app, id, binary, args, cwd).await
 }
 
+fn sanitize_basename(basename: &str) -> Result<String, String> {
+    let name = basename.trim();
+    if name.is_empty() {
+        return Err("basename is empty".to_string());
+    }
+    if name.contains('/') || name.contains('\\') || name.contains("..") {
+        return Err("basename must not contain path separators".to_string());
+    }
+    Ok(name.to_string())
+}
+
+pub fn snapshot_ti3_filename(basename: &str, pass_index: u32) -> Result<String, String> {
+    if pass_index == 0 {
+        return Err("pass_index must be 1-based".to_string());
+    }
+    let name = sanitize_basename(basename)?;
+    Ok(format!("{}_pass{}.ti3", name, pass_index))
+}
+
+/// Copy `{cwd}/{basename}.ti3` to `{cwd}/{basename}_pass{N}.ti3` and remove the
+/// canonical file so Stage 4 stays locked until Finish (#109 / #110).
+#[tauri::command]
+pub fn snapshot_ti3(cwd: String, basename: String, pass_index: u32) -> Result<String, String> {
+    let dest_name = snapshot_ti3_filename(&basename, pass_index)?;
+    let name = sanitize_basename(&basename)?;
+    let dir = std::path::Path::new(&cwd);
+    if !dir.is_dir() {
+        return Err(format!("working directory does not exist: {}", cwd));
+    }
+    let src = dir.join(format!("{}.ti3", name));
+    if !src.is_file() {
+        return Err(format!("measurement file not found: {}", src.display()));
+    }
+    let dest = dir.join(&dest_name);
+    std::fs::copy(&src, &dest).map_err(|e| format!("failed to snapshot .ti3: {}", e))?;
+    std::fs::remove_file(&src)
+        .map_err(|e| format!("failed to remove canonical .ti3 after snapshot: {}", e))?;
+    Ok(dest_name)
+}
+
+/// Copy a pass file (relative name) back to `{cwd}/{basename}.ti3`.
+#[tauri::command]
+pub fn promote_ti3(cwd: String, source: String, basename: String) -> Result<(), String> {
+    let name = sanitize_basename(&basename)?;
+    let src_name = source.trim();
+    if src_name.is_empty()
+        || src_name.contains('/')
+        || src_name.contains('\\')
+        || src_name.contains("..")
+    {
+        return Err("source filename is invalid".to_string());
+    }
+    let dir = std::path::Path::new(&cwd);
+    let src = dir.join(src_name);
+    if !src.is_file() {
+        return Err(format!("source measurement file not found: {}", src.display()));
+    }
+    let dest = dir.join(format!("{}.ti3", name));
+    std::fs::copy(&src, &dest).map_err(|e| format!("failed to promote .ti3: {}", e))?;
+    Ok(())
+}
+
 #[derive(Debug, Deserialize, Serialize)]
 pub struct ColprofConfig {
     pub algorithm: String,
@@ -705,6 +771,12 @@ mod tests {
     use super::*;
 
     #[test]
+    fn test_build_iccgamut_args() {
+        let args = build_iccgamut_args("/path/to/profile.icc");
+        assert_eq!(args, vec!["-v", "-d", "10", "/path/to/profile.icc"]);
+    }
+
+    #[test]
     fn test_build_targen_args_rgb() {
         let config = TargenConfig {
             colour_space: "rgb".to_string(),
@@ -792,11 +864,22 @@ mod tests {
     }
 
     #[test]
-    fn test_build_chartread_args() {
+    fn test_build_chartread_args_auto() {
         let config = ChartreadConfig {
             basename: "my_profile".to_string(),
             cwd: "/home/user".to_string(),
             port: None,
+        };
+        let args = build_chartread_args(&config);
+        assert_eq!(args, vec!["-v", "-u", "my_profile"]);
+    }
+
+    #[test]
+    fn test_build_chartread_args_empty_port() {
+        let config = ChartreadConfig {
+            basename: "my_profile".to_string(),
+            cwd: "/home/user".to_string(),
+            port: Some("".to_string()),
         };
         let args = build_chartread_args(&config);
         assert_eq!(args, vec!["-v", "-u", "my_profile"]);
@@ -822,6 +905,55 @@ mod tests {
         };
         let args = build_average_args(&config);
         assert_eq!(args, vec!["-v", "pass1.ti3", "pass2.ti3", "avg.ti3"]);
+    }
+
+    #[test]
+    fn test_build_average_args_pass_files() {
+        let config = AverageConfig {
+            inputs: vec!["job_pass1.ti3".to_string(), "job_pass2.ti3".to_string()],
+            output: "job.ti3".to_string(),
+            cwd: "/home/user".to_string(),
+        };
+        let args = build_average_args(&config);
+        assert_eq!(args, vec!["-v", "job_pass1.ti3", "job_pass2.ti3", "job.ti3"]);
+    }
+
+    #[test]
+    fn test_snapshot_ti3_filename() {
+        assert_eq!(snapshot_ti3_filename("foo", 1).unwrap(), "foo_pass1.ti3");
+        assert_eq!(snapshot_ti3_filename("foo", 2).unwrap(), "foo_pass2.ti3");
+        assert!(snapshot_ti3_filename("foo", 0).is_err());
+        assert!(snapshot_ti3_filename("../x", 1).is_err());
+        assert!(snapshot_ti3_filename("a/b", 1).is_err());
+    }
+
+    #[test]
+    fn test_snapshot_and_promote_ti3_roundtrip() {
+        let dir = std::env::temp_dir().join(format!(
+            "iccery_ti3_{}_{}",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ));
+        std::fs::create_dir_all(&dir).unwrap();
+        let canonical = dir.join("job.ti3");
+        std::fs::write(&canonical, b"PASS1").unwrap();
+        let cwd = dir.to_string_lossy().to_string();
+        let name = snapshot_ti3(cwd.clone(), "job".to_string(), 1).unwrap();
+        assert_eq!(name, "job_pass1.ti3");
+        assert!(!canonical.exists(), "canonical .ti3 must be removed after snapshot");
+        assert_eq!(std::fs::read(dir.join("job_pass1.ti3")).unwrap(), b"PASS1");
+
+        std::fs::write(dir.join("job_pass2.ti3"), b"PASS2").unwrap();
+        let name2 = snapshot_ti3_filename("job", 2).unwrap();
+        assert_eq!(name2, "job_pass2.ti3");
+        assert!(dir.join("job_pass1.ti3").exists(), "pass 1 must survive pass 2");
+
+        promote_ti3(cwd, name, "job".to_string()).unwrap();
+        assert_eq!(std::fs::read(&canonical).unwrap(), b"PASS1");
+        let _ = std::fs::remove_dir_all(&dir);
     }
 
     #[test]

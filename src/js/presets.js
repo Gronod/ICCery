@@ -50,44 +50,75 @@ export async function initPresets() {
       const item = document.createElement("div");
       item.style.cssText = "display:flex; justify-content:space-between; align-items:center; background:rgba(255,255,255,0.05); padding:8px 12px; border-radius:6px;";
       
-      item.innerHTML = `
-        <div style="flex:1; margin-right:12px;">
-          <div style="font-weight:600; font-size:0.9rem;">${p.name} ${isBuiltin ? '<span style="font-size:0.7rem; opacity:0.6; border:1px solid #555; padding:1px 4px; border-radius:3px; margin-left:4px;">Built-in</span>' : ''}</div>
-          <div style="font-size:0.75rem; opacity:0.7; margin-top:2px;">${p.description || "No description"}</div>
-          <div style="font-size:0.7rem; opacity:0.5; margin-top:2px;">${p.colour_space.toUpperCase()} • ${p.patch_count} patches • ${p.page_size} • ${p.bit_depth}-bit • Quality ${p.colprof_quality.toUpperCase()}</div>
-        </div>
-        <div style="display:flex; gap:6px;">
-          <button type="button" class="secondary btn-export-one" data-id="${p.id}" style="font-size:0.75rem; padding:4px 8px;">Export</button>
-          ${!isBuiltin ? `<button type="button" class="danger btn-delete-one" data-id="${p.id}" style="font-size:0.75rem; padding:4px 8px;">Delete</button>` : ''}
-        </div>
-      `;
+      const leftCol = document.createElement("div");
+      leftCol.style.cssText = "flex:1; margin-right:12px;";
 
-      managePresetsList.appendChild(item);
-    });
+      const titleRow = document.createElement("div");
+      titleRow.style.cssText = "font-weight:600; font-size:0.9rem; display:flex; align-items:center; gap:6px;";
+      const titleSpan = document.createElement("span");
+      titleSpan.textContent = p.name || "Untitled";
+      titleRow.appendChild(titleSpan);
 
-    // Attach listeners for export / delete
-    managePresetsList.querySelectorAll(".btn-export-one").forEach((btn) => {
-      btn.addEventListener("click", async () => {
-        const id = btn.getAttribute("data-id");
-        const preset = currentPresets.find(p => p.id === id);
-        if (preset) exportPreset(preset);
-      });
-    });
+      if (isBuiltin) {
+        const badge = document.createElement("span");
+        badge.style.cssText = "font-size:0.7rem; opacity:0.6; border:1px solid #555; padding:1px 4px; border-radius:3px;";
+        badge.textContent = "Built-in";
+        titleRow.appendChild(badge);
+      }
+      leftCol.appendChild(titleRow);
 
-    managePresetsList.querySelectorAll(".btn-delete-one").forEach((btn) => {
-      btn.addEventListener("click", async () => {
-        const id = btn.getAttribute("data-id");
-        if (confirm("Delete this custom preset?")) {
-          try {
-            currentPresets = await invoke("delete_preset", { id });
-            if (activePresetId === id) activePresetId = currentPresets[0]?.id || "preset-std-rgb";
-            renderPresetDropdown();
-            renderManagePresetsList();
-          } catch (err) {
-            alert("Delete failed: " + err);
+      const descDiv = document.createElement("div");
+      descDiv.style.cssText = "font-size:0.8rem; opacity:0.75; margin-top:2px;";
+      descDiv.textContent = p.description || "No description";
+      leftCol.appendChild(descDiv);
+
+      const metaDiv = document.createElement("div");
+      metaDiv.style.cssText = "font-size:0.75rem; opacity:0.5; margin-top:4px;";
+      metaDiv.textContent = `${(p.colour_space || "").toUpperCase()} • ${p.patch_count} patches • ${p.page_size} • ${p.dpi || 300} DPI • ${p.bit_depth}-bit`;
+      leftCol.appendChild(metaDiv);
+
+      item.appendChild(leftCol);
+
+      const actionsDiv = document.createElement("div");
+      actionsDiv.style.cssText = "display:flex; gap:6px;";
+
+      const exportBtn = document.createElement("button");
+      exportBtn.type = "button";
+      exportBtn.className = "icon-btn";
+      exportBtn.title = "Export to JSON";
+      exportBtn.style.cssText = "font-size:0.85rem; padding:4px 6px; border:1px solid var(--border-color, #333); border-radius:4px; background:transparent; cursor:pointer;";
+      exportBtn.textContent = "💾";
+      exportBtn.addEventListener("click", () => exportPreset(p));
+      actionsDiv.appendChild(exportBtn);
+
+      if (!isBuiltin) {
+        const deleteBtn = document.createElement("button");
+        deleteBtn.type = "button";
+        deleteBtn.className = "icon-btn";
+        deleteBtn.title = "Delete Preset";
+        deleteBtn.style.cssText = "font-size:0.85rem; padding:4px 6px; border:1px solid var(--border-color, #333); border-radius:4px; background:transparent; cursor:pointer; color:#ff6b6b;";
+        deleteBtn.textContent = "🗑️";
+        deleteBtn.addEventListener("click", async () => {
+          if (confirm(`Delete preset "${p.name}"?`)) {
+            try {
+              currentPresets = await invoke("delete_preset", { id: p.id });
+              if (activePresetId === p.id) {
+                activePresetId = "preset-std-rgb";
+                const fallback = currentPresets.find(x => x.id === activePresetId);
+                if (fallback) applyPreset(fallback);
+              }
+              renderPresetDropdown();
+              renderManagePresetsList();
+            } catch (err) {
+              alert("Delete preset failed: " + err);
+            }
           }
-        }
-      });
+        });
+        actionsDiv.appendChild(deleteBtn);
+      }
+
+      item.appendChild(actionsDiv);
+      managePresetsList.appendChild(item);
     });
   }
 
@@ -133,6 +164,11 @@ export async function initPresets() {
       if (Number(r.value) === preset.bit_depth) r.checked = true;
     });
 
+    const tiffDpi = document.getElementById("tiffDpi");
+    if (tiffDpi && preset.dpi) {
+      tiffDpi.value = preset.dpi;
+    }
+
     // Stage 4 controls
     const colprofQuality = document.getElementById("colprofQuality");
     if (colprofQuality && preset.colprof_quality) colprofQuality.value = preset.colprof_quality;
@@ -171,6 +207,9 @@ export async function initPresets() {
     const bitDepthRadio = document.querySelector('input[name="bitDepth"]:checked');
     const bit_depth = bitDepthRadio ? parseInt(bitDepthRadio.value, 10) : 8;
 
+    const tiffDpi = document.getElementById("tiffDpi");
+    const dpi = tiffDpi && tiffDpi.value ? parseInt(tiffDpi.value, 10) || 300 : 300;
+
     const colprofQuality = document.getElementById("colprofQuality");
     const colprof_quality = colprofQuality ? colprofQuality.value : "m";
 
@@ -188,7 +227,7 @@ export async function initPresets() {
       instrument,
       page_size,
       bit_depth,
-      dpi: 300,
+      dpi,
       colprof_algorithm,
       colprof_quality,
       colprof_intent: null,

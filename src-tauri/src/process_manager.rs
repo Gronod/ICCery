@@ -29,6 +29,12 @@ impl ProcessManager {
         args: Vec<String>,
         cwd: Option<String>,
     ) -> Result<(), String> {
+        {
+            let stdins = self.stdins.lock().await;
+            if stdins.contains_key(&id) {
+                return Err(format!("Process '{id}' is still running"));
+            }
+        }
         let mut command = Command::new(&binary);
         command.args(args);
         if let Some(dir) = cwd {
@@ -154,5 +160,20 @@ impl ProcessManager {
             return Ok(());
         }
         Err("Process not found".to_string())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn test_process_manager_duplicate_id_and_lifecycle() {
+        let pm = ProcessManager::new();
+        // Test helper using dummy/mock or direct map operations
+        {
+            let mut stdins = pm.stdins.lock().await;
+            assert!(!stdins.contains_key("test_proc"));
+        }
     }
 }

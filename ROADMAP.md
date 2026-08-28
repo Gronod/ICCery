@@ -60,10 +60,14 @@ ICCery is a native, cross-platform desktop application built with:
 ## 3. Future Roadmap
 
 ### Milestone 8 — Advanced Measurement & Workflow Enhancements (`v0.3.0`)
-- [ ] **Averaging & Multi-Pass Reading**: Integrate Argyll's `average` utility to merge multiple measurement sheets for enhanced accuracy.
-- [ ] **Ambient & Display Profiling**: Extend wizard beyond reflective targets to emissive displays (`dispwin`, `dispread`).
-- [ ] **Preset Management**: Save and load reusable profiling recipes (paper types, patch counts, quality presets).
-- [ ] **Full 3D Convex Hull in CIELAB**: Replace 2D projected Delaunay triangulation with full 3D Delaunay/Convex Hull in Lab space for complex non-convex gamuts.
+- [x] **Averaging & Multi-Pass Reading**: Integrated Argyll `average` multi-pass measurement sheet workflow for noise reduction.
+- [x] **Instrument Auto-Detection**: Added hardware detection via `instlist`.
+- [x] **Preset Management**: Save, load, export, and import profiling recipes.
+- [x] **Full 3D Convex Hull in CIELAB**: Replaced 2D projected Delaunay triangulation with full 3D QuickHull in Lab space with touch rotation controls.
+
+### Hotfix Releases (`v0.3.1` & `v0.3.2`)
+- [x] **v0.3.1 (#103)**: Stage 1 file browse via backend `select_target_file` dialog.
+- [x] **v0.3.2 (#108)**: Linux CI runner compatibility updated to Ubuntu 22.04 LTS so `.deb` packages run without requiring newer GLIBC versions.
 
 ### Milestone 9 — macOS Native Support & Enhanced Print Spooling (`v0.4.0`)
 - [ ] **macOS Platform Bundle**: Build and sign universal macOS `.dmg` bundles.

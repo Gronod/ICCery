@@ -301,11 +301,12 @@ export function initPrinttarg() {
       if (radio.checked) bitDepth = parseInt(radio.value, 10);
     });
 
+    const dpi = tiffDpi && tiffDpi.value ? parseInt(tiffDpi.value, 10) || 300 : 300;
     const config = {
       instrument: instrumentSelect.value,
       page_size: pageSize,
       bit_depth: bitDepth,
-      dpi: 300, // Master high-resolution layout scaled automatically to device bounds
+      dpi: dpi,
       basename: stage1Basename,
       cwd: stage1Cwd,
     };

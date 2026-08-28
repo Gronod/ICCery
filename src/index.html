@@ -50,7 +50,7 @@
           <button class="step active" data-step="1">1. Generate Target</button>
           <button class="step" data-step="2">2. Print Layout</button>
           <button class="step" data-step="3">3. Measure Target</button>
-          <button class="step" data-step="4">4. Create Profile</button>
+          <button class="step" data-step="4" title="Complete measurement (Finish) before profiling">4. Create Profile</button>
           <button class="step" data-step="5">5. Verify</button>
         </nav>
       </aside>
@@ -176,6 +176,11 @@
                 <label><input type="radio" name="bitDepth" value="16"> 16-bit</label>
               </div>
             </div>
+
+            <div class="form-group">
+              <label for="tiffDpi">Target Resolution (DPI)</label>
+              <input type="number" id="tiffDpi" min="72" max="600" value="300" placeholder="300">
+            </div>
           </div>
 
           <button class="primary" id="btnCreateLayout">Create Layout (.ti2 + .tif)</button>
@@ -266,10 +271,10 @@
           <!-- Instrument & Hardware Port Selector -->
           <div class="form-container" style="margin-bottom: 16px;">
             <div class="form-group">
-              <label for="chartreadInstrumentSelect">Instrument / Hardware Port</label>
+              <label for="chartreadInstrumentSelect">Communication Port</label>
               <div class="input-row" style="display: flex; gap: 8px; align-items: center;">
                 <select id="chartreadInstrumentSelect" style="flex: 1;">
-                  <option value="">Auto-Detect (First Available Instrument)</option>
+                  <option value="">Auto (First available port)</option>
                 </select>
                 <button type="button" class="secondary" id="btnDetectInstruments" title="Detect connected instruments via instlist">↻ Detect</button>
               </div>
@@ -311,11 +316,11 @@
               <h3 style="margin: 0; font-size: 1rem;">Multi-Pass Target Averaging</h3>
               <span id="passCounterBadge" class="status-badge badge-idle">Pass 1 Complete</span>
             </div>
-            <p class="sub-label" style="margin-bottom: 12px;">You can measure additional printed copies to reduce measurement and printing noise before computing the profile.</p>
+            <p class="sub-label" style="margin-bottom: 12px;">Each successful sheet is saved as a separate _passN.ti3 file. Stage 4 stays locked until you finish. Measure extra copies to reduce noise, then finish to write the canonical .ti3.</p>
             <div id="passesList" class="passes-list" style="display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px;"></div>
             <div style="display: flex; gap: 8px;">
               <button type="button" class="secondary" id="btnMeasureAnotherSheet">➕ Measure Another Sheet</button>
-              <button type="button" class="primary" id="btnFinishAndAverage">✓ Average Passes &amp; Proceed →</button>
+              <button type="button" class="primary" id="btnFinishAndAverage" title="Complete measurement (Finish) before profiling">✓ Average Passes &amp; Proceed →</button>
             </div>
           </div>
 
