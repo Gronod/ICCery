@@ -2,7 +2,7 @@
 
 > Modern, cross-platform native desktop application for printer profiling, powered by ArgyllCMS.
 
-[![Release](https://img.shields.io/badge/version-v0.2.1-blue.svg)](https://git.i3omb.com/gronod/ICCery)
+[![Release](https://img.shields.io/badge/version-v0.3.2-blue.svg)](https://git.i3omb.com/gronod/ICCery)
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux-lightgrey.svg)](https://git.i3omb.com/gronod/ICCery)
 [![Framework](https://img.shields.io/badge/framework-Tauri%20v2%20%2B%20Rust-orange.svg)](https://tauri.app)
 [![License](https://img.shields.io/badge/license-Proprietary%20%2F%20EULA-blue.svg)](LICENCE.md)
@@ -14,11 +14,13 @@
 ## Key Features
 
 - 🪄 **Linear 5-Stage Wizard Workflow**:
-  1. **Stage 1 — Patch Generation (`targen`)**: Configure RGB (driver-managed) or CMYK (RIP-managed) patch sets with custom counts, quality presets, and neutral/grey axis boosting.
+  1. **Stage 1 — Patch Generation (`targen`)**: Configure RGB (driver-managed) or CMYK (RIP-managed) patch sets with custom counts, profiling presets, and neutral/grey axis boosting.
   2. **Stage 2 — Target Creation & Raw Printing (`printtarg`)**: Format patch targets for spectrophotometers (i1Pro, i1Pro2, ColorMunki, SpyderPrint). View high-resolution downscaled TIFF previews and print directly using native OS raw unmanaged pathways (Windows GDI uncorrected / Linux CUPS `raw`).
-  3. **Stage 3 — Interactive Measurement (`chartread`)**: Real-time instrument calibration prompts, interactive strip reading state machine, and a live swatch grid featuring instant per-patch CIEDE2000 ($\Delta E_{00}$) quality indicators.
+  3. **Stage 3 — Interactive Measurement (`chartread`) & Averaging (`average`)**: Instrument auto-detection (`instlist`), real-time calibration prompts, interactive strip reading state machine, live swatch grid with CIEDE2000 ($\Delta E_{00}$) quality indicators, and multi-pass sheet averaging for measurement noise reduction.
   4. **Stage 4 — Profile Calculation (`colprof`)**: Generate high-precision cLUT mathematical ICC/ICM profiles with configurable algorithm quality, descriptions, and copyright tagging.
-  5. **Stage 5 — Verification & 3D Gamut (`profcheck` + `iccgamut`)**: Comprehensive mathematical validation report (Peak, Average, RMS $\Delta E$) paired with an interactive 3D CIELAB color volume viewer and bundled sRGB reference wireframe comparison.
+  5. **Stage 5 — Verification & 3D Gamut (`profcheck` + `iccgamut`)**: Comprehensive mathematical validation report (Peak, Average, RMS $\Delta E$) paired with an interactive 3D CIELAB convex hull color volume viewer, touch controls, and bundled sRGB reference wireframe comparison.
+- 📋 **Profiling Presets**: One-click configuration presets (Standard RGB Photo, High-Gamut CMYK Proofing, Fast RGB Draft) with custom preset export/import and security validation.
+- 🐧 **glibc Compatibility**: Pre-built Linux packages compiled with Ubuntu 22.04 LTS compatibility for Debian/Ubuntu environments.
 - 🛡️ **Disk Artefact Gating**: Stepper navigation strictly verifies generated artefacts on disk (`.ti1`, `.ti2`, `.ti3`, `.icc`/`.icm`), preventing out-of-order execution while preserving backward navigation.
 - 🌐 **Platform-Aware**: Automatic handling of platform profile conventions (`.icm` on Windows, `.icc` on Linux/macOS) and native OS printer subsystems.
 - ⚖️ **Clean AGPL Boundary**: Complete isolation of AGPLv3 binaries via asynchronous tokio IPC process pipelines.
