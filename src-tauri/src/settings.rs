@@ -150,7 +150,24 @@ pub fn export_preset_json(preset: ProfilingPreset) -> Result<String, String> {
 
 #[tauri::command]
 pub fn import_preset_json(json: String) -> Result<ProfilingPreset, String> {
-    serde_json::from_str::<ProfilingPreset>(&json).map_err(|e| format!("Invalid preset format: {}", e))
+    let preset: ProfilingPreset = serde_json::from_str::<ProfilingPreset>(&json)
+        .map_err(|e| format!("Invalid preset format: {}", e))?;
+    
+    if preset.name.trim().is_empty() {
+        return Err("Preset name cannot be empty".to_string());
+    }
+    if preset.name.len() > 200 {
+        return Err("Preset name is too long (max 200 characters)".to_string());
+    }
+    if let Some(ref desc) = preset.description {
+        if desc.len() > 500 {
+            return Err("Preset description is too long (max 500 characters)".to_string());
+        }
+    }
+    if preset.dpi < 72 || preset.dpi > 2400 {
+        return Err("Preset DPI out of allowed range (72 - 2400)".to_string());
+    }
+    Ok(preset)
 }
 
 #[cfg(test)]
@@ -166,6 +183,22 @@ mod tests {
         assert_eq!(defaults[0].patch_count, 800);
         assert_eq!(defaults[1].colour_space, "cmyk");
         assert_eq!(defaults[1].patch_count, 1500);
+    }
+
+    #[test]
+    fn test_import_preset_validation_name_length() {
+        let mut preset = get_default_presets()[0].clone();
+        preset.name = "a".repeat(201);
+        let json = serde_json::to_string(&preset).unwrap();
+        assert!(import_preset_json(json).is_err());
+    }
+
+    #[test]
+    fn test_import_preset_validation_dpi() {
+        let mut preset = get_default_presets()[0].clone();
+        preset.dpi = 10;
+        let json = serde_json::to_string(&preset).unwrap();
+        assert!(import_preset_json(json).is_err());
     }
 
     #[test]

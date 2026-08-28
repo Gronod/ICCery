@@ -176,6 +176,11 @@
                 <label><input type="radio" name="bitDepth" value="16"> 16-bit</label>
               </div>
             </div>
+
+            <div class="form-group">
+              <label for="tiffDpi">Target Resolution (DPI)</label>
+              <input type="number" id="tiffDpi" min="72" max="600" value="300" placeholder="300">
+            </div>
           </div>
 
           <button class="primary" id="btnCreateLayout">Create Layout (.ti2 + .tif)</button>
