@@ -122,6 +122,51 @@ pub fn get_default_working_dir(app: AppHandle) -> Result<String, String> {
 }
 
 #[tauri::command]
+pub fn get_log_path(app: AppHandle) -> Result<String, String> {
+    let log_dir = app
+        .path()
+        .app_log_dir()
+        .map_err(|e| format!("Failed to resolve log dir: {}", e))?;
+    Ok(log_dir.join("iccery.log").to_string_lossy().to_string())
+}
+
+#[tauri::command]
+pub fn open_log_dir(app: AppHandle) -> Result<(), String> {
+    let log_dir = app
+        .path()
+        .app_log_dir()
+        .map_err(|e| format!("Failed to resolve log dir: {}", e))?;
+    
+    std::fs::create_dir_all(&log_dir).map_err(|e| format!("Failed to create log dir: {}", e))?;
+
+    #[cfg(target_os = "windows")]
+    {
+        std::process::Command::new("explorer")
+            .arg(&log_dir)
+            .spawn()
+            .map_err(|e| format!("Failed to open log folder: {}", e))?;
+    }
+
+    #[cfg(target_os = "macos")]
+    {
+        std::process::Command::new("open")
+            .arg(&log_dir)
+            .spawn()
+            .map_err(|e| format!("Failed to open log folder: {}", e))?;
+    }
+
+    #[cfg(target_os = "linux")]
+    {
+        std::process::Command::new("xdg-open")
+            .arg(&log_dir)
+            .spawn()
+            .map_err(|e| format!("Failed to open log folder: {}", e))?;
+    }
+
+    Ok(())
+}
+
+#[tauri::command]
 pub async fn select_target_file(
     app: AppHandle,
     default_dir: Option<String>,
