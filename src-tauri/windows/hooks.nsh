@@ -2,7 +2,9 @@ Var InstallArgyllUSB
 
 !macro NSIS_HOOK_PREINSTALL
   StrCpy $InstallArgyllUSB 0
-  ${If} ${IsUserAdmin}
+  UserInfo::GetAccountType
+  Pop $0
+  ${If} $0 == "Admin"
     MessageBox MB_YESNO|MB_ICONQUESTION \
       "Install ArgyllCMS USB instrument drivers?$\r$\n$\r$\nRequired for spectrophotometers (i1Pro, ColorMunki, SpyderPrint, etc.)." \
       IDNO skip_usb_prompt
