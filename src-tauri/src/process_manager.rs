@@ -43,6 +43,7 @@ impl ProcessManager {
         command.stdout(Stdio::piped());
         command.stderr(Stdio::piped());
         command.stdin(Stdio::piped());
+        command.env("ARGYLL_NOT_INTERACTIVE", "1");
 
         #[cfg(windows)]
         {
