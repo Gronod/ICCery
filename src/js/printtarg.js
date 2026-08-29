@@ -9,6 +9,8 @@ let stage1Cwd = "";
 let currentManifest = null;
 let discoveredPrinters = [];
 
+let updateLabelPreviewFn = null;
+
 /**
  * Called by targen.js (or app.js) after Stage 1 completes.
  * Passes the basename and working directory forward.
@@ -17,6 +19,9 @@ export function setStage1Result(basename, cwd) {
   stage1Basename = basename || wizardState.basename;
   stage1Cwd = cwd || wizardState.cwd;
   wizardState.setTarget(stage1Basename, stage1Cwd);
+  if (updateLabelPreviewFn) {
+    updateLabelPreviewFn();
+  }
 }
 
 export function initPrinttarg() {
@@ -33,6 +38,93 @@ export function initPrinttarg() {
   const tiffGallery = document.getElementById("tiffGallery");
   const galleryInfo = document.getElementById("galleryInfo");
   const galleryGrid = document.getElementById("galleryGrid");
+
+  // Target Label & Metadata elements (printtarg -d)
+  const targetMetadataPrinter = document.getElementById("targetMetadataPrinter");
+  const targetMetadataInkSet = document.getElementById("targetMetadataInkSet");
+  const targetMetadataDriverPaper = document.getElementById("targetMetadataDriverPaper");
+  const targetMetadataActualPaper = document.getElementById("targetMetadataActualPaper");
+  const targetLabelPreview = document.getElementById("targetLabelPreview");
+  const btnToggleLabelEdit = document.getElementById("btnToggleLabelEdit");
+
+  let isManualLabelOverride = false;
+
+  /**
+   * Format current local date & time into standard DD/MM/YYYY HH:MM format.
+   */
+  function formatTimestamp(d = new Date()) {
+    const pad = (n) => String(n).padStart(2, "0");
+    const day = pad(d.getDate());
+    const month = pad(d.getMonth() + 1);
+    const year = d.getFullYear();
+    const hours = pad(d.getHours());
+    const mins = pad(d.getMinutes());
+    return `${day}/${month}/${year} ${hours}:${mins}`;
+  }
+
+  /**
+   * Assemble dynamic label string from Stage 1 run name and metadata inputs.
+   */
+  function assembleTargetLabel() {
+    const parts = ["ICCery"];
+    const runName = stage1Basename || wizardState.basename || "";
+    if (runName.trim()) {
+      parts.push(runName.trim());
+    }
+
+    const printer = targetMetadataPrinter ? targetMetadataPrinter.value.trim() : "";
+    if (printer) parts.push(printer);
+
+    const inkSet = targetMetadataInkSet ? targetMetadataInkSet.value.trim() : "";
+    if (inkSet) parts.push(inkSet);
+
+    const driverPaper = targetMetadataDriverPaper ? targetMetadataDriverPaper.value.trim() : "";
+    if (driverPaper) parts.push(driverPaper);
+
+    const actualPaper = targetMetadataActualPaper ? targetMetadataActualPaper.value.trim() : "";
+    if (actualPaper) parts.push(actualPaper);
+
+    parts.push(formatTimestamp());
+    return parts.join(" - ");
+  }
+
+  function updateLabelPreview() {
+    if (!targetLabelPreview) return;
+    if (!isManualLabelOverride) {
+      targetLabelPreview.value = assembleTargetLabel();
+    }
+  }
+  updateLabelPreviewFn = updateLabelPreview;
+  updateLabelPreview();
+
+  // Bind input listeners for dynamic label assembly
+  [targetMetadataPrinter, targetMetadataInkSet, targetMetadataDriverPaper, targetMetadataActualPaper].forEach(input => {
+    if (input) {
+      input.addEventListener("input", () => {
+        updateLabelPreview();
+      });
+    }
+  });
+
+  // Toggle between auto-assembled preview and manual edit
+  if (btnToggleLabelEdit && targetLabelPreview) {
+    btnToggleLabelEdit.addEventListener("click", () => {
+      isManualLabelOverride = !isManualLabelOverride;
+      if (isManualLabelOverride) {
+        targetLabelPreview.removeAttribute("readonly");
+        targetLabelPreview.style.background = "var(--bg-color)";
+        targetLabelPreview.style.borderColor = "var(--accent-color, #3b82f6)";
+        btnToggleLabelEdit.textContent = "↺ Reset Auto";
+        targetLabelPreview.focus();
+      } else {
+        targetLabelPreview.setAttribute("readonly", true);
+        targetLabelPreview.style.background = "var(--bg-color)";
+        targetLabelPreview.style.borderColor = "var(--border-color, #333)";
+        btnToggleLabelEdit.textContent = "✏️ Edit Label";
+        updateLabelPreview();
+      }
+    });
+  }
 
   // Raw Printing UI elements
   const rawPrintPanel = document.getElementById("rawPrintPanel");
@@ -302,11 +394,19 @@ export function initPrinttarg() {
     });
 
     const dpi = tiffDpi && tiffDpi.value ? parseInt(tiffDpi.value, 10) || 300 : 300;
+    
+    // Obtain custom label string
+    let customLabel = null;
+    if (targetLabelPreview && targetLabelPreview.value.trim()) {
+      customLabel = targetLabelPreview.value.trim();
+    }
+
     const config = {
       instrument: instrumentSelect.value,
       page_size: pageSize,
       bit_depth: bitDepth,
       dpi: dpi,
+      custom_label: customLabel,
       basename: stage1Basename,
       cwd: stage1Cwd,
     };

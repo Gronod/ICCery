@@ -181,6 +181,43 @@
               <label for="tiffDpi">Target Resolution (DPI)</label>
               <input type="number" id="tiffDpi" min="72" max="600" value="300" placeholder="300">
             </div>
+
+            <!-- Target Label & Metadata (printtarg -d) -->
+            <div class="form-group" style="margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--border-color, #333);">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                <label style="margin: 0; font-weight: 600;">Target Label &amp; Metadata (Optional)</label>
+                <button type="button" class="secondary" id="btnToggleLabelEdit" style="font-size: 0.75rem; padding: 2px 8px;">✏️ Edit Label</button>
+              </div>
+              <p class="sub-label" style="margin-bottom: 10px;">Printed below test patches to identify hardware, ink, and media used for this profiling run.</p>
+
+              <div class="input-row" style="margin-bottom: 10px;">
+                <div>
+                  <label for="targetMetadataPrinter" class="sub-label">Printer Model</label>
+                  <input type="text" id="targetMetadataPrinter" placeholder="e.g. Epson SC-P900">
+                </div>
+                <div>
+                  <label for="targetMetadataInkSet" class="sub-label">Ink Set</label>
+                  <input type="text" id="targetMetadataInkSet" placeholder="e.g. UltraChrome PRO10">
+                </div>
+              </div>
+
+              <div class="input-row" style="margin-bottom: 10px;">
+                <div>
+                  <label for="targetMetadataDriverPaper" class="sub-label">Driver Paper Setting</label>
+                  <input type="text" id="targetMetadataDriverPaper" placeholder="e.g. Premium Luster Photo Paper">
+                </div>
+                <div>
+                  <label for="targetMetadataActualPaper" class="sub-label">Actual Paper Substrate</label>
+                  <input type="text" id="targetMetadataActualPaper" placeholder="e.g. Ilford Galerie Smooth Pearl 310">
+                </div>
+              </div>
+
+              <!-- Live Assembled Label Preview / Manual Override -->
+              <div>
+                <label for="targetLabelPreview" class="sub-label">Printed Page Label Preview</label>
+                <input type="text" id="targetLabelPreview" placeholder="ICCery - Target Label Preview" readonly style="font-family: monospace; font-size: 0.85rem;">
+              </div>
+            </div>
           </div>
 
           <button class="primary" id="btnCreateLayout">Create Layout (.ti2 + .tif)</button>
