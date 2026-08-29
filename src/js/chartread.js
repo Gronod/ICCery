@@ -94,22 +94,24 @@ export function initChartread() {
       btnDetectInstruments.textContent = "Detecting...";
       setPrompt("Querying connected spectrophotometers and colorimeters via instlist...");
 
-      const detected = [];
+      let stdoutAccumulator = "";
+      const regexDetected = [];
 
       try {
         const unlistenStdout = await listen("process:stdout", (event) => {
           if (event.payload.id !== "instlist" || !event.payload.line) return;
-          const line = event.payload.line.trim();
+          const line = event.payload.line;
+          stdoutAccumulator += line + "\n";
 
-          // Matches Argyll instlist output e.g. "1: 'i1Pro' on 'USB'" or "1: 'ColorMunki'" or "1 = 'i1Display'"
+          // Legacy regex line matching fallback
           const KNOWN_INST_TOKENS = /i1|ColorMunki|Spyder|spectro|Display|Huey|DTP|SpectroScan|Smile|Klein/i;
-          const match = line.match(/^(\d+)[\s:=]+'?([^'\n]+)'?(?:\s+on\s+'?([^'\n]+)'?)?/i);
+          const match = line.trim().match(/^(\d+)[\s:=]+'?([^'\n]+)'?(?:\s+on\s+'?([^'\n]+)'?)?/i);
           if (match) {
             const index = match[1];
             const name = match[2].trim();
             const port = match[3] ? match[3].trim() : "";
             if (KNOWN_INST_TOKENS.test(name) || port.length > 0) {
-              detected.push({ index, name, port });
+              regexDetected.push({ index, name, port });
             }
           }
         });
@@ -123,16 +125,35 @@ export function initChartread() {
 
           instrumentSelect.innerHTML = `<option value="">Auto (First available port)</option>`;
 
-          if (detected.length > 0) {
-            detected.forEach((inst) => {
+          let devicesList = [];
+
+          // Try parsing JSON output from instlist
+          try {
+            const trimmed = stdoutAccumulator.trim();
+            const parsed = JSON.parse(trimmed);
+            if (parsed && Array.isArray(parsed.devices)) {
+              devicesList = parsed.devices.map(d => ({
+                index: String(d.port || ""),
+                name: d.name || d.type || "Instrument",
+                type: d.type || "",
+                port: String(d.port || ""),
+              }));
+            }
+          } catch (_) {
+            // Fall back to regex parsed items if not JSON
+            devicesList = regexDetected;
+          }
+
+          if (devicesList.length > 0) {
+            devicesList.forEach((inst) => {
               const opt = document.createElement("option");
-              // Do not pass instlist ordinal as -c comm port; use empty value for auto-port (#111)
-              opt.value = "";
-              opt.textContent = `${inst.name}${inst.port ? ` on ${inst.port}` : ""}`;
+              // Port value for -c switch. If port is 1 or auto, empty string leaves -c omitted for default port
+              opt.value = inst.port && inst.port !== "1" ? inst.port : "";
+              opt.textContent = `${inst.type || inst.name}${inst.port ? ` (Port ${inst.port})` : ""}`;
               instrumentSelect.appendChild(opt);
             });
             instrumentSelect.value = "";
-            setPrompt(`Found ${detected.length} instrument(s): ${detected.map(d => d.name).join(", ")}`);
+            setPrompt(`Found ${devicesList.length} instrument(s): ${devicesList.map(d => d.type || d.name).join(", ")}`);
           } else {
             setPrompt("No instruments found via instlist. Ensure USB cable is plugged in.");
           }
@@ -164,6 +185,8 @@ export function initChartread() {
         btnStartRead.classList.remove("hidden");
         break;
       case STATE.CALIBRATING:
+        btnCalibrate.disabled = false;
+        btnCalibrate.textContent = "✓ Calibrate";
         btnCalibrate.classList.remove("hidden");
         btnCancel.classList.remove("hidden");
         break;
@@ -243,21 +266,26 @@ export function initChartread() {
           // Parse prompts for state transitions
           const lineLower = line.toLowerCase();
 
-          if (lineLower.includes("calibrat") && lineLower.includes("place")) {
+          if (
+            (lineLower.includes("place") && (lineLower.includes("reference") || lineLower.includes("white") || lineLower.includes("calibrat"))) ||
+            lineLower.includes("hit any key to continue") ||
+            lineLower.includes("calibration")
+          ) {
             setState(STATE.CALIBRATING);
-            setPrompt(line);
-          } else if (lineLower.includes("hit") && lineLower.includes("read") && lineLower.includes("strip")) {
+            setPrompt(line.trim());
+          } else if (
+            (lineLower.includes("hit") && lineLower.includes("read") && lineLower.includes("strip")) ||
+            lineLower.includes("ready to read") ||
+            (lineLower.includes("read") && lineLower.includes("strip") && lineLower.includes("key"))
+          ) {
             setState(STATE.AWAITING_STRIP);
-            setPrompt(line);
-          } else if (lineLower.includes("ready to read")) {
-            setState(STATE.AWAITING_STRIP);
-            setPrompt(line);
+            setPrompt(line.trim());
           } else if (lineLower.includes("reading strip") || lineLower.includes("processing")) {
             setState(STATE.READING);
-            setPrompt(line);
+            setPrompt(line.trim());
           } else if (lineLower.includes("error") || lineLower.includes("too fast") || lineLower.includes("too slow") || lineLower.includes("misread")) {
             setState(STATE.ERROR);
-            setPrompt("⚠️ " + line);
+            setPrompt("⚠️ " + line.trim());
           }
         });
 
@@ -423,8 +451,16 @@ export function initChartread() {
   if (btnCalibrate) {
     btnCalibrate.addEventListener("click", async () => {
       try {
+        btnCalibrate.disabled = true;
+        btnCalibrate.textContent = "⏳ Calibrating...";
+        setPrompt("Sending calibration command to instrument...");
         await invoke("send_stdin", { id: currentProcessId, input: " \n" });
-      } catch (e) { console.error("send_stdin error:", e); }
+      } catch (e) {
+        console.error("send_stdin error:", e);
+        btnCalibrate.disabled = false;
+        btnCalibrate.textContent = "✓ Calibrate";
+        setPrompt(`Failed to send calibration signal: ${e}`);
+      }
     });
   }
 
