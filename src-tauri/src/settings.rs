@@ -24,6 +24,7 @@ pub struct ProfilingPreset {
 pub struct AppSettings {
     pub argyll_binary_dir: Option<String>,
     pub default_instrument: Option<String>,
+    pub log_level: Option<String>,
     #[serde(default)]
     pub custom_presets: Vec<ProfilingPreset>,
 }

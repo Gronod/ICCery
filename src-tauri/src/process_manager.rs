@@ -51,6 +51,7 @@ impl ProcessManager {
             command.creation_flags(CREATE_NO_WINDOW);
         }
 
+        log::info!(target: "subprocess", "Spawning process '{id}': {binary} {:?}", args);
         match command.spawn() {
             Ok(mut child) => {
                 let stdout = child.stdout.take().expect("Failed to open stdout");
@@ -67,6 +68,7 @@ impl ProcessManager {
                             let json_str = line[JSON_ROW_PREFIX.len()..].to_string();
                             crate::events::emit_json_row(&app_clone, &id_clone, json_str);
                         } else {
+                            log::info!(target: "subprocess", "[{id_clone}] {line}");
                             emit_stdout(&app_clone, &id_clone, line);
                         }
                     }
@@ -77,6 +79,7 @@ impl ProcessManager {
                 tokio::spawn(async move {
                     let mut reader = BufReader::new(stderr).lines();
                     while let Ok(Some(line)) = reader.next_line().await {
+                        log::warn!(target: "subprocess", "[{id_clone2}] [stderr] {line}");
                         emit_stderr(&app_clone2, &id_clone2, line);
                     }
                 });
@@ -112,6 +115,8 @@ impl ProcessManager {
                         }
                     };
 
+                    log::info!(target: "subprocess", "Process '{id_clone_exit}' exited with code {exit_code}");
+
                     // Reap child from process manager maps upon exit
                     {
                         let mut stdins = stdins_clone.lock().await;
@@ -126,6 +131,7 @@ impl ProcessManager {
                 Ok(())
             }
             Err(e) => {
+                log::error!(target: "subprocess", "Failed to spawn '{id}': {e}");
                 emit_error(&app, &id, e.to_string());
                 Err(e.to_string())
             }
