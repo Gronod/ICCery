@@ -33,6 +33,8 @@ pub fn run() {
             commands::get_default_working_dir,
             commands::get_log_path,
             commands::open_log_dir,
+            commands::parse_ti2_header,
+            commands::select_existing_target,
             commands::select_target_file,
             commands::select_directory,
             commands::send_stdin,
