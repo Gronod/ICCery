@@ -9,12 +9,38 @@ let stage2Basename = "";
 let stage2Cwd = "";
 
 /**
- * Called by printtarg.js after Stage 2 completes.
+ * Called by printtarg.js after Stage 2 completes, or when resuming from .ti2.
  */
 export function setStage2Result(basename, cwd) {
   stage2Basename = basename || wizardState.basename;
   stage2Cwd = cwd || wizardState.cwd;
   wizardState.setTarget(stage2Basename, stage2Cwd);
+  populateStage3TargetContext();
+}
+
+export function populateStage3TargetContext(metadata) {
+  const banner = document.getElementById("stage3LoadedTargetBanner");
+  const basenameEl = document.getElementById("stage3TargetBasename");
+  const metaEl = document.getElementById("stage3TargetMeta");
+  const badgeEl = document.getElementById("stage3TargetBadge");
+
+  const basename = (metadata && metadata.basename) || stage2Basename || wizardState.basename;
+  const cwd = (metadata && metadata.cwd) || stage2Cwd || wizardState.cwd;
+
+  if (basename && banner) {
+    banner.classList.remove("hidden");
+    if (basenameEl) basenameEl.textContent = `${basename}.ti2`;
+    if (metaEl) {
+      const parts = [];
+      if (metadata && metadata.patch_count) parts.push(`${metadata.patch_count} patches`);
+      if (metadata && metadata.instrument) parts.push(`Instrument: ${metadata.instrument}`);
+      if (cwd) parts.push(`Dir: ${cwd}`);
+      metaEl.textContent = parts.join(" • ");
+    }
+    if (badgeEl) {
+      badgeEl.textContent = metadata ? "Resumed from .ti2" : "Generated";
+    }
+  }
 }
 
 // State machine states

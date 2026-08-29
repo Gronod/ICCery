@@ -166,6 +166,101 @@ pub fn open_log_dir(app: AppHandle) -> Result<(), String> {
     Ok(())
 }
 
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct Ti2Metadata {
+    pub basename: String,
+    pub cwd: String,
+    pub instrument: Option<String>,
+    pub patch_count: Option<u32>,
+    pub colorant_count: Option<u32>,
+    pub pages: Option<u32>,
+    pub has_ti1: bool,
+    pub has_ti2: bool,
+}
+
+#[tauri::command]
+pub fn parse_ti2_header(app: AppHandle, file_path: String) -> Result<Ti2Metadata, String> {
+    let path = std::path::PathBuf::from(&file_path);
+    if !path.exists() {
+        return Err(format!("File does not exist: {}", file_path));
+    }
+
+    let content = std::fs::read_to_string(&path)
+        .map_err(|e| format!("Failed to read target file: {}", e))?;
+
+    let parent = path.parent().unwrap_or_else(|| std::path::Path::new(""));
+    let file_stem = path.file_stem().and_then(|s| s.to_str()).unwrap_or("");
+    let cwd = parent.to_string_lossy().to_string();
+    let basename = file_stem.to_string();
+
+    let ti1_path = parent.join(format!("{}.ti1", basename));
+    let ti2_path = parent.join(format!("{}.ti2", basename));
+
+    let mut instrument: Option<String> = None;
+    let mut patch_count: Option<u32> = None;
+    let mut colorant_count: Option<u32> = None;
+    let mut pages: Option<u32> = None;
+
+    for line in content.lines() {
+        let trimmed = line.trim();
+        if trimmed.starts_with("TARGET_INSTRUMENT") {
+            let parts: Vec<&str> = trimmed.split_whitespace().collect();
+            if parts.len() >= 2 {
+                instrument = Some(parts[1].trim_matches('"').to_string());
+            }
+        } else if trimmed.starts_with("NUMBER_OF_FIELDS") {
+            let parts: Vec<&str> = trimmed.split_whitespace().collect();
+            if parts.len() >= 2 {
+                colorant_count = parts[1].parse::<u32>().ok();
+            }
+        } else if trimmed.starts_with("NUMBER_OF_SETS") {
+            let parts: Vec<&str> = trimmed.split_whitespace().collect();
+            if parts.len() >= 2 {
+                patch_count = parts[1].parse::<u32>().ok();
+            }
+        } else if trimmed.starts_with("NUMBER_OF_PAGES") || trimmed.starts_with("PAGES") {
+            let parts: Vec<&str> = trimmed.split_whitespace().collect();
+            if parts.len() >= 2 {
+                pages = parts[1].parse::<u32>().ok();
+            }
+        }
+    }
+
+    Ok(Ti2Metadata {
+        basename,
+        cwd,
+        instrument,
+        patch_count,
+        colorant_count,
+        pages,
+        has_ti1: ti1_path.exists(),
+        has_ti2: ti2_path.exists(),
+    })
+}
+
+#[tauri::command]
+pub async fn select_existing_target(
+    app: AppHandle,
+    default_dir: Option<String>,
+) -> Result<Option<String>, String> {
+    use tauri_plugin_dialog::DialogExt;
+
+    let mut builder = app.dialog().file().add_filter("ArgyllCMS Target Files (.ti1, .ti2)", &["ti1", "ti2"]);
+    if let Some(ref dir) = default_dir {
+        if !dir.trim().is_empty() {
+            builder = builder.set_directory(std::path::PathBuf::from(dir));
+        }
+    }
+
+    let (tx, rx) = tokio::sync::oneshot::channel();
+    builder.pick_file(move |file_path| {
+        let res = file_path.map(|p| p.to_string());
+        let _ = tx.send(res);
+    });
+
+    rx.await.map_err(|e| format!("Dialog channel error: {}", e))
+}
+
 #[tauri::command]
 pub async fn select_target_file(
     app: AppHandle,

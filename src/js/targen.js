@@ -1,6 +1,7 @@
 const { invoke } = window.__TAURI__.core;
 const { listen } = window.__TAURI__.event;
 import { setStage1Result } from './printtarg.js';
+import { populateStage3TargetContext } from './chartread.js';
 import { wizardState } from './state.js';
 
 export function initTargen() {
@@ -12,6 +13,7 @@ export function initTargen() {
   const targetBasename = document.getElementById("targetBasename");
   const selectedPathDisplay = document.getElementById("selectedPathDisplay");
   const btnBrowse = document.getElementById("btnBrowse");
+  const btnOpenExisting = document.getElementById("btnOpenExisting");
   const btnGenerate = document.getElementById("btnGenerate");
   const logContainer = document.getElementById("targenLogContainer");
   const logPre = document.getElementById("targenLog");
@@ -100,9 +102,60 @@ export function initTargen() {
           }
           updateGenerateButton();
         }
-      } catch (err)
- {
+      } catch (err) {
         console.error("Failed to open file dialog:", err);
+      }
+    });
+  }
+
+  // Open existing target (.ti1 or .ti2)
+  if (btnOpenExisting) {
+    btnOpenExisting.addEventListener("click", async () => {
+      try {
+        const filePath = await invoke("select_existing_target", {
+          defaultDir: currentWorkingDir || null,
+        });
+
+        if (filePath) {
+          const isWindows = filePath.includes('\\');
+          const sep = isWindows ? '\\' : '/';
+          const parts = filePath.split(sep);
+          const fileName = parts.pop();
+          const isTi2 = fileName.toLowerCase().endsWith('.ti2');
+
+          currentWorkingDir = parts.join(sep);
+          const basename = fileName.replace(/\.(ti1|ti2)$/i, '');
+
+          if (targetBasename) {
+            targetBasename.value = basename;
+          }
+          if (selectedPathDisplay) {
+            selectedPathDisplay.textContent = `Directory: ${currentWorkingDir}`;
+          }
+          updateGenerateButton();
+
+          if (isTi2) {
+            // Parse .ti2 metadata and jump straight to Stage 3
+            try {
+              const meta = await invoke("parse_ti2_header", { filePath });
+              await wizardState.setTarget(meta.basename, meta.cwd);
+              populateStage3TargetContext(meta);
+              wizardState.navigateToStage(3);
+            } catch (parseErr) {
+              console.warn("Could not parse .ti2 header, navigating with basic target:", parseErr);
+              await wizardState.setTarget(basename, currentWorkingDir);
+              populateStage3TargetContext({ basename, cwd: currentWorkingDir });
+              wizardState.navigateToStage(3);
+            }
+          } else {
+            // .ti1 selected -> advance to Stage 2 (Print Layout)
+            await wizardState.setTarget(basename, currentWorkingDir);
+            setStage1Result(basename, currentWorkingDir);
+            wizardState.navigateToStage(2);
+          }
+        }
+      } catch (err) {
+        console.error("Failed to open existing target:", err);
       }
     });
   }
