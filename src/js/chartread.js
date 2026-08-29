@@ -23,6 +23,8 @@ const STATE = {
   CALIBRATING: "CALIBRATING",
   AWAITING_STRIP: "AWAITING_STRIP",
   READING: "READING",
+  WARNING: "WARNING",
+  PROMPT_CONTINUE: "PROMPT_CONTINUE",
   ERROR: "ERROR",
   FINISHED: "FINISHED",
 };
@@ -36,6 +38,7 @@ const recordedPasses = [];
 export function initChartread() {
   const btnStartRead = document.getElementById("btnStartRead");
   const btnCalibrate = document.getElementById("btnCalibrate");
+  const btnAccept = document.getElementById("btnAccept");
   const btnRetry = document.getElementById("btnRetry");
   const btnSkip = document.getElementById("btnSkip");
   const btnCancel = document.getElementById("btnCancel");
@@ -174,39 +177,71 @@ export function initChartread() {
     if (stateLabel) stateLabel.textContent = newState;
 
     // Show/hide buttons based on state
-    btnCalibrate.classList.add("hidden");
-    btnRetry.classList.add("hidden");
-    btnSkip.classList.add("hidden");
-    btnCancel.classList.add("hidden");
-    btnStartRead.classList.add("hidden");
+    if (btnCalibrate) btnCalibrate.classList.add("hidden");
+    if (btnAccept) btnAccept.classList.add("hidden");
+    if (btnRetry) btnRetry.classList.add("hidden");
+    if (btnSkip) btnSkip.classList.add("hidden");
+    if (btnCancel) btnCancel.classList.add("hidden");
+    if (btnStartRead) btnStartRead.classList.add("hidden");
 
     switch (newState) {
       case STATE.IDLE:
-        btnStartRead.classList.remove("hidden");
+        if (btnStartRead) btnStartRead.classList.remove("hidden");
         break;
       case STATE.CALIBRATING:
-        btnCalibrate.disabled = false;
-        btnCalibrate.textContent = "✓ Calibrate";
-        btnCalibrate.classList.remove("hidden");
-        btnCancel.classList.remove("hidden");
+        if (btnCalibrate) {
+          btnCalibrate.disabled = false;
+          btnCalibrate.textContent = "✓ Calibrate";
+          btnCalibrate.classList.remove("hidden");
+        }
+        if (btnCancel) btnCancel.classList.remove("hidden");
         break;
       case STATE.AWAITING_STRIP:
-        btnRetry.classList.remove("hidden");
-        btnSkip.classList.remove("hidden");
-        btnCancel.classList.remove("hidden");
+        if (btnRetry) {
+          btnRetry.disabled = false;
+          btnRetry.textContent = "↻ Retry Strip";
+          btnRetry.classList.remove("hidden");
+        }
+        if (btnSkip) btnSkip.classList.remove("hidden");
+        if (btnCancel) btnCancel.classList.remove("hidden");
         break;
       case STATE.READING:
-        btnCancel.classList.remove("hidden");
+        if (btnCancel) btnCancel.classList.remove("hidden");
+        break;
+      case STATE.WARNING:
+        if (btnAccept) {
+          btnAccept.disabled = false;
+          btnAccept.textContent = "✓ Accept Strip";
+          btnAccept.classList.remove("hidden");
+        }
+        if (btnRetry) {
+          btnRetry.disabled = false;
+          btnRetry.textContent = "↻ Retry Strip";
+          btnRetry.classList.remove("hidden");
+        }
+        if (btnCancel) btnCancel.classList.remove("hidden");
+        break;
+      case STATE.PROMPT_CONTINUE:
+        if (btnAccept) {
+          btnAccept.disabled = false;
+          btnAccept.textContent = "✓ Continue";
+          btnAccept.classList.remove("hidden");
+        }
+        if (btnCancel) btnCancel.classList.remove("hidden");
         break;
       case STATE.ERROR:
-        btnRetry.classList.remove("hidden");
-        btnSkip.classList.remove("hidden");
-        btnCancel.classList.remove("hidden");
+        if (btnRetry) {
+          btnRetry.disabled = false;
+          btnRetry.textContent = "↻ Retry Strip";
+          btnRetry.classList.remove("hidden");
+        }
+        if (btnSkip) btnSkip.classList.remove("hidden");
+        if (btnCancel) btnCancel.classList.remove("hidden");
         break;
       case STATE.FINISHED:
         // After a recorded pass, further sheets go through "Measure Another Sheet"
         if (recordedPasses.length === 0) {
-          btnStartRead.classList.remove("hidden");
+          if (btnStartRead) btnStartRead.classList.remove("hidden");
         }
         break;
     }
@@ -267,7 +302,29 @@ export function initChartread() {
           const lineLower = line.toLowerCase();
 
           if (
-            (lineLower.includes("place") && (lineLower.includes("reference") || lineLower.includes("white") || lineLower.includes("calibrat"))) ||
+            lineLower.includes("(warning)") ||
+            lineLower.includes("use it anyway") ||
+            lineLower.includes("seem to have read strip pass") ||
+            lineLower.includes("unexpected response") ||
+            lineLower.includes("hit return to use it anyway")
+          ) {
+            const previousPrompt = promptText ? promptText.textContent.trim() : "";
+            const isContinuationPrompt = lineLower.includes("hit return to use it anyway") || lineLower.includes("use it anyway");
+            setState(STATE.WARNING);
+            if (currentState === STATE.WARNING && isContinuationPrompt && previousPrompt && !previousPrompt.includes(line.trim())) {
+              setPrompt(`${previousPrompt}\n${line.trim()}`);
+            } else {
+              setPrompt(line.trim());
+            }
+          } else if (
+            lineLower.includes("place sheet") ||
+            lineLower.includes("remove previous sheet") ||
+            (lineLower.includes("hit return to continue") && !lineLower.includes("use it anyway"))
+          ) {
+            setState(STATE.PROMPT_CONTINUE);
+            setPrompt(line.trim());
+          } else if (
+            (lineLower.includes("place") && (lineLower.includes("reference") || lineLower.includes("white") || lineLower.includes("calibrat") || lineLower.includes("standard"))) ||
             lineLower.includes("hit any key to continue") ||
             lineLower.includes("calibration")
           ) {
@@ -283,7 +340,7 @@ export function initChartread() {
           } else if (lineLower.includes("reading strip") || lineLower.includes("processing")) {
             setState(STATE.READING);
             setPrompt(line.trim());
-          } else if (lineLower.includes("error") || lineLower.includes("too fast") || lineLower.includes("too slow") || lineLower.includes("misread")) {
+          } else if (lineLower.includes("error") || lineLower.includes("too fast") || lineLower.includes("too slow") || lineLower.includes("misread") || lineLower.includes("failed to read")) {
             setState(STATE.ERROR);
             setPrompt("⚠️ " + line.trim());
           }
@@ -460,6 +517,22 @@ export function initChartread() {
         btnCalibrate.disabled = false;
         btnCalibrate.textContent = "✓ Calibrate";
         setPrompt(`Failed to send calibration signal: ${e}`);
+      }
+    });
+  }
+
+  // Accept / Continue button — sends newline ("\n")
+  if (btnAccept) {
+    btnAccept.addEventListener("click", async () => {
+      try {
+        btnAccept.disabled = true;
+        await invoke("send_stdin", { id: currentProcessId, input: "\n" });
+        setState(STATE.READING);
+        setPrompt("Accepted. Processing...");
+      } catch (e) {
+        console.error("send_stdin error:", e);
+        btnAccept.disabled = false;
+        setPrompt(`Failed to send accept signal: ${e}`);
       }
     });
   }
