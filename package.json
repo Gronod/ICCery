@@ -1,7 +1,7 @@
 {
   "name": "iccery",
   "private": true,
-  "version": "0.3.6",
+  "version": "0.5.0",
   "type": "module",
   "scripts": {
     "fetch-argyll": "node scripts/fetch-argyll.mjs",
