@@ -163,9 +163,13 @@ Var MappedDrivesList
 !macroend
 
 !macro NSIS_HOOK_PREUNINSTALL
+  StrCpy $MappedDrivesList ""
+  !insertmacro ScanAndMapShellFolderDrives
 !macroend
 
 !macro NSIS_HOOK_POSTUNINSTALL
+  !insertmacro CleanupTemporaryMappedDrives
+
   ; Do not auto-run ArgyllCMS_uninstall_USB.exe. Driver removal is a
   ; separate admin action and can break other Argyll-based apps.
 !macroend
