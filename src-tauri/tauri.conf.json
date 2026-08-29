@@ -36,6 +36,9 @@
       "argyll/**/*"
     ],
     "windows": {
+      "webviewInstallMode": {
+        "type": "skip"
+      },
       "wix": {
         "bannerPath": "icons/wix-banner.bmp",
         "dialogImagePath": "icons/wix-dialog.bmp"
