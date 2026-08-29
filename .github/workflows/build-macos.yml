@@ -45,14 +45,19 @@ jobs:
       - name: Rust Cache
         uses: Swatinem/rust-cache@v2
 
-      - name: Check sidecar binaries
-        run: |
-          if [ ! -d "src-tauri/argyll/${{ matrix.platform.binary_dir }}" ]; then
-            echo "Warning: macOS ArgyllCMS binaries not found. Please ensure they are downloaded/committed to src-tauri/argyll/${{ matrix.platform.binary_dir }} before release."
-          fi
-
       - name: Install Node dependencies
         run: npm ci
+
+      - name: Fetch ArgyllCMS binaries
+        env:
+          ARGYLL_RELEASE_TAG: ${{ vars.ARGYLL_RELEASE_TAG }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npm run fetch-argyll -- --force --platform ${{ matrix.platform.binary_dir }}
+
+      - name: Verify sidecar binaries
+        run: |
+          test -x "src-tauri/argyll/${{ matrix.platform.binary_dir }}/instlist"
+          test -x "src-tauri/argyll/${{ matrix.platform.binary_dir }}/targen"
 
       - name: Set Release Environment
         id: set_env

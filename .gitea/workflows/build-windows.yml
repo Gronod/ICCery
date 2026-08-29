@@ -38,15 +38,31 @@ jobs:
         with:
           workspaces: "src-tauri -> target"
 
-      - name: Check sidecar binaries
-        shell: powershell
-        run: |
-          if (!(Test-Path "src-tauri\argyll\windows-x86_64\argyll-instlist.exe")) {
-            Write-Host "Warning: Windows ArgyllCMS binaries not found. Please ensure they are downloaded/committed to src-tauri/argyll/windows-x86_64 before release."
-          }
-
       - name: Install Node dependencies
         run: npm ci
+
+      - name: Fetch ArgyllCMS binaries
+        shell: powershell
+        env:
+          ARGYLL_SERVER_URL: ${{ github.server_url }}
+          ARGYLL_RELEASE_TAG: ${{ vars.ARGYLL_RELEASE_TAG }}
+          GITEA_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npm run fetch-argyll -- --force --platform windows-x86_64 --server "${{ github.server_url }}"
+
+      - name: Verify sidecar binaries
+        shell: powershell
+        run: |
+          $required = @(
+            "src-tauri\argyll\windows-x86_64\instlist.exe",
+            "src-tauri\argyll\windows-x86_64\targen.exe",
+            "src-tauri\argyll\windows-x86_64\chartread.exe",
+            "src-tauri\argyll\windows-x86_64\colprof.exe",
+            "src-tauri\argyll\usb\ArgyllCMS_install_USB.exe",
+            "src-tauri\argyll\usb\ArgyllCMS.inf"
+          )
+          foreach ($p in $required) {
+            if (!(Test-Path $p)) { throw "Missing required ArgyllCMS file: $p" }
+          }
 
       - name: Set Release Environment
         id: set_env
@@ -57,14 +73,6 @@ jobs:
           "TAG=$TAG" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
           "SHORT_SHA=$SHORT_SHA" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
           "PREFIX=ICCery_${TAG}-${SHORT_SHA}-windows-x86_64" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-
-      - name: Prepare platform-specific resources
-        shell: powershell
-        run: |
-          if (Test-Path "src-tauri\argyll\linux-x86_64") {
-            Write-Host "Removing Linux ArgyllCMS binaries to avoid bundling them in Windows installer..."
-            Remove-Item -Recurse -Force "src-tauri\argyll\linux-x86_64"
-          }
 
       - name: Build Tauri App
         run: npm run tauri build -- -v

@@ -67,10 +67,19 @@ jobs:
           echo "SHORT_SHA=${SHORT_SHA}" >> $GITHUB_ENV
           echo "PREFIX=ICCery_${TAG}-${SHORT_SHA}-linux-x86_64" >> $GITHUB_ENV
 
-      - name: Prepare platform-specific resources
+      - name: Fetch ArgyllCMS binaries
+        env:
+          ARGYLL_SERVER_URL: ${{ github.server_url }}
+          ARGYLL_RELEASE_TAG: ${{ vars.ARGYLL_RELEASE_TAG }}
+          GITEA_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npm run fetch-argyll -- --force --platform linux-x86_64 --server "${{ github.server_url }}"
+
+      - name: Verify sidecar binaries
         run: |
-          echo "Removing Windows ArgyllCMS binaries to avoid bundling them in Linux packages..."
-          rm -rf src-tauri/argyll/windows-x86_64
+          test -x src-tauri/argyll/linux-x86_64/instlist
+          test -x src-tauri/argyll/linux-x86_64/targen
+          test -x src-tauri/argyll/linux-x86_64/chartread
+          test -x src-tauri/argyll/linux-x86_64/colprof
 
       - name: Build Tauri App
         env:
