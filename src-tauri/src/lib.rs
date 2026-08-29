@@ -8,12 +8,33 @@ mod settings;
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
+        .plugin(
+            tauri_plugin_log::Builder::default()
+                .targets([
+                    tauri_plugin_log::Target::new(tauri_plugin_log::TargetKind::LogDir {
+                        file_name: Some("iccery".into()),
+                    }),
+                    tauri_plugin_log::Target::new(tauri_plugin_log::TargetKind::Stdout),
+                    tauri_plugin_log::Target::new(tauri_plugin_log::TargetKind::Webview),
+                ])
+                .level(if cfg!(debug_assertions) {
+                    log::LevelFilter::Debug
+                } else {
+                    log::LevelFilter::Info
+                })
+                .rotation_strategy(tauri_plugin_log::RotationStrategy::KeepOne)
+                .build(),
+        )
         .manage(process_manager::ProcessManager::new())
         .manage(print::PrinterDevModeStore::new())
         .invoke_handler(tauri::generate_handler![
             commands::spawn_process,
             commands::get_app_info,
             commands::get_default_working_dir,
+            commands::get_log_path,
+            commands::open_log_dir,
+            commands::parse_ti2_header,
+            commands::select_existing_target,
             commands::select_target_file,
             commands::select_directory,
             commands::send_stdin,

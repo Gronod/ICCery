@@ -122,6 +122,146 @@ pub fn get_default_working_dir(app: AppHandle) -> Result<String, String> {
 }
 
 #[tauri::command]
+pub fn get_log_path(app: AppHandle) -> Result<String, String> {
+    let log_dir = app
+        .path()
+        .app_log_dir()
+        .map_err(|e| format!("Failed to resolve log dir: {}", e))?;
+    Ok(log_dir.join("iccery.log").to_string_lossy().to_string())
+}
+
+#[tauri::command]
+pub fn open_log_dir(app: AppHandle) -> Result<(), String> {
+    let log_dir = app
+        .path()
+        .app_log_dir()
+        .map_err(|e| format!("Failed to resolve log dir: {}", e))?;
+    
+    std::fs::create_dir_all(&log_dir).map_err(|e| format!("Failed to create log dir: {}", e))?;
+
+    #[cfg(target_os = "windows")]
+    {
+        std::process::Command::new("explorer")
+            .arg(&log_dir)
+            .spawn()
+            .map_err(|e| format!("Failed to open log folder: {}", e))?;
+    }
+
+    #[cfg(target_os = "macos")]
+    {
+        std::process::Command::new("open")
+            .arg(&log_dir)
+            .spawn()
+            .map_err(|e| format!("Failed to open log folder: {}", e))?;
+    }
+
+    #[cfg(target_os = "linux")]
+    {
+        std::process::Command::new("xdg-open")
+            .arg(&log_dir)
+            .spawn()
+            .map_err(|e| format!("Failed to open log folder: {}", e))?;
+    }
+
+    Ok(())
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct Ti2Metadata {
+    pub basename: String,
+    pub cwd: String,
+    pub instrument: Option<String>,
+    pub patch_count: Option<u32>,
+    pub colorant_count: Option<u32>,
+    pub pages: Option<u32>,
+    pub has_ti1: bool,
+    pub has_ti2: bool,
+}
+
+#[tauri::command]
+pub fn parse_ti2_header(app: AppHandle, file_path: String) -> Result<Ti2Metadata, String> {
+    let path = std::path::PathBuf::from(&file_path);
+    if !path.exists() {
+        return Err(format!("File does not exist: {}", file_path));
+    }
+
+    let content = std::fs::read_to_string(&path)
+        .map_err(|e| format!("Failed to read target file: {}", e))?;
+
+    let parent = path.parent().unwrap_or_else(|| std::path::Path::new(""));
+    let file_stem = path.file_stem().and_then(|s| s.to_str()).unwrap_or("");
+    let cwd = parent.to_string_lossy().to_string();
+    let basename = file_stem.to_string();
+
+    let ti1_path = parent.join(format!("{}.ti1", basename));
+    let ti2_path = parent.join(format!("{}.ti2", basename));
+
+    let mut instrument: Option<String> = None;
+    let mut patch_count: Option<u32> = None;
+    let mut colorant_count: Option<u32> = None;
+    let mut pages: Option<u32> = None;
+
+    for line in content.lines() {
+        let trimmed = line.trim();
+        if trimmed.starts_with("TARGET_INSTRUMENT") {
+            let parts: Vec<&str> = trimmed.split_whitespace().collect();
+            if parts.len() >= 2 {
+                instrument = Some(parts[1].trim_matches('"').to_string());
+            }
+        } else if trimmed.starts_with("NUMBER_OF_FIELDS") {
+            let parts: Vec<&str> = trimmed.split_whitespace().collect();
+            if parts.len() >= 2 {
+                colorant_count = parts[1].parse::<u32>().ok();
+            }
+        } else if trimmed.starts_with("NUMBER_OF_SETS") {
+            let parts: Vec<&str> = trimmed.split_whitespace().collect();
+            if parts.len() >= 2 {
+                patch_count = parts[1].parse::<u32>().ok();
+            }
+        } else if trimmed.starts_with("NUMBER_OF_PAGES") || trimmed.starts_with("PAGES") {
+            let parts: Vec<&str> = trimmed.split_whitespace().collect();
+            if parts.len() >= 2 {
+                pages = parts[1].parse::<u32>().ok();
+            }
+        }
+    }
+
+    Ok(Ti2Metadata {
+        basename,
+        cwd,
+        instrument,
+        patch_count,
+        colorant_count,
+        pages,
+        has_ti1: ti1_path.exists(),
+        has_ti2: ti2_path.exists(),
+    })
+}
+
+#[tauri::command]
+pub async fn select_existing_target(
+    app: AppHandle,
+    default_dir: Option<String>,
+) -> Result<Option<String>, String> {
+    use tauri_plugin_dialog::DialogExt;
+
+    let mut builder = app.dialog().file().add_filter("ArgyllCMS Target Files (.ti1, .ti2)", &["ti1", "ti2"]);
+    if let Some(ref dir) = default_dir {
+        if !dir.trim().is_empty() {
+            builder = builder.set_directory(std::path::PathBuf::from(dir));
+        }
+    }
+
+    let (tx, rx) = tokio::sync::oneshot::channel();
+    builder.pick_file(move |file_path| {
+        let res = file_path.map(|p| p.to_string());
+        let _ = tx.send(res);
+    });
+
+    rx.await.map_err(|e| format!("Dialog channel error: {}", e))
+}
+
+#[tauri::command]
 pub async fn select_target_file(
     app: AppHandle,
     default_dir: Option<String>,
@@ -296,7 +436,7 @@ pub async fn extract_gamut(
     state.spawn(app, id, binary, args, cwd).await
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct TargenConfig {
     pub colour_space: String,
     #[serde(default)]
@@ -306,6 +446,19 @@ pub struct TargenConfig {
     pub total_patches: Option<u32>,
     pub basename: String,
     pub cwd: String,
+
+    // Advanced Stage 1 options
+    pub grey_steps: Option<u32>,                  // -g
+    pub single_channel_steps: Option<u32>,        // -s
+    pub neutral_steps: Option<u32>,               // -n
+    pub preconditioning_profile: Option<String>,  // -c
+    pub neutral_concentration: Option<f64>,       // -N
+    pub ofps_high_quality: Option<bool>,          // -G
+    pub ofps_adaptation: Option<f64>,             // -A
+    pub full_spread_algorithm: Option<String>,    // "ofps"|"t"|"r"|"R"|"q"|"Q"|"i"|"I"
+    pub total_ink_limit: Option<u32>,             // -l
+    pub dark_emphasis: Option<f64>,               // -V
+    pub device_power: Option<f64>,                // -p
 }
 
 fn default_dpi() -> u32 {
@@ -330,7 +483,8 @@ pub fn build_targen_args(config: &TargenConfig) -> Vec<String> {
         "-d".to_string(),
     ];
     
-    if config.colour_space.to_lowercase() == "cmyk" {
+    let is_cmyk = config.colour_space.to_lowercase() == "cmyk";
+    if is_cmyk {
         args.push("4".to_string());
     } else {
         args.push("2".to_string()); // Default to RGB
@@ -355,6 +509,87 @@ pub fn build_targen_args(config: &TargenConfig) -> Vec<String> {
     if let Some(black) = config.black_patches {
         args.push("-B".to_string());
         args.push(black.to_string());
+    }
+
+    if let Some(grey) = config.grey_steps {
+        if grey > 0 {
+            args.push("-g".to_string());
+            args.push(grey.to_string());
+        }
+    }
+
+    if let Some(single) = config.single_channel_steps {
+        if single > 0 {
+            args.push("-s".to_string());
+            args.push(single.to_string());
+        }
+    }
+
+    if let Some(ref precond) = config.preconditioning_profile {
+        let trimmed = precond.trim();
+        if !trimmed.is_empty() {
+            args.push("-c".to_string());
+            args.push(trimmed.to_string());
+        }
+    }
+
+    if let Some(neutral) = config.neutral_steps {
+        if neutral > 0 {
+            args.push("-n".to_string());
+            args.push(neutral.to_string());
+        }
+    }
+
+    if let Some(conc) = config.neutral_concentration {
+        if (conc - 0.50).abs() > 0.001 {
+            args.push("-N".to_string());
+            args.push(format!("{:.2}", conc));
+        }
+    }
+
+    if let Some(true) = config.ofps_high_quality {
+        args.push("-G".to_string());
+    }
+
+    if let Some(adapt) = config.ofps_adaptation {
+        args.push("-A".to_string());
+        args.push(format!("{:.2}", adapt));
+    }
+
+    if let Some(ref algo) = config.full_spread_algorithm {
+        match algo.as_str() {
+            "t" => args.push("-t".to_string()),
+            "r" => args.push("-r".to_string()),
+            "R" => args.push("-R".to_string()),
+            "q" => args.push("-q".to_string()),
+            "Q" => args.push("-Q".to_string()),
+            "i" => args.push("-i".to_string()),
+            "I" => args.push("-I".to_string()),
+            _ => {} // default is OFPS (no flag needed)
+        }
+    }
+
+    if is_cmyk {
+        if let Some(limit) = config.total_ink_limit {
+            if limit > 0 && limit <= 400 {
+                args.push("-l".to_string());
+                args.push(limit.to_string());
+            }
+        }
+    }
+
+    if let Some(dark) = config.dark_emphasis {
+        if (dark - 1.0).abs() > 0.001 {
+            args.push("-V".to_string());
+            args.push(format!("{:.2}", dark));
+        }
+    }
+
+    if let Some(power) = config.device_power {
+        if (power - 1.0).abs() > 0.001 && power > 0.0 {
+            args.push("-p".to_string());
+            args.push(format!("{:.2}", power));
+        }
     }
     
     args.push(config.basename.clone());
@@ -814,6 +1049,17 @@ mod tests {
             total_patches: None,
             basename: "my_profile".to_string(),
             cwd: "/tmp".to_string(),
+            grey_steps: None,
+            single_channel_steps: None,
+            neutral_steps: None,
+            preconditioning_profile: None,
+            neutral_concentration: None,
+            ofps_high_quality: None,
+            ofps_adaptation: None,
+            full_spread_algorithm: None,
+            total_ink_limit: None,
+            dark_emphasis: None,
+            device_power: None,
         };
         let args = build_targen_args(&config);
         assert_eq!(args, vec!["-v", "-d", "2", "-f", "800", "-e", "4", "my_profile"]);
@@ -829,6 +1075,17 @@ mod tests {
             total_patches: None,
             basename: "cmyk_profile".to_string(),
             cwd: "/tmp".to_string(),
+            grey_steps: None,
+            single_channel_steps: None,
+            neutral_steps: None,
+            preconditioning_profile: None,
+            neutral_concentration: None,
+            ofps_high_quality: None,
+            ofps_adaptation: None,
+            full_spread_algorithm: None,
+            total_ink_limit: None,
+            dark_emphasis: None,
+            device_power: None,
         };
         let args = build_targen_args(&config);
         assert_eq!(args, vec!["-v", "-d", "4", "-f", "1500", "-B", "8", "cmyk_profile"]);
@@ -844,9 +1101,92 @@ mod tests {
             total_patches: Some(400),
             basename: "draft_profile".to_string(),
             cwd: "/tmp".to_string(),
+            grey_steps: None,
+            single_channel_steps: None,
+            neutral_steps: None,
+            preconditioning_profile: None,
+            neutral_concentration: None,
+            ofps_high_quality: None,
+            ofps_adaptation: None,
+            full_spread_algorithm: None,
+            total_ink_limit: None,
+            dark_emphasis: None,
+            device_power: None,
         };
         let args = build_targen_args(&config);
         assert_eq!(args, vec!["-v", "-d", "2", "-f", "400", "draft_profile"]);
+    }
+
+    #[test]
+    fn test_build_targen_args_all_advanced_flags() {
+        let config = TargenConfig {
+            colour_space: "cmyk".to_string(),
+            patch_count: 1200,
+            white_patches: Some(4),
+            black_patches: Some(4),
+            total_patches: None,
+            basename: "adv_target".to_string(),
+            cwd: "/home/user".to_string(),
+            grey_steps: Some(16),
+            single_channel_steps: Some(8),
+            neutral_steps: Some(10),
+            preconditioning_profile: Some("/profiles/precond.icc".to_string()),
+            neutral_concentration: Some(0.75),
+            ofps_high_quality: Some(true),
+            ofps_adaptation: Some(0.80),
+            full_spread_algorithm: Some("t".to_string()),
+            total_ink_limit: Some(320),
+            dark_emphasis: Some(1.5),
+            device_power: Some(1.2),
+        };
+        let args = build_targen_args(&config);
+        assert_eq!(
+            args,
+            vec![
+                "-v", "-d", "4",
+                "-f", "1200",
+                "-e", "4",
+                "-B", "4",
+                "-g", "16",
+                "-s", "8",
+                "-c", "/profiles/precond.icc",
+                "-n", "10",
+                "-N", "0.75",
+                "-G",
+                "-A", "0.80",
+                "-t",
+                "-l", "320",
+                "-V", "1.50",
+                "-p", "1.20",
+                "adv_target"
+            ]
+        );
+    }
+
+    #[test]
+    fn test_build_targen_args_rgb_ignores_ink_limit() {
+        let config = TargenConfig {
+            colour_space: "rgb".to_string(),
+            patch_count: 800,
+            white_patches: None,
+            black_patches: None,
+            total_patches: None,
+            basename: "rgb_target".to_string(),
+            cwd: "/tmp".to_string(),
+            grey_steps: None,
+            single_channel_steps: None,
+            neutral_steps: None,
+            preconditioning_profile: None,
+            neutral_concentration: None,
+            ofps_high_quality: None,
+            ofps_adaptation: None,
+            full_spread_algorithm: None,
+            total_ink_limit: Some(300), // Should be ignored for RGB
+            dark_emphasis: None,
+            device_power: None,
+        };
+        let args = build_targen_args(&config);
+        assert!(!args.contains(&"-l".to_string()));
     }
 
     #[test]

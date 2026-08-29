@@ -58,19 +58,31 @@
       <main class="content">
         <!-- Stage 1: targen -->
         <section id="stage-1" class="stage active">
-          <h2>Generate Target</h2>
-          <p>Configure the colour patches for your profiling target.</p>
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div>
+              <h2>Generate Target</h2>
+              <p>Configure the colour patches for your profiling target.</p>
+            </div>
+            <button type="button" id="btnToggleAllHelp" class="secondary" style="font-size: 0.75rem; padding: 4px 8px;" title="Toggle tooltip hints for all options">💡 Show Tooltip Hints</button>
+          </div>
           
-          <div class="form-container">
-            <div class="form-group">
+          <div class="form-container" id="stage1FormContainer">
+            <!-- Basic Settings -->
+            <div class="form-group has-tooltip">
               <label>Colour Space</label>
               <div class="radio-group">
                 <label><input type="radio" name="colourSpace" value="rgb" checked> RGB (Printer Driver)</label>
                 <label><input type="radio" name="colourSpace" value="cmyk"> CMYK (RIP)</label>
               </div>
+              <div class="tooltip-text">
+                Choose the device colour model for the test chart.<br>
+                • RGB (Printer Driver) – for printers driven by an RGB driver or host colour management.<br>
+                • CMYK (RIP) – for printers controlled by a RIP or when you need explicit CMYK separation.<br>
+                This sets the targen -d colourant combination (2 = Print RGB, 4 = CMYK).
+              </div>
             </div>
 
-            <div class="form-group">
+            <div class="form-group has-tooltip">
               <label>Patch Count</label>
               <select id="patchCountPreset">
                 <option value="400">Draft (400 patches)</option>
@@ -80,33 +92,195 @@
                 <option value="custom">Custom...</option>
               </select>
               <input type="number" id="patchCountCustom" value="800" min="50" max="10000" class="hidden" style="margin-top: 8px;">
+              <div class="tooltip-text">
+                Total number of colour patches that will appear in the final chart.<br>
+                Higher counts improve profile accuracy (especially in smooth gradients and near the neutrals) but increase print time, paper usage and measurement time.<br>
+                Typical guidance: 400 (draft), 800 (standard), 1500 (photo/proof), 2500+ (maximum quality). Passed to targen -f.
+              </div>
             </div>
 
             <div class="form-group">
               <label>Neutral Axis Boost (Optional)</label>
               <div class="input-row">
-                <div>
-                  <label for="whitePatches" class="sub-label">White Patches</label>
+                <div class="has-tooltip" style="flex: 1;">
+                  <label for="whitePatches" class="sub-label">White Patches (-e)</label>
                   <input type="number" id="whitePatches" min="0" max="100" placeholder="e.g. 4">
+                  <div class="tooltip-text">
+                    Number of pure-white patches included in the chart.<br>
+                    White defines the paper white point that the ICC profile is made relative to. Measuring several white patches improves robustness against noise and paper variation. Default is 4.
+                  </div>
                 </div>
-                <div>
-                  <label for="blackPatches" class="sub-label">Black Patches</label>
-                  <input type="number" id="blackPatches" min="0" max="100" placeholder="e.g. 8">
+                <div class="has-tooltip" style="flex: 1;">
+                  <label for="blackPatches" class="sub-label">Black Patches (-B)</label>
+                  <input type="number" id="blackPatches" min="0" max="100" placeholder="e.g. 4">
+                  <div class="tooltip-text">
+                    Number of pure-black patches included in the chart.<br>
+                    Black is especially important for additive (RGB) devices; measuring multiple black patches improves black-point accuracy. Default is 4 for RGB and 0 for CMYK.
+                  </div>
                 </div>
               </div>
             </div>
 
-            <div class="form-group">
-              <label>Project Directory & Filename</label>
+            <div class="form-group has-tooltip">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                <label style="margin: 0;">Project Directory &amp; Filename</label>
+                <button type="button" id="btnOpenExisting" class="secondary" style="font-size: 0.75rem; padding: 2px 8px;" title="Open existing .ti1 or .ti2 target file">📂 Open Target...</button>
+              </div>
               <div class="input-row has-btn">
                 <input type="text" id="targetBasename" placeholder="e.g. my_paper_profile">
                 <button type="button" id="btnBrowse" class="secondary">Browse...</button>
               </div>
               <small id="selectedPathDisplay" class="path-display">No directory selected (using default).</small>
+              <div class="tooltip-text">
+                Base name used for all generated files (.ti1, later .ti2, .ti3, .icc/.icm) and folder where artefacts will be created.
+              </div>
             </div>
+
+            <!-- Collapsible Advanced Section -->
+            <details id="targenAdvancedDetails" class="advanced-section-details" style="margin-top: 10px; border: 1px solid var(--border-color, #333); border-radius: 8px; padding: 10px 14px; background: rgba(0,0,0,0.15);">
+              <summary style="font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: space-between; user-select: none;">
+                <span>⚙️ Advanced Target Generation Options</span>
+                <span class="summary-badge" style="font-size: 0.75rem; opacity: 0.6;">Click to expand</span>
+              </summary>
+
+              <div class="advanced-content" style="margin-top: 14px; display: flex; flex-direction: column; gap: 12px;">
+                <!-- Grey & Single Channel Steps -->
+                <div class="input-row">
+                  <div class="form-group has-tooltip" style="flex: 1;">
+                    <label for="targenGreySteps" class="sub-label">Grey / Combined Axis Steps (-g)</label>
+                    <input type="number" id="targenGreySteps" min="0" max="256" placeholder="0">
+                    <div class="tooltip-text">
+                      Number of evenly-spaced steps along the combined grey axis (equal R=G=B or C=M=Y).<br>
+                      These patches improve neutral-axis rendering and are useful when device will later be used as source space. 0 = none.
+                    </div>
+                  </div>
+                  <div class="form-group has-tooltip" style="flex: 1;">
+                    <label for="targenSingleChannelSteps" class="sub-label">Single-Channel Steps (-s)</label>
+                    <input type="number" id="targenSingleChannelSteps" min="0" max="256" placeholder="0">
+                    <div class="tooltip-text">
+                      Number of steps for each individual colorant wedge (R, G, B or C, M, Y, K).<br>
+                      Useful for diagnosing per-channel non-linearity and source-space characterisation. 0 = none.
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Preconditioning Profile & Neutral Axis Steps -->
+                <div class="form-group has-tooltip">
+                  <label for="targenPrecondProfile" class="sub-label">Preconditioning Profile (-c)</label>
+                  <div class="input-row has-btn">
+                    <input type="text" id="targenPrecondProfile" placeholder="Optional previous profile (.icc / .icm)">
+                    <button type="button" id="btnBrowsePrecondProfile" class="secondary">Browse...</button>
+                  </div>
+                  <div class="tooltip-text">
+                    Optional previous ICC/ICM (or MPP) profile of this or a similar device.<br>
+                    Used by targen to estimate perceptual distances, colourspace curvature and the true neutral axis. Enables adaptive OFPS and Neutral Axis Steps.
+                  </div>
+                </div>
+
+                <div class="input-row">
+                  <div class="form-group has-tooltip" style="flex: 1;">
+                    <label for="targenNeutralSteps" class="sub-label">Neutral Axis Steps (-n)</label>
+                    <input type="number" id="targenNeutralSteps" min="0" max="256" placeholder="0">
+                    <div class="tooltip-text">
+                      Number of patches placed along the true neutral axis as estimated by preconditioning profile.<br>
+                      Requires a Preconditioning Profile. Improves neutral rendering of final profile.
+                    </div>
+                  </div>
+                  <div class="form-group has-tooltip" style="flex: 1;">
+                    <label for="targenNeutralConcentration" class="sub-label">Neutral Axis Concentration (-N)</label>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                      <input type="range" id="targenNeutralConcentration" min="0.0" max="1.0" step="0.05" value="0.5" style="flex: 1;">
+                      <span id="targenNeutralConcVal" style="font-family: monospace; font-size: 0.8rem; min-width: 35px;">0.50</span>
+                    </div>
+                    <div class="tooltip-text">
+                      How strongly the patch distribution should favour the neutral axis (0 = none, 1 = maximum).<br>
+                      Default 0.5. Most effective with preconditioning profile and high OFPS Adaptation.
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Quality & Algorithm -->
+                <div class="input-row">
+                  <div class="form-group has-tooltip" style="flex: 1;">
+                    <label for="targenAlgorithm" class="sub-label">Full-spread Algorithm</label>
+                    <select id="targenAlgorithm">
+                      <option value="ofps" selected>OFPS (Optimised Farthest Point Sampling - Default)</option>
+                      <option value="t">Incremental Far Point (-t)</option>
+                      <option value="r">Device Random (-r)</option>
+                      <option value="R">Perceptual Random (-R)</option>
+                      <option value="q">Device Quasi-Random (-q)</option>
+                      <option value="Q">Perceptual Quasi-Random (-Q)</option>
+                      <option value="i">Device BCC (-i)</option>
+                      <option value="I">Perceptual BCC (-I)</option>
+                    </select>
+                    <div class="tooltip-text">
+                      Algorithm used to place remaining “full-spread” patches.<br>
+                      • OFPS (default) – best evenness in most cases.<br>
+                      • Incremental Far Point – used automatically for >4 channels.<br>
+                      • Device/Perceptual random or BCC – alternative space-filling methods.
+                    </div>
+                  </div>
+                  <div class="form-group has-tooltip" style="flex: 1; display: flex; flex-direction: column; justify-content: flex-end;">
+                    <label style="cursor: pointer; display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+                      <input type="checkbox" id="targenHighQuality">
+                      <span style="font-size: 0.85rem;">High Quality OFPS (-G)</span>
+                    </label>
+                    <div class="tooltip-text">
+                      When checked, targen runs the OFPS algorithm in “good” mode (more iterations).<br>
+                      Produces a more evenly distributed set of patches at cost of longer generation time. Recommended for final production charts.
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Adaptation & Ink Limit & Tone Remapping -->
+                <div class="input-row">
+                  <div class="form-group has-tooltip" style="flex: 1;">
+                    <label for="targenAdaptation" class="sub-label">OFPS Adaptation (-A)</label>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                      <input type="range" id="targenAdaptation" min="0.0" max="1.0" step="0.05" value="0.1" style="flex: 1;">
+                      <span id="targenAdaptationVal" style="font-family: monospace; font-size: 0.8rem; min-width: 35px;">0.10</span>
+                    </div>
+                    <div class="tooltip-text">
+                      Degree to which OFPS adapts to device behaviour from preconditioning profile (0 = ignore, 1 = fully adapt).<br>
+                      Default 0.1; automatically rises to 1.0 when preconditioning profile is supplied.
+                    </div>
+                  </div>
+                  <div class="form-group has-tooltip" id="targenInkLimitGroup" style="flex: 1;">
+                    <label for="targenInkLimit" class="sub-label">Total Ink Limit / TAC (-l %)</label>
+                    <input type="number" id="targenInkLimit" min="0" max="400" placeholder="e.g. 320" disabled>
+                    <div class="tooltip-text">
+                      Maximum total ink coverage (Total Area Coverage) in percent.<br>
+                      Essential for CMYK to avoid over-inking. Set at least 10% higher than final profile TAC. Disabled in RGB mode.
+                    </div>
+                  </div>
+                </div>
+
+                <div class="input-row">
+                  <div class="form-group has-tooltip" style="flex: 1;">
+                    <label for="targenDarkEmphasis" class="sub-label">Dark Region Emphasis (-V)</label>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                      <input type="range" id="targenDarkEmphasis" min="1.0" max="4.0" step="0.1" value="1.0" style="flex: 1;">
+                      <span id="targenDarkEmphasisVal" style="font-family: monospace; font-size: 0.8rem; min-width: 35px;">1.00</span>
+                    </div>
+                    <div class="tooltip-text">
+                      Concentrates more patches toward dark tones (1.0 = none, up to 4.0 = strong).<br>
+                      Useful for devices with non-linearity or important shadow detail. Default 1.0.
+                    </div>
+                  </div>
+                  <div class="form-group has-tooltip" style="flex: 1;">
+                    <label for="targenDevicePower" class="sub-label">Device Value Power (-p)</label>
+                    <input type="number" id="targenDevicePower" min="0.1" max="4.0" step="0.1" placeholder="Linear (1.0)">
+                    <div class="tooltip-text">
+                      Optional power-like remapping applied to device values after generation.<br>
+                      Values &gt; 1 tighten spacing near 0; values &lt; 1 tighten spacing near 1. Leave empty for linear spacing.
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </details>
           </div>
 
-          <button class="primary" id="btnGenerate" disabled>Generate (.ti1)</button>
+          <button class="primary" id="btnGenerate" disabled style="margin-top: 14px;">Generate (.ti1)</button>
           
           <details class="log-container hidden" id="targenLogContainer">
             <summary>Process Output</summary>
@@ -305,6 +479,15 @@
           <h2>Measure Target</h2>
           <p>Read the printed target patches with your spectrophotometer.</p>
 
+          <!-- Loaded Target Context Banner -->
+          <div id="stage3LoadedTargetBanner" class="info-banner hidden" style="margin-bottom: 16px; background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.3); padding: 10px 14px; border-radius: 6px; display: flex; justify-content: space-between; align-items: center;">
+            <div>
+              <strong>Active Target:</strong> <span id="stage3TargetBasename" style="font-family: monospace; font-weight: 600;"></span>
+              <div id="stage3TargetMeta" style="font-size: 0.8rem; opacity: 0.8; margin-top: 2px;"></div>
+            </div>
+            <span class="badge" id="stage3TargetBadge" style="background: var(--accent-color, #3b82f6); color: white; padding: 3px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: 500;">Ready</span>
+          </div>
+
           <!-- Instrument & Hardware Port Selector -->
           <div class="form-container" style="margin-bottom: 16px;">
             <div class="form-group">
@@ -488,6 +671,26 @@
         <div class="form-group">
           <label for="default_instrument">Default Instrument Override</label>
           <input type="text" id="default_instrument" placeholder="e.g. i1">
+        </div>
+        <div class="form-group" style="margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--border-color, #333);">
+          <label style="font-weight: 600;">Diagnostics &amp; Logging</label>
+          <div class="input-row" style="margin-top: 8px;">
+            <div>
+              <label for="logLevelSelect" class="sub-label">Log Level</label>
+              <select id="logLevelSelect">
+                <option value="error">Error (Minimal)</option>
+                <option value="warn">Warn</option>
+                <option value="info" selected>Info (Standard)</option>
+                <option value="debug">Debug (Detailed)</option>
+                <option value="trace">Trace (Verbose)</option>
+              </select>
+            </div>
+            <div style="display: flex; align-items: flex-end; gap: 8px;">
+              <button type="button" id="btnOpenLogFolder" class="secondary" title="Open log folder in file explorer">📂 Open Log Folder</button>
+              <button type="button" id="btnCopyLogPath" class="secondary" title="Copy log path to clipboard">📋 Copy Path</button>
+            </div>
+          </div>
+          <small id="logPathDisplay" class="path-display" style="margin-top: 6px; display: block;"></small>
         </div>
         <div class="modal-actions">
           <button id="saveSettingsBtn" class="primary">Save Settings</button>

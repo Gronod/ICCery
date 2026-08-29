@@ -8,7 +8,32 @@ export const wizardState = {
   setTarget(basename, cwd) {
     if (basename) this.basename = basename;
     if (cwd) this.cwd = cwd;
-    this.updateGating();
+    return this.updateGating();
+  },
+
+  navigateToStage(stageNumber) {
+    this.currentStage = stageNumber;
+    const steps = document.querySelectorAll('.step');
+    const stages = document.querySelectorAll('.stage');
+
+    steps.forEach(s => {
+      if (s.getAttribute('data-step') === String(stageNumber)) {
+        s.classList.remove('disabled');
+        s.classList.add('active');
+      } else {
+        s.classList.remove('active');
+      }
+    });
+
+    stages.forEach(s => {
+      if (s.id === `stage-${stageNumber}`) {
+        s.classList.remove('hidden');
+        s.classList.add('active');
+      } else {
+        s.classList.remove('active');
+        s.classList.add('hidden');
+      }
+    });
   },
 
   async updateGating() {
