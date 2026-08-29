@@ -49,6 +49,8 @@ function parseArgs() {
   const args = process.argv.slice(2);
   let force = false;
   let platform = null;
+  let server = process.env.ARGYLL_SERVER_URL || process.env.GITEA_SERVER_URL || null;
+  let repo = process.env.ARGYLL_REPO || 'gronod/argyllcms';
 
   for (let i = 0; i < args.length; i++) {
     if (args[i] === '--force') {
@@ -57,6 +59,14 @@ function parseArgs() {
       platform = args[++i];
     } else if (args[i].startsWith('--platform=')) {
       platform = args[i].split('=')[1];
+    } else if (args[i] === '--server' && i + 1 < args.length) {
+      server = args[++i];
+    } else if (args[i].startsWith('--server=')) {
+      server = args[i].split('=')[1];
+    } else if (args[i] === '--repo' && i + 1 < args.length) {
+      repo = args[++i];
+    } else if (args[i].startsWith('--repo=')) {
+      repo = args[i].split('=')[1];
     }
   }
 
@@ -85,19 +95,30 @@ function parseArgs() {
     process.exit(1);
   }
 
-  return { force, platform };
+  return { force, platform, server, repo };
 }
 
-async function getReleaseData(tag, token) {
-  const baseUrl = 'https://api.github.com/repos/Gronod/argyllcms/releases';
-  const url = tag ? `${baseUrl}/tags/${encodeURIComponent(tag)}` : `${baseUrl}/latest`;
+async function getReleaseData(server, repo, tag, token) {
+  const isGitHub = !server || server.includes('github.com');
+  const cleanServer = (server || 'https://api.github.com').replace(/\/+$/, '');
+
+  let url;
+  if (isGitHub) {
+    const apiBase = server && !server.includes('api.github.com') ? 'https://api.github.com' : cleanServer;
+    const baseUrl = `${apiBase}/repos/${repo}/releases`;
+    url = tag ? `${baseUrl}/tags/${encodeURIComponent(tag)}` : `${baseUrl}/latest`;
+  } else {
+    // Gitea / Forgejo releases API
+    const baseUrl = `${cleanServer}/api/v1/repos/${repo}/releases`;
+    url = tag ? `${baseUrl}/tags/${encodeURIComponent(tag)}` : `${baseUrl}/latest`;
+  }
 
   const headers = {
     'User-Agent': 'ICCery-fetch-argyll',
-    Accept: 'application/vnd.github+json',
+    Accept: 'application/vnd.github+json, application/json',
   };
   if (token) {
-    headers.Authorization = `Bearer ${token}`;
+    headers.Authorization = isGitHub ? `Bearer ${token}` : `token ${token}`;
   }
 
   console.log(`Fetching release info from ${url}...`);
@@ -186,7 +207,7 @@ function copyDirectoryContents(src, dest, chmodExec = false) {
 }
 
 async function main() {
-  const { force, platform } = parseArgs();
+  const { force, platform, server, repo } = parseArgs();
   const targetConfig = PLATFORMS[platform];
   const markerPath = path.join(targetConfig.destDir, targetConfig.markerBinary);
 
@@ -196,9 +217,9 @@ async function main() {
   }
 
   const releaseTag = process.env.ARGYLL_RELEASE_TAG || '';
-  const token = process.env.GITHUB_TOKEN || '';
+  const token = process.env.GITEA_TOKEN || process.env.GITHUB_TOKEN || '';
 
-  const releaseData = await getReleaseData(releaseTag, token);
+  const releaseData = await getReleaseData(server, repo, releaseTag, token);
   console.log(`Selected release tag: ${releaseData.tag_name || releaseTag || 'latest'}`);
 
   const matchingAsset = (releaseData.assets || []).find((asset) =>
@@ -218,12 +239,18 @@ async function main() {
   const extractDir = path.join(tempDir, 'extracted');
 
   try {
+    const downloadHeaders = {
+      'User-Agent': 'ICCery-fetch-argyll',
+      Accept: 'application/octet-stream',
+    };
+    if (token) {
+      const isGitHub = !server || server.includes('github.com');
+      downloadHeaders.Authorization = isGitHub ? `Bearer ${token}` : `token ${token}`;
+    }
+
     console.log(`Downloading ${matchingAsset.browser_download_url}...`);
     const res = await fetch(matchingAsset.browser_download_url, {
-      headers: {
-        'User-Agent': 'ICCery-fetch-argyll',
-        Accept: 'application/octet-stream',
-      },
+      headers: downloadHeaders,
     });
 
     if (!res.ok) {

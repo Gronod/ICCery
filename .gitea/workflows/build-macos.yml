@@ -47,9 +47,10 @@ jobs:
 
       - name: Fetch ArgyllCMS binaries
         env:
+          ARGYLL_SERVER_URL: ${{ github.server_url }}
           ARGYLL_RELEASE_TAG: ${{ vars.ARGYLL_RELEASE_TAG }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: npm run fetch-argyll -- --force --platform ${{ matrix.platform.binary_dir }}
+          GITEA_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npm run fetch-argyll -- --force --platform ${{ matrix.platform.binary_dir }} --server "${{ github.server_url }}"
 
       - name: Verify sidecar binaries
         run: |

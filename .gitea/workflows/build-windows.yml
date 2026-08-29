@@ -44,9 +44,10 @@ jobs:
       - name: Fetch ArgyllCMS binaries
         shell: powershell
         env:
+          ARGYLL_SERVER_URL: ${{ github.server_url }}
           ARGYLL_RELEASE_TAG: ${{ vars.ARGYLL_RELEASE_TAG }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: npm run fetch-argyll -- --force --platform windows-x86_64
+          GITEA_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npm run fetch-argyll -- --force --platform windows-x86_64 --server "${{ github.server_url }}"
 
       - name: Verify sidecar binaries
         shell: powershell
