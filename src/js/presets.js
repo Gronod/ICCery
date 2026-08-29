@@ -152,6 +152,58 @@ export async function initPresets() {
     const blackPatches = document.getElementById("blackPatches");
     if (blackPatches) blackPatches.value = preset.black_patches !== null && preset.black_patches !== undefined ? preset.black_patches : "";
 
+    // Advanced Stage 1 controls
+    const targenGreySteps = document.getElementById("targenGreySteps");
+    if (targenGreySteps) targenGreySteps.value = (preset.grey_steps !== null && preset.grey_steps !== undefined) ? preset.grey_steps : "";
+
+    const targenSingleChannelSteps = document.getElementById("targenSingleChannelSteps");
+    if (targenSingleChannelSteps) targenSingleChannelSteps.value = (preset.single_channel_steps !== null && preset.single_channel_steps !== undefined) ? preset.single_channel_steps : "";
+
+    const targenPrecondProfile = document.getElementById("targenPrecondProfile");
+    if (targenPrecondProfile) targenPrecondProfile.value = preset.preconditioning_profile || "";
+
+    const targenNeutralSteps = document.getElementById("targenNeutralSteps");
+    if (targenNeutralSteps) targenNeutralSteps.value = (preset.neutral_steps !== null && preset.neutral_steps !== undefined) ? preset.neutral_steps : "";
+
+    const targenNeutralConcentration = document.getElementById("targenNeutralConcentration");
+    const targenNeutralConcVal = document.getElementById("targenNeutralConcVal");
+    if (targenNeutralConcentration) {
+      const conc = (preset.neutral_concentration !== null && preset.neutral_concentration !== undefined) ? preset.neutral_concentration : 0.50;
+      targenNeutralConcentration.value = conc;
+      if (targenNeutralConcVal) targenNeutralConcVal.textContent = parseFloat(conc).toFixed(2);
+    }
+
+    const targenHighQuality = document.getElementById("targenHighQuality");
+    if (targenHighQuality) targenHighQuality.checked = !!preset.ofps_high_quality;
+
+    const targenAdaptation = document.getElementById("targenAdaptation");
+    const targenAdaptationVal = document.getElementById("targenAdaptationVal");
+    if (targenAdaptation) {
+      const adapt = (preset.ofps_adaptation !== null && preset.ofps_adaptation !== undefined) ? preset.ofps_adaptation : 0.10;
+      targenAdaptation.value = adapt;
+      if (targenAdaptationVal) targenAdaptationVal.textContent = parseFloat(adapt).toFixed(2);
+    }
+
+    const targenAlgorithm = document.getElementById("targenAlgorithm");
+    if (targenAlgorithm) targenAlgorithm.value = preset.full_spread_algorithm || "ofps";
+
+    const targenInkLimit = document.getElementById("targenInkLimit");
+    if (targenInkLimit) {
+      targenInkLimit.disabled = preset.colour_space.toLowerCase() !== "cmyk";
+      targenInkLimit.value = (preset.total_ink_limit !== null && preset.total_ink_limit !== undefined) ? preset.total_ink_limit : "";
+    }
+
+    const targenDarkEmphasis = document.getElementById("targenDarkEmphasis");
+    const targenDarkEmphasisVal = document.getElementById("targenDarkEmphasisVal");
+    if (targenDarkEmphasis) {
+      const dark = (preset.dark_emphasis !== null && preset.dark_emphasis !== undefined) ? preset.dark_emphasis : 1.00;
+      targenDarkEmphasis.value = dark;
+      if (targenDarkEmphasisVal) targenDarkEmphasisVal.textContent = parseFloat(dark).toFixed(2);
+    }
+
+    const targenDevicePower = document.getElementById("targenDevicePower");
+    if (targenDevicePower) targenDevicePower.value = (preset.device_power !== null && preset.device_power !== undefined) ? preset.device_power : "";
+
     // Stage 2 controls
     const instrumentSelect = document.getElementById("instrumentSelect");
     if (instrumentSelect && preset.instrument) instrumentSelect.value = preset.instrument;
@@ -198,6 +250,40 @@ export async function initPresets() {
     const blackInput = document.getElementById("blackPatches");
     const black_patches = blackInput && blackInput.value ? parseInt(blackInput.value, 10) : null;
 
+    // Advanced Stage 1 inputs
+    const targenGreySteps = document.getElementById("targenGreySteps");
+    const grey_steps = targenGreySteps && targenGreySteps.value ? parseInt(targenGreySteps.value, 10) : null;
+
+    const targenSingleChannelSteps = document.getElementById("targenSingleChannelSteps");
+    const single_channel_steps = targenSingleChannelSteps && targenSingleChannelSteps.value ? parseInt(targenSingleChannelSteps.value, 10) : null;
+
+    const targenPrecondProfile = document.getElementById("targenPrecondProfile");
+    const preconditioning_profile = targenPrecondProfile && targenPrecondProfile.value.trim() ? targenPrecondProfile.value.trim() : null;
+
+    const targenNeutralSteps = document.getElementById("targenNeutralSteps");
+    const neutral_steps = targenNeutralSteps && targenNeutralSteps.value ? parseInt(targenNeutralSteps.value, 10) : null;
+
+    const targenNeutralConcentration = document.getElementById("targenNeutralConcentration");
+    const neutral_concentration = targenNeutralConcentration ? parseFloat(targenNeutralConcentration.value) : null;
+
+    const targenHighQuality = document.getElementById("targenHighQuality");
+    const ofps_high_quality = targenHighQuality ? targenHighQuality.checked : false;
+
+    const targenAdaptation = document.getElementById("targenAdaptation");
+    const ofps_adaptation = targenAdaptation ? parseFloat(targenAdaptation.value) : null;
+
+    const targenAlgorithm = document.getElementById("targenAlgorithm");
+    const full_spread_algorithm = targenAlgorithm && targenAlgorithm.value !== "ofps" ? targenAlgorithm.value : null;
+
+    const targenInkLimit = document.getElementById("targenInkLimit");
+    const total_ink_limit = (colour_space === "cmyk" && targenInkLimit && targenInkLimit.value) ? parseInt(targenInkLimit.value, 10) : null;
+
+    const targenDarkEmphasis = document.getElementById("targenDarkEmphasis");
+    const dark_emphasis = targenDarkEmphasis ? parseFloat(targenDarkEmphasis.value) : null;
+
+    const targenDevicePower = document.getElementById("targenDevicePower");
+    const device_power = targenDevicePower && targenDevicePower.value ? parseFloat(targenDevicePower.value) : null;
+
     const instrumentSelect = document.getElementById("instrumentSelect");
     const instrument = instrumentSelect ? instrumentSelect.value : "i1";
 
@@ -224,6 +310,17 @@ export async function initPresets() {
       patch_count,
       white_patches,
       black_patches,
+      grey_steps,
+      single_channel_steps,
+      preconditioning_profile,
+      neutral_steps,
+      neutral_concentration,
+      ofps_high_quality,
+      ofps_adaptation,
+      full_spread_algorithm,
+      total_ink_limit,
+      dark_emphasis,
+      device_power,
       instrument,
       page_size,
       bit_depth,

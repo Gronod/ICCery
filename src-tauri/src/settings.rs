@@ -18,6 +18,30 @@ pub struct ProfilingPreset {
     pub colprof_algorithm: String,
     pub colprof_quality: String,
     pub colprof_intent: Option<String>,
+
+    // Advanced Stage 1 fields
+    #[serde(default)]
+    pub grey_steps: Option<u32>,
+    #[serde(default)]
+    pub single_channel_steps: Option<u32>,
+    #[serde(default)]
+    pub neutral_steps: Option<u32>,
+    #[serde(default)]
+    pub preconditioning_profile: Option<String>,
+    #[serde(default)]
+    pub neutral_concentration: Option<f64>,
+    #[serde(default)]
+    pub ofps_high_quality: Option<bool>,
+    #[serde(default)]
+    pub ofps_adaptation: Option<f64>,
+    #[serde(default)]
+    pub full_spread_algorithm: Option<String>,
+    #[serde(default)]
+    pub total_ink_limit: Option<u32>,
+    #[serde(default)]
+    pub dark_emphasis: Option<f64>,
+    #[serde(default)]
+    pub device_power: Option<f64>,
 }
 
 #[derive(Debug, Deserialize, Serialize, Default, Clone)]
@@ -46,6 +70,17 @@ pub fn get_default_presets() -> Vec<ProfilingPreset> {
             colprof_algorithm: "l".to_string(),
             colprof_quality: "m".to_string(),
             colprof_intent: None,
+            grey_steps: None,
+            single_channel_steps: None,
+            neutral_steps: None,
+            preconditioning_profile: None,
+            neutral_concentration: None,
+            ofps_high_quality: None,
+            ofps_adaptation: None,
+            full_spread_algorithm: None,
+            total_ink_limit: None,
+            dark_emphasis: None,
+            device_power: None,
         },
         ProfilingPreset {
             id: "preset-hq-cmyk".to_string(),
@@ -62,6 +97,17 @@ pub fn get_default_presets() -> Vec<ProfilingPreset> {
             colprof_algorithm: "l".to_string(),
             colprof_quality: "h".to_string(),
             colprof_intent: None,
+            grey_steps: None,
+            single_channel_steps: None,
+            neutral_steps: None,
+            preconditioning_profile: None,
+            neutral_concentration: None,
+            ofps_high_quality: None,
+            ofps_adaptation: None,
+            full_spread_algorithm: None,
+            total_ink_limit: Some(320),
+            dark_emphasis: None,
+            device_power: None,
         },
         ProfilingPreset {
             id: "preset-draft-rgb".to_string(),
@@ -78,6 +124,17 @@ pub fn get_default_presets() -> Vec<ProfilingPreset> {
             colprof_algorithm: "l".to_string(),
             colprof_quality: "l".to_string(),
             colprof_intent: None,
+            grey_steps: None,
+            single_channel_steps: None,
+            neutral_steps: None,
+            preconditioning_profile: None,
+            neutral_concentration: None,
+            ofps_high_quality: None,
+            ofps_adaptation: None,
+            full_spread_algorithm: None,
+            total_ink_limit: None,
+            dark_emphasis: None,
+            device_power: None,
         },
         ProfilingPreset {
             id: "preset-ultra-rgb".to_string(),
@@ -94,6 +151,17 @@ pub fn get_default_presets() -> Vec<ProfilingPreset> {
             colprof_algorithm: "l".to_string(),
             colprof_quality: "u".to_string(),
             colprof_intent: None,
+            grey_steps: None,
+            single_channel_steps: None,
+            neutral_steps: None,
+            preconditioning_profile: None,
+            neutral_concentration: None,
+            ofps_high_quality: Some(true),
+            ofps_adaptation: None,
+            full_spread_algorithm: None,
+            total_ink_limit: None,
+            dark_emphasis: None,
+            device_power: None,
         },
     ]
 }
@@ -219,6 +287,17 @@ mod tests {
             colprof_algorithm: "l".to_string(),
             colprof_quality: "h".to_string(),
             colprof_intent: None,
+            grey_steps: Some(16),
+            single_channel_steps: Some(8),
+            neutral_steps: Some(10),
+            preconditioning_profile: Some("/profiles/precond.icc".to_string()),
+            neutral_concentration: Some(0.75),
+            ofps_high_quality: Some(true),
+            ofps_adaptation: Some(0.80),
+            full_spread_algorithm: Some("t".to_string()),
+            total_ink_limit: Some(320),
+            dark_emphasis: Some(1.5),
+            device_power: Some(1.2),
         };
 
         let json = export_preset_json(preset.clone()).expect("Export failed");
