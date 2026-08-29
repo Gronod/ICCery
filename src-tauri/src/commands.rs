@@ -319,6 +319,7 @@ pub struct PrinttargConfig {
     pub bit_depth: u8,        // 8 or 16
     #[serde(default = "default_dpi")]
     pub dpi: u32,             // TIFF resolution, defaults to 300 DPI
+    pub custom_label: Option<String>, // Custom chart label / description metadata string (-d)
     pub basename: String,     // Must match the .ti1 basename from Stage 1
     pub cwd: String,          // Working directory where the .ti1 file resides
 }
@@ -369,6 +370,11 @@ pub fn build_printtarg_args(config: &PrinttargConfig) -> Vec<String> {
         "-p".to_string(),
         config.page_size.clone(),
     ];
+
+    if let Some(ref label) = config.custom_label {
+        args.push("-d".to_string());
+        args.push(label.clone());
+    }
 
     if config.bit_depth == 16 {
         args.push("-T".to_string());
@@ -850,6 +856,7 @@ mod tests {
             page_size: "A4".to_string(),
             bit_depth: 8,
             dpi: 100,
+            custom_label: None,
             basename: "my_profile".to_string(),
             cwd: "/tmp".to_string(),
         };
@@ -864,6 +871,7 @@ mod tests {
             page_size: "Letter".to_string(),
             bit_depth: 16,
             dpi: 300,
+            custom_label: None,
             basename: "cmyk_profile".to_string(),
             cwd: "/home/user".to_string(),
         };
@@ -878,11 +886,42 @@ mod tests {
             page_size: "200x400".to_string(),
             bit_depth: 8,
             dpi: 150,
+            custom_label: None,
             basename: "custom_target".to_string(),
             cwd: "/tmp".to_string(),
         };
         let args = build_printtarg_args(&config);
         assert_eq!(args, vec!["-v", "-u", "-i", "SS", "-p", "200x400", "-t", "150", "custom_target"]);
+    }
+
+    #[test]
+    fn test_build_printtarg_args_with_custom_label() {
+        let config = PrinttargConfig {
+            instrument: "i1".to_string(),
+            page_size: "A4".to_string(),
+            bit_depth: 8,
+            dpi: 300,
+            custom_label: Some("ICCery - Pro900 - Luster - 29/08/2026 12:00".to_string()),
+            basename: "my_profile".to_string(),
+            cwd: "/tmp".to_string(),
+        };
+        let args = build_printtarg_args(&config);
+        assert_eq!(
+            args,
+            vec![
+                "-v",
+                "-u",
+                "-i",
+                "i1",
+                "-p",
+                "A4",
+                "-d",
+                "ICCery - Pro900 - Luster - 29/08/2026 12:00",
+                "-t",
+                "300",
+                "my_profile"
+            ]
+        );
     }
 
     #[test]
