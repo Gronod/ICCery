@@ -65,8 +65,12 @@ impl PrinterDevModeStore {
 #[cfg(windows)]
 pub mod windows;
 
+#[cfg(any(target_os = "macos", test))]
+pub mod macos;
+
 #[cfg(any(unix, test))]
 pub mod unix;
 
 #[cfg(test)]
 mod tests;
+
