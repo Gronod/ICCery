@@ -68,6 +68,7 @@ ICCery is a native, cross-platform desktop application built with:
 ### Hotfix Releases (`v0.3.1` & `v0.3.2`)
 - [x] **v0.3.1 (#103)**: Stage 1 file browse via backend `select_target_file` dialog.
 - [x] **v0.3.2 (#108)**: Linux CI runner compatibility updated to Ubuntu 22.04 LTS so `.deb` packages run without requiring newer GLIBC versions.
+- [x] **v0.3.3 (#127)**: ArgyllCMS binary sidecars dynamically fetched at build time from `Gronod/argyllcms` releases; removed vendored binaries from repository; added Windows NSIS USB instrument driver installer hook.
 
 ### Milestone 9 — macOS Native Support & Enhanced Print Spooling (`v0.4.0`)
 - [ ] **macOS Platform Bundle**: Build and sign universal macOS `.dmg` bundles.

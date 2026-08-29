@@ -74,3 +74,8 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
+
+## ArgyllCMS (Binary Toolchain & Drivers)
+ArgyllCMS binaries and USB instrument drivers fetched at build time from [Gronod/argyllcms](https://github.com/Gronod/argyllcms) are licensed under the GNU Affero General Public License Version 3 (AGPLv3).
+See the bundled `License.txt` packaged alongside the platform binaries under `src-tauri/argyll/<platform>/License.txt`.
+
