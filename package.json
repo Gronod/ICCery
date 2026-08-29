@@ -4,6 +4,7 @@
   "version": "0.3.3",
   "type": "module",
   "scripts": {
+    "fetch-argyll": "node scripts/fetch-argyll.mjs",
     "tauri": "tauri"
   },
   "devDependencies": {

@@ -83,12 +83,23 @@ cd ICCery
 # Install frontend dependencies
 npm install
 
+# Download ArgyllCMS sidecars for this OS (from github.com/Gronod/argyllcms/releases)
+npm run fetch-argyll
+
 # Run the development app
 npm run tauri dev
 ```
 
+> **Note:**
+> - Sidecars are not stored in git; `tauri build` / `tauri dev` will fail until `npm run fetch-argyll` has been run at least once.
+> - You can override the downloaded ArgyllCMS release version using `ARGYLL_RELEASE_TAG=vX.Y.Z npm run fetch-argyll`.
+> - On Windows, the NSIS installer package bundles the ArgyllCMS USB instrument driver suite and offers an optional driver setup step when run with administrative privileges.
+
 ### Production Build
 ```bash
+# Download sidecars (if not already fetched)
+npm run fetch-argyll
+
 # Build desktop packages (MSI/NSIS on Windows, DEB/AppImage on Linux)
 npm run tauri build
 ```

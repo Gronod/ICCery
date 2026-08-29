@@ -41,9 +41,11 @@
         "dialogImagePath": "icons/wix-dialog.bmp"
       },
       "nsis": {
+        "installMode": "both",
         "installerIcon": "icons/icon.ico",
         "headerImage": "icons/nsis-header.bmp",
-        "sidebarImage": "icons/nsis-sidebar.bmp"
+        "sidebarImage": "icons/nsis-sidebar.bmp",
+        "installerHooks": "windows/hooks.nsh"
       }
     }
   }
