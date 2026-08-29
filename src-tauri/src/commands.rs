@@ -179,7 +179,7 @@ pub struct Ti2Metadata {
 }
 
 #[tauri::command]
-pub fn parse_ti2_header(app: AppHandle, file_path: String) -> Result<Ti2Metadata, String> {
+pub fn parse_ti2_header(_app: AppHandle, file_path: String) -> Result<Ti2Metadata, String> {
     let path = std::path::PathBuf::from(&file_path);
     if !path.exists() {
         return Err(format!("File does not exist: {}", file_path));
