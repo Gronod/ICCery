@@ -36,7 +36,7 @@ impl ProcessManager {
             }
         }
         let mut command = Command::new(&binary);
-        command.args(args);
+        command.args(&args);
         if let Some(dir) = cwd {
             command.current_dir(dir);
         }
