@@ -1155,3 +1155,36 @@ button.danger:hover {
   to { transform: rotate(360deg); }
 }
 
+/* Tooltip & Help Styling */
+.has-tooltip {
+  position: relative;
+}
+
+.tooltip-text {
+  display: none;
+  font-size: 0.78rem;
+  line-height: 1.35;
+  color: #e0e0e0;
+  background: #252530;
+  border: 1px solid #444455;
+  border-radius: 6px;
+  padding: 8px 10px;
+  margin-top: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  z-index: 10;
+}
+
+.has-tooltip:hover .tooltip-text,
+.has-tooltip:focus-within .tooltip-text {
+  display: block;
+}
+
+.show-all-tooltips .tooltip-text {
+  display: block !important;
+}
+
+.advanced-section-details summary::-webkit-details-marker {
+  display: none;
+}
+
+

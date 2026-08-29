@@ -18,7 +18,95 @@ export function initTargen() {
   const logContainer = document.getElementById("targenLogContainer");
   const logPre = document.getElementById("targenLog");
 
+  // Advanced controls
+  const targenGreySteps = document.getElementById("targenGreySteps");
+  const targenSingleChannelSteps = document.getElementById("targenSingleChannelSteps");
+  const targenPrecondProfile = document.getElementById("targenPrecondProfile");
+  const btnBrowsePrecondProfile = document.getElementById("btnBrowsePrecondProfile");
+  const targenNeutralSteps = document.getElementById("targenNeutralSteps");
+  const targenNeutralConcentration = document.getElementById("targenNeutralConcentration");
+  const targenNeutralConcVal = document.getElementById("targenNeutralConcVal");
+  const targenAlgorithm = document.getElementById("targenAlgorithm");
+  const targenHighQuality = document.getElementById("targenHighQuality");
+  const targenAdaptation = document.getElementById("targenAdaptation");
+  const targenAdaptationVal = document.getElementById("targenAdaptationVal");
+  const targenInkLimit = document.getElementById("targenInkLimit");
+  const targenDarkEmphasis = document.getElementById("targenDarkEmphasis");
+  const targenDarkEmphasisVal = document.getElementById("targenDarkEmphasisVal");
+  const targenDevicePower = document.getElementById("targenDevicePower");
+  const btnToggleAllHelp = document.getElementById("btnToggleAllHelp");
+  const stage1FormContainer = document.getElementById("stage1FormContainer");
+
   let currentWorkingDir = "";
+
+  // Help hints toggle
+  if (btnToggleAllHelp && stage1FormContainer) {
+    btnToggleAllHelp.addEventListener("click", () => {
+      stage1FormContainer.classList.toggle("show-all-tooltips");
+      if (stage1FormContainer.classList.contains("show-all-tooltips")) {
+        btnToggleAllHelp.textContent = "💡 Hide Tooltip Hints";
+      } else {
+        btnToggleAllHelp.textContent = "💡 Show Tooltip Hints";
+      }
+    });
+  }
+
+  // Sliders dynamic display
+  if (targenNeutralConcentration && targenNeutralConcVal) {
+    targenNeutralConcentration.addEventListener("input", (e) => {
+      targenNeutralConcVal.textContent = parseFloat(e.target.value).toFixed(2);
+    });
+  }
+  if (targenAdaptation && targenAdaptationVal) {
+    targenAdaptation.addEventListener("input", (e) => {
+      targenAdaptationVal.textContent = parseFloat(e.target.value).toFixed(2);
+    });
+  }
+  if (targenDarkEmphasis && targenDarkEmphasisVal) {
+    targenDarkEmphasis.addEventListener("input", (e) => {
+      targenDarkEmphasisVal.textContent = parseFloat(e.target.value).toFixed(2);
+    });
+  }
+
+  // Colour space change listener to enable/disable ink limit
+  colourSpaceRadios.forEach((radio) => {
+    radio.addEventListener("change", (e) => {
+      const isCmyk = e.target.value === "cmyk";
+      if (targenInkLimit) {
+        targenInkLimit.disabled = !isCmyk;
+        if (!isCmyk) {
+          targenInkLimit.value = "";
+        }
+      }
+      if (blackPatches) {
+        if (isCmyk && (!blackPatches.value || blackPatches.value === "4")) {
+          blackPatches.value = "0";
+        } else if (!isCmyk && (!blackPatches.value || blackPatches.value === "0")) {
+          blackPatches.value = "4";
+        }
+      }
+    });
+  });
+
+  // Browse preconditioning profile
+  if (btnBrowsePrecondProfile && targenPrecondProfile) {
+    btnBrowsePrecondProfile.addEventListener("click", async () => {
+      try {
+        const filePath = await invoke("select_existing_target", {
+          defaultDir: currentWorkingDir || null,
+        });
+        if (filePath) {
+          targenPrecondProfile.value = filePath;
+          if (targenAdaptation && targenAdaptation.value === "0.1") {
+            targenAdaptation.value = "1.0";
+            if (targenAdaptationVal) targenAdaptationVal.textContent = "1.00";
+          }
+        }
+      } catch (err) {
+        console.error("Failed to select preconditioning profile:", err);
+      }
+    });
+  }
 
   function updateGenerateButton() {
     const hasBasename = targetBasename && targetBasename.value.trim().length > 0;
@@ -210,6 +298,17 @@ export function initTargen() {
         black_patches: (blackPatches && blackPatches.value) ? parseInt(blackPatches.value, 10) : null,
         basename: basename,
         cwd: currentWorkingDir,
+        grey_steps: (targenGreySteps && targenGreySteps.value) ? parseInt(targenGreySteps.value, 10) : null,
+        single_channel_steps: (targenSingleChannelSteps && targenSingleChannelSteps.value) ? parseInt(targenSingleChannelSteps.value, 10) : null,
+        preconditioning_profile: (targenPrecondProfile && targenPrecondProfile.value.trim()) ? targenPrecondProfile.value.trim() : null,
+        neutral_steps: (targenNeutralSteps && targenNeutralSteps.value) ? parseInt(targenNeutralSteps.value, 10) : null,
+        neutral_concentration: (targenNeutralConcentration) ? parseFloat(targenNeutralConcentration.value) : null,
+        ofps_high_quality: (targenHighQuality) ? targenHighQuality.checked : false,
+        ofps_adaptation: (targenAdaptation) ? parseFloat(targenAdaptation.value) : null,
+        full_spread_algorithm: (targenAlgorithm && targenAlgorithm.value !== "ofps") ? targenAlgorithm.value : null,
+        total_ink_limit: (colourSpace === "cmyk" && targenInkLimit && targenInkLimit.value) ? parseInt(targenInkLimit.value, 10) : null,
+        dark_emphasis: (targenDarkEmphasis) ? parseFloat(targenDarkEmphasis.value) : null,
+        device_power: (targenDevicePower && targenDevicePower.value) ? parseFloat(targenDevicePower.value) : null,
       };
 
       try {
