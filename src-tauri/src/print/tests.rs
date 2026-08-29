@@ -241,6 +241,55 @@ printer Custom_Queue unknown state\n\
         assert_eq!(work_buf[std::mem::size_of::<DEVMODEW>() + 10], 0xAA);
         assert_eq!(work_buf[std::mem::size_of::<DEVMODEW>() + 11], 0x55);
     }
+
+    #[test]
+    fn test_macos_build_lp_args_colorsync_suppression() {
+        use crate::print::macos::build_lp_args as macos_build_lp_args;
+
+        let printer = "Epson_SureColor_P900";
+        let path = "/tmp/targets/target_page_1.tif";
+
+        // Raw mode
+        let args_raw = macos_build_lp_args(printer, path, None);
+        assert_eq!(args_raw[0], "-d");
+        assert_eq!(args_raw[1], printer);
+        assert_eq!(args_raw[2], "-t");
+        assert_eq!(args_raw[3], "ICCery Target - target_page_1.tif");
+        assert_eq!(args_raw[4], "-o");
+        assert_eq!(args_raw[5], "raw");
+        assert_eq!(args_raw[6], "-o");
+        assert_eq!(args_raw[7], "AP_ColorMatchingMode=AP_ApplicationColorMatching");
+        assert_eq!(args_raw[8], path);
+
+        // PPD uncorrected passthrough mode with options
+        let opts = PrintOptions {
+            orientation: Some("landscape".to_string()),
+            paper_size: Some("A4".to_string()),
+            ppd_uncorrected_passthrough: Some(true),
+            ..Default::default()
+        };
+        let args_ppd = macos_build_lp_args(printer, path, Some(&opts));
+        assert_eq!(args_ppd[4], "-o");
+        assert_eq!(args_ppd[5], "ColorModel=Gray");
+        assert_eq!(args_ppd[6], "-o");
+        assert_eq!(args_ppd[7], "cm-calibration");
+        assert_eq!(args_ppd[8], "-o");
+        assert_eq!(args_ppd[9], "AP_ColorMatchingMode=AP_ApplicationColorMatching");
+        assert_eq!(args_ppd[10], "-o");
+        assert_eq!(args_ppd[11], "orientation-requested=4");
+        assert_eq!(args_ppd[12], "-o");
+        assert_eq!(args_ppd[13], "PageSize=A4");
+        assert_eq!(args_ppd[14], path);
+    }
+
+    #[test]
+    fn test_macos_print_target_nonexistent_file() {
+        use crate::print::macos::print_target as macos_print_target;
+        let res = macos_print_target("Test_Mac_Printer", "/non/existent/target.tif", None);
+        assert!(res.is_err());
+        assert!(res.unwrap_err().contains("Target TIFF file not found"));
+    }
 }
+
 
 
