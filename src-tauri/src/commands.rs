@@ -684,7 +684,11 @@ pub async fn get_printers() -> Result<Vec<crate::print::Printer>, String> {
     {
         crate::print::windows::get_printers()
     }
-    #[cfg(unix)]
+    #[cfg(target_os = "macos")]
+    {
+        crate::print::macos::get_printers()
+    }
+    #[cfg(all(unix, not(target_os = "macos")))]
     {
         crate::print::unix::get_printers()
     }
@@ -702,7 +706,11 @@ pub async fn get_printer_capabilities(
     {
         crate::print::windows::get_printer_capabilities(&printer_name)
     }
-    #[cfg(unix)]
+    #[cfg(target_os = "macos")]
+    {
+        crate::print::macos::get_printer_capabilities(&printer_name)
+    }
+    #[cfg(all(unix, not(target_os = "macos")))]
     {
         crate::print::unix::get_printer_capabilities(&printer_name)
     }
@@ -722,7 +730,12 @@ pub async fn show_printer_properties(
     {
         crate::print::windows::show_printer_properties(&printer_name, &state)
     }
-    #[cfg(unix)]
+    #[cfg(target_os = "macos")]
+    {
+        let _ = state;
+        crate::print::macos::show_printer_properties(&printer_name)
+    }
+    #[cfg(all(unix, not(target_os = "macos")))]
     {
         let _ = (state, printer_name);
         Ok(())
@@ -750,7 +763,16 @@ pub async fn print_target_native(
             Some(&state),
         )
     }
-    #[cfg(unix)]
+    #[cfg(target_os = "macos")]
+    {
+        let _ = state;
+        crate::print::macos::print_target(
+            &printer_name,
+            &tiff_path,
+            options.as_ref(),
+        )
+    }
+    #[cfg(all(unix, not(target_os = "macos")))]
     {
         let _ = state;
         crate::print::unix::print_target(
