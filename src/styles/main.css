@@ -1099,10 +1099,33 @@ button.danger:hover {
   color: #a5d6a7;
 }
 
+.notification-banner.warning {
+  background: rgba(255, 152, 0, 0.12);
+  border: 1px solid rgba(255, 152, 0, 0.3);
+  color: #ffcc80;
+}
+
 .notification-banner.error {
   background: rgba(244, 67, 54, 0.12);
   border: 1px solid rgba(244, 67, 54, 0.3);
   color: #ef9a9a;
+}
+
+.notification-close {
+  background: none;
+  border: none;
+  color: inherit;
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 4px;
+  margin-left: auto;
+  opacity: 0.7;
+  transition: opacity 0.2s ease;
+}
+
+.notification-close:hover {
+  opacity: 1;
 }
 
 .print-actions-row {

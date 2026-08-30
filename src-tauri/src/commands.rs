@@ -1405,4 +1405,95 @@ mod tests {
         let candidates_exe = get_binary_candidates("targen.exe");
         assert_eq!(candidates_exe, vec!["targen.exe"]);
     }
+
+    #[test]
+    fn test_verify_stage_artefacts_empty_input() {
+        let status = verify_stage_artefacts("".to_string(), "".to_string());
+        assert!(!status.stage1_complete);
+        assert!(!status.stage2_complete);
+        assert!(!status.stage3_complete);
+        assert!(!status.stage4_complete);
+        assert!(status.profile_path.is_none());
+
+        let status2 = verify_stage_artefacts("  ".to_string(), "  ".to_string());
+        assert!(!status2.stage1_complete);
+        assert!(!status2.stage2_complete);
+        assert!(!status2.stage3_complete);
+        assert!(!status2.stage4_complete);
+        assert!(status2.profile_path.is_none());
+    }
+
+    #[test]
+    fn test_verify_stage_artefacts_file_progression() {
+        let temp_dir = std::env::temp_dir().join(format!("iccery_test_gating_{}", std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos()));
+        std::fs::create_dir_all(&temp_dir).unwrap();
+        let cwd = temp_dir.to_string_lossy().to_string();
+        let basename = "test_target".to_string();
+
+        // 0. No files exist
+        let status0 = verify_stage_artefacts(cwd.clone(), basename.clone());
+        assert!(!status0.stage1_complete);
+        assert!(!status0.stage2_complete);
+        assert!(!status0.stage3_complete);
+        assert!(!status0.stage4_complete);
+        assert!(status0.profile_path.is_none());
+
+        // 1. .ti1 created
+        std::fs::write(temp_dir.join("test_target.ti1"), b"ti1 content").unwrap();
+        let status1 = verify_stage_artefacts(cwd.clone(), basename.clone());
+        assert!(status1.stage1_complete);
+        assert!(!status1.stage2_complete);
+        assert!(!status1.stage3_complete);
+        assert!(!status1.stage4_complete);
+        assert!(status1.profile_path.is_none());
+
+        // 2. .ti2 created
+        std::fs::write(temp_dir.join("test_target.ti2"), b"ti2 content").unwrap();
+        let status2 = verify_stage_artefacts(cwd.clone(), basename.clone());
+        assert!(status2.stage1_complete);
+        assert!(status2.stage2_complete);
+        assert!(!status2.stage3_complete);
+        assert!(!status2.stage4_complete);
+
+        // 3. .ti3 created
+        std::fs::write(temp_dir.join("test_target.ti3"), b"ti3 content").unwrap();
+        let status3 = verify_stage_artefacts(cwd.clone(), basename.clone());
+        assert!(status3.stage1_complete);
+        assert!(status3.stage2_complete);
+        assert!(status3.stage3_complete);
+        assert!(!status3.stage4_complete);
+
+        // 4. Profile created (.icc / .icm)
+        let (prof_ext, _) = resolve_profile_extension(&cwd, &basename);
+        std::fs::write(temp_dir.join(format!("test_target.{}", prof_ext)), b"icc profile content").unwrap();
+        let status4 = verify_stage_artefacts(cwd.clone(), basename.clone());
+        assert!(status4.stage1_complete);
+        assert!(status4.stage2_complete);
+        assert!(status4.stage3_complete);
+        assert!(status4.stage4_complete);
+        assert!(status4.profile_path.is_some());
+
+        // Clean up
+        let _ = std::fs::remove_dir_all(&temp_dir);
+    }
+
+    #[test]
+    fn test_verify_stage_artefacts_missing_intermediate() {
+        let temp_dir = std::env::temp_dir().join(format!("iccery_test_missing_ti2_{}", std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos()));
+        std::fs::create_dir_all(&temp_dir).unwrap();
+        let cwd = temp_dir.to_string_lossy().to_string();
+        let basename = "gap_target".to_string();
+
+        // Create .ti1 and .ti3, but NOT .ti2
+        std::fs::write(temp_dir.join("gap_target.ti1"), b"ti1").unwrap();
+        std::fs::write(temp_dir.join("gap_target.ti3"), b"ti3").unwrap();
+
+        let status = verify_stage_artefacts(cwd.clone(), basename.clone());
+        assert!(status.stage1_complete);
+        assert!(!status.stage2_complete, ".ti2 is missing");
+        assert!(status.stage3_complete, ".ti3 exists");
+        assert!(!status.stage4_complete);
+
+        let _ = std::fs::remove_dir_all(&temp_dir);
+    }
 }
