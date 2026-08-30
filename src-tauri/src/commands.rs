@@ -129,6 +129,91 @@ pub fn get_default_working_dir(app: AppHandle) -> Result<String, String> {
 }
 
 #[tauri::command]
+pub fn log_frontend_message(level: String, message: String, context: Option<String>) {
+    let ctx = context.map(|c| format!("[{}] ", c)).unwrap_or_default();
+    match level.to_lowercase().as_str() {
+        "error" => log::error!(target: "frontend", "{}{}", ctx, message),
+        "warn" | "warning" => log::warn!(target: "frontend", "{}{}", ctx, message),
+        "debug" => log::debug!(target: "frontend", "{}{}", ctx, message),
+        "trace" => log::trace!(target: "frontend", "{}{}", ctx, message),
+        _ => log::info!(target: "frontend", "{}{}", ctx, message),
+    }
+}
+
+pub fn prune_historical_logs(log_dir: &std::path::Path, max_history: usize) {
+    if let Ok(entries) = std::fs::read_dir(log_dir) {
+        let mut rotated_files: Vec<(std::path::PathBuf, std::time::SystemTime)> = Vec::new();
+        for entry in entries.flatten() {
+            let path = entry.path();
+            if path.is_file() {
+                let name = path.file_name().and_then(|n| n.to_str()).unwrap_or("");
+                // Identify rotated log files (e.g. iccery_2026-08-30.log, iccery.log.1, etc.)
+                if name.starts_with("iccery") && name != "iccery.log" {
+                    let mtime = entry.metadata().and_then(|m| m.modified()).unwrap_or(std::time::UNIX_EPOCH);
+                    rotated_files.push((path, mtime));
+                }
+            }
+        }
+
+        // Sort newest first
+        rotated_files.sort_by(|a, b| b.1.cmp(&a.1));
+
+        // Delete any beyond max_history
+        if rotated_files.len() > max_history {
+            for (old_file, _) in &rotated_files[max_history..] {
+                log::info!(target: "log", "Pruning old log segment: {:?}", old_file);
+                let _ = std::fs::remove_file(old_file);
+            }
+        }
+    }
+}
+
+pub fn extract_recent_log_lines(content: &str, max_lines: usize) -> String {
+    let lines: Vec<&str> = content.lines().collect();
+    if lines.len() <= max_lines {
+        content.to_string()
+    } else {
+        lines[lines.len() - max_lines..].join("\n")
+    }
+}
+
+#[tauri::command]
+pub fn get_recent_log_excerpt(
+    app: AppHandle,
+    max_lines: Option<usize>,
+    max_bytes: Option<usize>,
+) -> Result<String, String> {
+    let log_dir = app
+        .path()
+        .app_log_dir()
+        .map_err(|e| format!("Failed to resolve log dir: {}", e))?;
+    let log_file = log_dir.join("iccery.log");
+
+    if !log_file.exists() {
+        return Ok("No log file found yet.".to_string());
+    }
+
+    let max_b = max_bytes.unwrap_or(65536); // 64 KiB cap
+    let max_l = max_lines.unwrap_or(200);
+
+    use std::io::{Read, Seek, SeekFrom};
+    let mut file = std::fs::File::open(&log_file).map_err(|e| format!("Failed to open log file: {}", e))?;
+    let file_len = file.metadata().map_err(|e| e.to_string())?.len();
+
+    let mut buf = Vec::new();
+    if file_len > max_b as u64 {
+        file.seek(SeekFrom::End(-(max_b as i64)))
+            .map_err(|e| e.to_string())?;
+        file.read_to_end(&mut buf).map_err(|e| e.to_string())?;
+    } else {
+        file.read_to_end(&mut buf).map_err(|e| e.to_string())?;
+    }
+
+    let text = String::from_utf8_lossy(&buf);
+    Ok(extract_recent_log_lines(&text, max_l))
+}
+
+#[tauri::command]
 pub fn get_log_path(app: AppHandle) -> Result<String, String> {
     let log_dir = app
         .path()
@@ -1493,6 +1578,44 @@ mod tests {
         assert!(!status.stage2_complete, ".ti2 is missing");
         assert!(status.stage3_complete, ".ti3 exists");
         assert!(!status.stage4_complete);
+
+        let _ = std::fs::remove_dir_all(&temp_dir);
+    }
+
+    #[test]
+    fn test_extract_recent_log_lines() {
+        let content = "line 1\nline 2\nline 3\nline 4\nline 5";
+        assert_eq!(extract_recent_log_lines(content, 2), "line 4\nline 5");
+        assert_eq!(extract_recent_log_lines(content, 10), content);
+        assert_eq!(extract_recent_log_lines("", 5), "");
+    }
+
+    #[test]
+    fn test_prune_historical_logs() {
+        let temp_dir = std::env::temp_dir().join(format!("iccery_test_logs_{}", std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos()));
+        std::fs::create_dir_all(&temp_dir).unwrap();
+
+        // Create main log
+        std::fs::write(temp_dir.join("iccery.log"), b"active log").unwrap();
+
+        // Create 8 historical log files with slight pauses to ensure distinct mtimes
+        for i in 1..=8 {
+            let file_path = temp_dir.join(format!("iccery_2026-08-0{}.log", i));
+            std::fs::write(&file_path, format!("old log {}", i)).unwrap();
+        }
+
+        prune_historical_logs(&temp_dir, 5);
+
+        // Count remaining historical files
+        let mut count = 0;
+        for entry in std::fs::read_dir(&temp_dir).unwrap().flatten() {
+            let name = entry.file_name().to_string_lossy().to_string();
+            if name.starts_with("iccery_") {
+                count += 1;
+            }
+        }
+        assert_eq!(count, 5);
+        assert!(temp_dir.join("iccery.log").exists(), "Active log must never be deleted");
 
         let _ = std::fs::remove_dir_all(&temp_dir);
     }

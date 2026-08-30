@@ -19,14 +19,20 @@ pub fn run() {
                     tauri_plugin_log::Target::new(tauri_plugin_log::TargetKind::Stdout),
                     tauri_plugin_log::Target::new(tauri_plugin_log::TargetKind::Webview),
                 ])
-                .level(if cfg!(debug_assertions) {
-                    log::LevelFilter::Debug
-                } else {
-                    log::LevelFilter::Info
-                })
-                .rotation_strategy(tauri_plugin_log::RotationStrategy::KeepOne)
+                .max_file_size(5 * 1024 * 1024)
+                .rotation_strategy(tauri_plugin_log::RotationStrategy::KeepAll)
                 .build(),
         )
+        .setup(|app| {
+            if let Ok(log_dir) = app.path().app_log_dir() {
+                commands::prune_historical_logs(&log_dir, 5);
+            }
+            let settings = settings::load_settings(app.handle().clone()).unwrap_or_default();
+            let filter = settings::parse_log_level_filter(settings.log_level.as_deref());
+            log::set_max_level(filter);
+            log::info!("ICCery initialized. Effective log level: {:?}", filter);
+            Ok(())
+        })
         .manage(process_manager::ProcessManager::new())
         .manage(print::PrinterDevModeStore::new())
         .invoke_handler(tauri::generate_handler![
@@ -34,6 +40,8 @@ pub fn run() {
             commands::get_app_info,
             commands::get_default_working_dir,
             commands::get_log_path,
+            commands::get_recent_log_excerpt,
+            commands::log_frontend_message,
             commands::open_log_dir,
             commands::parse_ti2_header,
             commands::select_existing_target,

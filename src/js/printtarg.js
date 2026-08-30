@@ -2,6 +2,7 @@ const { invoke } = window.__TAURI__.core;
 const { listen } = window.__TAURI__.event;
 import { setStage2Result } from './chartread.js';
 import { wizardState } from './state.js';
+import { logger } from './logger.js';
 
 // Module-level state: set by Stage 1 when it completes
 let stage1Basename = "";
@@ -463,6 +464,7 @@ export function initPrinttarg() {
       await invoke("run_printtarg", { config });
 
     } catch (err) {
+      logger.error(`run_printtarg invocation failed: ${err}`, 'Stage2-Printtarg');
       logPre.textContent += `\n[INVOKE ERROR] ${err}\n`;
       btnCreateLayout.disabled = false;
     }

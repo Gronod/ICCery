@@ -8,6 +8,57 @@ use tokio::sync::Mutex;
 
 use crate::events::{emit_error, emit_stderr, emit_stdout};
 
+pub fn get_user_home_dir() -> Option<String> {
+    #[cfg(windows)]
+    {
+        std::env::var("USERPROFILE")
+            .ok()
+            .or_else(|| {
+                let drive = std::env::var("HOMEDRIVE").ok()?;
+                let path = std::env::var("HOMEPATH").ok()?;
+                Some(format!("{}{}", drive, path))
+            })
+    }
+    #[cfg(not(windows))]
+    {
+        std::env::var("HOME").ok()
+    }
+}
+
+pub fn sanitize_arg_for_logging(arg: &str) -> String {
+    if let Some(home) = get_user_home_dir() {
+        if !home.trim().is_empty() {
+            #[cfg(windows)]
+            {
+                let arg_lower = arg.to_lowercase();
+                let home_lower = home.to_lowercase();
+                if let Some(pos) = arg_lower.find(&home_lower) {
+                    let mut result = String::new();
+                    result.push_str(&arg[..pos]);
+                    result.push('~');
+                    result.push_str(&arg[pos + home.len()..]);
+                    return result;
+                }
+            }
+            #[cfg(not(windows))]
+            {
+                if let Some(pos) = arg.find(&home) {
+                    let mut result = String::new();
+                    result.push_str(&arg[..pos]);
+                    result.push('~');
+                    result.push_str(&arg[pos + home.len()..]);
+                    return result;
+                }
+            }
+        }
+    }
+    arg.to_string()
+}
+
+pub fn sanitize_args_for_logging(args: &[String]) -> Vec<String> {
+    args.iter().map(|a| sanitize_arg_for_logging(a)).collect()
+}
+
 pub struct ProcessManager {
     stdins: Arc<Mutex<HashMap<String, Arc<Mutex<ChildStdin>>>>>,
     killers: Arc<Mutex<HashMap<String, tokio::sync::oneshot::Sender<()>>>>,
@@ -37,7 +88,7 @@ impl ProcessManager {
         }
         let mut command = Command::new(&binary);
         command.args(&args);
-        if let Some(dir) = cwd {
+        if let Some(ref dir) = cwd {
             command.current_dir(dir);
         }
         command.stdout(Stdio::piped());
@@ -51,7 +102,21 @@ impl ProcessManager {
             command.creation_flags(CREATE_NO_WINDOW);
         }
 
-        log::info!(target: "subprocess", "Spawning process '{id}': {binary} {:?}", args);
+        let sanitized_binary = sanitize_arg_for_logging(&binary);
+        let sanitized_args = sanitize_args_for_logging(&args);
+        let sanitized_cwd = cwd.as_deref().map(sanitize_arg_for_logging);
+        log::info!(
+            target: "subprocess",
+            "Spawning process '{id}': {sanitized_binary} {:?} (cwd: {:?})",
+            sanitized_args,
+            sanitized_cwd
+        );
+        log::debug!(
+            target: "subprocess",
+            "Raw spawn invocation for '{id}': {binary} {:?} (cwd: {:?})",
+            args,
+            cwd
+        );
         match command.spawn() {
             Ok(mut child) => {
                 let stdout = child.stdout.take().expect("Failed to open stdout");
@@ -243,5 +308,19 @@ mod tests {
             assert!(stdins.is_empty());
             assert!(killers.is_empty());
         }
+    }
+
+    #[test]
+    fn test_sanitize_arg_for_logging() {
+        if let Some(home) = get_user_home_dir() {
+            if !home.is_empty() {
+                let test_path = format!("{}/test_file.ti1", home);
+                let sanitized = sanitize_arg_for_logging(&test_path);
+                assert!(sanitized.starts_with('~'));
+                assert!(!sanitized.contains(&home));
+            }
+        }
+        let safe_arg = "-v";
+        assert_eq!(sanitize_arg_for_logging(safe_arg), "-v");
     }
 }

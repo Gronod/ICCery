@@ -3,6 +3,7 @@ const { listen } = window.__TAURI__.event;
 import { setStage4Result } from './profcheck.js';
 import { loadGamutMesh } from './gamut_viewer.js';
 import { wizardState } from './state.js';
+import { logger } from './logger.js';
 
 let chartreadBasename = "";
 let chartreadCwd = "";
@@ -130,6 +131,7 @@ export function initColprof() {
 
       await invoke("run_colprof", { config });
     } catch (err) {
+      logger.error(`run_colprof invocation failed: ${err}`, 'Stage4-Colprof');
       logPre.textContent += `\n[INVOKE ERROR] ${err}\n`;
       spinnerContainer.classList.add("hidden");
       btnCreateProfile.disabled = false;
