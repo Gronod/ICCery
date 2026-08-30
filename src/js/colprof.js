@@ -164,18 +164,5 @@ async function triggerGamutExtraction(basename, cwd, profilePath) {
 }
 
 function advanceToStage5() {
-  const steps = document.querySelectorAll('.step');
-  const stages = document.querySelectorAll('.stage');
-
-  steps.forEach(s => s.classList.remove('active'));
-  if (steps[4]) steps[4].classList.add('active');
-
-  stages.forEach(s => {
-    s.classList.remove('active');
-    s.classList.add('hidden');
-  });
-  if (stages[4]) {
-    stages[4].classList.remove('hidden');
-    stages[4].classList.add('active');
-  }
+  wizardState.navigateToStage(5);
 }

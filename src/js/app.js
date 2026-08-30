@@ -11,36 +11,31 @@ import { wizardState } from './state.js';
 const { invoke } = window.__TAURI__.core;
 
 document.addEventListener('DOMContentLoaded', () => {
-  // Wizard navigation
+  // Wizard stepper navigation with re-validation
   const steps = document.querySelectorAll('.step');
-  const stages = document.querySelectorAll('.stage');
+  steps.forEach(step => {
+    step.addEventListener('click', async () => {
+      const targetStep = parseInt(step.getAttribute('data-step'), 10);
+      if (isNaN(targetStep)) return;
+      await wizardState.navigateToStage(targetStep);
+    });
+  });
+
+  // Global wizard notification close button
+  const wizardNotificationClose = document.getElementById('wizardNotificationClose');
+  if (wizardNotificationClose) {
+    wizardNotificationClose.addEventListener('click', () => {
+      wizardState.hideNotice();
+    });
+  }
+
+  // Re-validate gating on window focus (e.g. when returning after modifying files in Explorer/Finder)
+  window.addEventListener('focus', () => {
+    wizardState.updateGating();
+  });
 
   // Initialize gating on load
   wizardState.updateGating();
-
-  steps.forEach(step => {
-    step.addEventListener('click', () => {
-      if (step.classList.contains('disabled')) {
-        return;
-      }
-
-      const targetStep = step.getAttribute('data-step');
-      
-      // Update UI
-      steps.forEach(s => s.classList.remove('active'));
-      stages.forEach(s => {
-        s.classList.remove('active');
-        s.classList.add('hidden');
-      });
-      
-      step.classList.add('active');
-      const targetStage = document.getElementById(`stage-${targetStep}`);
-      if (targetStage) {
-        targetStage.classList.remove('hidden');
-        targetStage.classList.add('active');
-      }
-    });
-  });
 
   // About modal
   const aboutDialog = document.getElementById('aboutDialog');

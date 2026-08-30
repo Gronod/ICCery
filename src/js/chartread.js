@@ -476,7 +476,8 @@ export function initChartread() {
             basename: basename,
           });
           logPre.textContent += `\n[SUCCESS] Promoted ${recordedPasses[0].filename} → ${basename}.ti3 (single pass, average not invoked).\n`;
-          acceptStage3(basename, cwd);
+          setStage3Result(basename, cwd);
+          advanceToStage4();
         } catch (e) {
           btnFinishAndAverage.disabled = false;
           setPrompt(`Failed to restore ${basename}.ti3: ${e}`);
@@ -503,7 +504,8 @@ export function initChartread() {
           if (event.payload.code === 0) {
             setPrompt(`✅ Successfully averaged ${recordedPasses.length} measurement passes into ${basename}.ti3!`);
             logPre.textContent += `\n[SUCCESS] average wrote ${basename}.ti3\n`;
-            acceptStage3(basename, cwd);
+            setStage3Result(basename, cwd);
+            advanceToStage4();
           } else {
             setPrompt(`⚠️ Argyll average exited with code ${event.payload.code}. Promoting pass 1 as fallback.`);
             logPre.textContent += `\n[ERROR] average exited ${event.payload.code}. Promoting ${recordedPasses[0].filename}.\n`;
@@ -513,7 +515,8 @@ export function initChartread() {
                 source: recordedPasses[0].filename,
                 basename: basename,
               });
-              acceptStage3(basename, cwd);
+              setStage3Result(basename, cwd);
+              advanceToStage4();
             } catch (e) {
               btnFinishAndAverage.disabled = false;
               setPrompt(`Average failed and fallback promote failed: ${e}`);
@@ -609,21 +612,5 @@ export function initChartread() {
 }
 
 function advanceToStage4() {
-  const steps = document.querySelectorAll('.step');
-  const stages = document.querySelectorAll('.stage');
-
-  steps.forEach(s => s.classList.remove('active'));
-  if (steps[3]) {
-    steps[3].classList.add('active');
-    steps[3].classList.remove('disabled');
-  }
-
-  stages.forEach(s => {
-    s.classList.remove('active');
-    s.classList.add('hidden');
-  });
-  if (stages[3]) {
-    stages[3].classList.remove('hidden');
-    stages[3].classList.add('active');
-  }
+  wizardState.navigateToStage(4);
 }

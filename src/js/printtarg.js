@@ -652,18 +652,5 @@ export function initPrinttarg() {
 }
 
 function advanceToStage3() {
-  const steps = document.querySelectorAll('.step');
-  const stages = document.querySelectorAll('.stage');
-
-  steps.forEach(s => s.classList.remove('active'));
-  if (steps[2]) steps[2].classList.add('active');
-
-  stages.forEach(s => {
-    s.classList.remove('active');
-    s.classList.add('hidden');
-  });
-  if (stages[2]) {
-    stages[2].classList.remove('hidden');
-    stages[2].classList.add('active');
-  }
+  wizardState.navigateToStage(3);
 }
