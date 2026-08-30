@@ -168,6 +168,38 @@ impl ProcessManager {
         }
         Err("Process not found".to_string())
     }
+
+    /// Kills all currently managed subprocesses, closes their stdins, and signals termination.
+    /// Returns the number of processes signaled.
+    pub async fn kill_all(&self) -> usize {
+        // 1. Close and drop all stdin streams
+        {
+            let mut stdins = self.stdins.lock().await;
+            stdins.clear();
+        }
+
+        // 2. Extract and send kill signal to all active killer channels
+        let killers_to_signal = {
+            let mut killers = self.killers.lock().await;
+            let list: Vec<(String, tokio::sync::oneshot::Sender<()>)> = killers.drain().collect();
+            list
+        };
+
+        let count = killers_to_signal.len();
+        if count > 0 {
+            log::info!(target: "subprocess", "Terminating all managed subprocesses ({count} active)");
+        }
+
+        for (id, killer) in killers_to_signal {
+            log::info!(target: "subprocess", "Sending kill signal to subprocess '{id}'");
+            let _ = killer.send(());
+        }
+
+        // Give background tasks a brief moment to initiate child.start_kill()
+        tokio::time::sleep(tokio::time::Duration::from_millis(50)).await;
+
+        count
+    }
 }
 
 #[cfg(test)]
@@ -181,6 +213,35 @@ mod tests {
         {
             let mut stdins = pm.stdins.lock().await;
             assert!(!stdins.contains_key("test_proc"));
+        }
+    }
+
+    #[tokio::test]
+    async fn test_kill_all_cleans_maps() {
+        let pm = ProcessManager::new();
+
+        let (tx1, mut rx1) = tokio::sync::oneshot::channel::<()>();
+        let (tx2, mut rx2) = tokio::sync::oneshot::channel::<()>();
+
+        {
+            let mut killers = pm.killers.lock().await;
+            killers.insert("proc_1".to_string(), tx1);
+            killers.insert("proc_2".to_string(), tx2);
+        }
+
+        let killed_count = pm.kill_all().await;
+        assert_eq!(killed_count, 2);
+
+        // Verify channels received signal
+        assert!(rx1.try_recv().is_ok());
+        assert!(rx2.try_recv().is_ok());
+
+        // Verify maps are empty
+        {
+            let stdins = pm.stdins.lock().await;
+            let killers = pm.killers.lock().await;
+            assert!(stdins.is_empty());
+            assert!(killers.is_empty());
         }
     }
 }

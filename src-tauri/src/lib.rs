@@ -1,3 +1,5 @@
+use tauri::Manager;
+
 mod commands;
 mod events;
 mod print;
@@ -39,6 +41,7 @@ pub fn run() {
             commands::select_directory,
             commands::send_stdin,
             commands::kill_process,
+            commands::kill_all_processes,
             commands::resolve_binary,
             commands::detect_instruments,
             commands::get_profile_path,
@@ -66,6 +69,26 @@ pub fn run() {
             settings::export_preset_json,
             settings::import_preset_json,
         ])
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        .build(tauri::generate_context!())
+        .expect("error while building tauri application")
+        .run(|app_handle, event| {
+            match event {
+                tauri::RunEvent::Exit | tauri::RunEvent::ExitRequested { .. } => {
+                    let pm = app_handle.state::<process_manager::ProcessManager>();
+                    tauri::async_runtime::block_on(async {
+                        pm.kill_all().await;
+                    });
+                }
+                tauri::RunEvent::WindowEvent {
+                    event: tauri::WindowEvent::CloseRequested { .. },
+                    ..
+                } => {
+                    let pm = app_handle.state::<process_manager::ProcessManager>();
+                    tauri::async_runtime::block_on(async {
+                        pm.kill_all().await;
+                    });
+                }
+                _ => {}
+            }
+        });
 }
