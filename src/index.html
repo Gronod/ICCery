@@ -691,10 +691,12 @@
                 <option value="debug">Debug (Detailed)</option>
                 <option value="trace">Trace (Verbose)</option>
               </select>
+              <small class="help-hint" style="display:block; font-size:0.75rem; color:var(--text-muted, #888); margin-top:3px;">Applies immediately on Save</small>
             </div>
-            <div style="display: flex; align-items: flex-end; gap: 8px;">
+            <div style="display: flex; align-items: flex-end; gap: 8px; flex-wrap: wrap;">
               <button type="button" id="btnOpenLogFolder" class="secondary" title="Open log folder in file explorer">📂 Open Log Folder</button>
-              <button type="button" id="btnCopyLogPath" class="secondary" title="Copy log path to clipboard">📋 Copy Path</button>
+              <button type="button" id="btnCopyLogPath" class="secondary" title="Copy full log file path to clipboard">📋 Copy Path</button>
+              <button type="button" id="btnCopyLogExcerpt" class="secondary" title="Copy recent log entries (last 200 lines) to clipboard">📋 Copy Recent Logs</button>
             </div>
           </div>
           <small id="logPathDisplay" class="path-display" style="margin-top: 6px; display: block;"></small>

@@ -3,6 +3,7 @@ const { listen } = window.__TAURI__.event;
 import { setStage1Result } from './printtarg.js';
 import { populateStage3TargetContext } from './chartread.js';
 import { wizardState } from './state.js';
+import { logger } from './logger.js';
 
 export function initTargen() {
   const colourSpaceRadios = document.querySelectorAll('input[name="colourSpace"]');
@@ -351,6 +352,7 @@ export function initTargen() {
         if (logPre) logPre.textContent = "Starting targen...\n";
         await invoke("run_targen", { config });
       } catch (err) {
+        logger.error(`run_targen invocation failed: ${err}`, 'Stage1-Targen');
         if (logPre) logPre.textContent += `\n[INVOKE ERROR] ${err}\n`;
         btnGenerate.disabled = false;
       }

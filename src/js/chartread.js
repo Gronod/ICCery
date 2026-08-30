@@ -3,6 +3,7 @@ const { listen } = window.__TAURI__.event;
 import { startSwatchListener, stopSwatchListener } from './swatch_grid.js';
 import { setStage3Result } from './colprof.js';
 import { wizardState } from './state.js';
+import { logger } from './logger.js';
 
 // Module-level state: set by Stage 2 when it completes
 let stage2Basename = "";
