@@ -2,6 +2,9 @@
 
 This document outlines the architectural roadmap, completed milestones, and upcoming development goals for **ICCery**.
 
+> [!NOTE]
+> Authoritative milestone and issue tracking lives in **Gitea Issues → Milestones**.
+
 ---
 
 ## 1. Architecture Summary
@@ -55,27 +58,35 @@ ICCery is a native, cross-platform desktop application built with:
 - [x] Resolved P0 process manager deadlock and premature stdin pipe closure affecting interactive `chartread` instrument workflows.
 - [x] Decoupled `ChildStdin` mutex management from child process wait/reap tasks.
 
----
-
-## 3. Future Roadmap
-
 ### Milestone 8 — Advanced Measurement & Workflow Enhancements (`v0.3.0`)
 - [x] **Averaging & Multi-Pass Reading**: Integrated Argyll `average` multi-pass measurement sheet workflow for noise reduction.
 - [x] **Instrument Auto-Detection**: Added hardware detection via `instlist`.
 - [x] **Preset Management**: Save, load, export, and import profiling recipes.
 - [x] **Full 3D Convex Hull in CIELAB**: Replaced 2D projected Delaunay triangulation with full 3D QuickHull in Lab space with touch rotation controls.
 
-### Hotfix Releases (`v0.3.1` & `v0.3.2`)
+### Maintenance & Hotfix Releases (`v0.3.1` – `v0.3.6`)
 - [x] **v0.3.1 (#103)**: Stage 1 file browse via backend `select_target_file` dialog.
 - [x] **v0.3.2 (#108)**: Linux CI runner compatibility updated to Ubuntu 22.04 LTS so `.deb` packages run without requiring newer GLIBC versions.
 - [x] **v0.3.3 (#127)**: ArgyllCMS binary sidecars dynamically fetched at build time from `Gronod/argyllcms` releases; removed vendored binaries from repository; added Windows NSIS USB instrument driver installer hook.
+- [x] **v0.3.4 & v0.3.5 (#119, #134)**: TIFF preview metadata extraction, printtarg custom patch labels, and robust `instlist` JSON parsing.
+- [x] **v0.3.6 (#137)**: Interactive `chartread` support for multi-key prompts (accept/override key combos).
+
+### Milestone 10 — Production Ready Features (`v0.5.0` & `v0.5.1`)
+- [x] **Structured Logging (#139)**: Integrated `tauri-plugin-log` with rotating logs in native OS app log directory and ArgyllCMS stdout/stderr stream capture.
+- [x] **Stage 3 Direct Resume (#140)**: Open existing `.ti2` target file in Stage 1 to parse header metadata and jump directly to Stage 3 (Measurement).
+- [x] **Stage 1 Additional Customisation & Tooltips (#141)**: Exposure of 11 advanced `targen` tuning parameters (`-g`, `-s`, `-n`, `-c`, `-N`, `-G`, `-A`, algorithm selection, `-l`, `-V`, `-p`) in a collapsible section with contextual guidance tooltips and preset support.
+- [x] **Subprocess Lifecycle & Clean Exit (#147, #149)**: Tauri application and window close hooks invoking `ProcessManager::kill_all` to prevent orphaned hardware-locking processes.
+
+---
+
+## 3. Future Roadmap
 
 ### Milestone 9 — macOS Native Support & Enhanced Print Spooling (`v0.4.0`)
-- [ ] **macOS Platform Bundle**: Build and sign universal macOS `.dmg` bundles.
+- [ ] **macOS Platform Bundle**: Build and sign universal macOS `.dmg` bundles with notarization.
 - [ ] **macOS Raw Spooling**: Native CoreGraphics/CUPS raw print dialog bypass.
-- [ ] **SpectroScan & Automated Table Support**: Support XY automated scanning tables in `chartread`.
+- [ ] **SpectroScan & Automated Table Support**: Support XY automated scanning tables (i1iO / SpectroScan) in `chartread`.
 
-### Milestone 10 — Enterprise Colour Workflow (`v1.0.0`)
+### Milestone 11 — Enterprise Colour Workflow (`v1.0.0`)
 - [ ] **Custom CGATS Export**: Export and import industry-standard `.ti3` / `.txt` CGATS datasets.
 - [ ] **Batch Verification & Drift Tracking**: Track printer drift over time by comparing periodic verification measurements against a baseline profile.
 - [ ] **Multi-Language Localization**: Full UI internationalization (English, German, French, Japanese).
