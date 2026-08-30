@@ -2,6 +2,7 @@ const { invoke } = window.__TAURI__.core;
 const { listen } = window.__TAURI__.event;
 import { loadGamutMesh } from './gamut_viewer.js';
 import { wizardState } from './state.js';
+import { logger } from './logger.js';
 
 let profileBasename = "";
 let profileCwd = "";
@@ -106,6 +107,7 @@ export function initProfcheck() {
 
       await invoke("run_profcheck", { config });
     } catch (err) {
+      logger.error(`run_profcheck invocation failed: ${err}`, 'Stage5-Profcheck');
       logPre.textContent += `\n[INVOKE ERROR] ${err}\n`;
       btnVerify.disabled = false;
     }

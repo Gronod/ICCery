@@ -166,6 +166,23 @@ pub fn get_default_presets() -> Vec<ProfilingPreset> {
     ]
 }
 
+pub fn parse_log_level_filter(level: Option<&str>) -> log::LevelFilter {
+    match level.map(|s| s.trim().to_lowercase()).as_deref() {
+        Some("error") => log::LevelFilter::Error,
+        Some("warn") | Some("warning") => log::LevelFilter::Warn,
+        Some("info") => log::LevelFilter::Info,
+        Some("debug") => log::LevelFilter::Debug,
+        Some("trace") => log::LevelFilter::Trace,
+        _ => {
+            if cfg!(debug_assertions) {
+                log::LevelFilter::Debug
+            } else {
+                log::LevelFilter::Info
+            }
+        }
+    }
+}
+
 #[tauri::command]
 pub fn load_settings(app: AppHandle) -> Result<AppSettings, String> {
     let path = app.path().app_data_dir().unwrap().join("settings.json");
@@ -181,7 +198,14 @@ pub fn save_settings(app: AppHandle, settings: AppSettings) -> Result<(), String
     let path = app.path().app_data_dir().unwrap();
     fs::create_dir_all(&path).map_err(|e| e.to_string())?;
     let json = serde_json::to_string_pretty(&settings).unwrap();
-    fs::write(path.join("settings.json"), json).map_err(|e| e.to_string())
+    fs::write(path.join("settings.json"), json).map_err(|e| e.to_string())?;
+
+    // Dynamically apply the log level immediately at runtime
+    let filter = parse_log_level_filter(settings.log_level.as_deref());
+    log::set_max_level(filter);
+    log::info!("Applied log level filter: {:?}", filter);
+
+    Ok(())
 }
 
 #[tauri::command]
@@ -303,5 +327,25 @@ mod tests {
         let json = export_preset_json(preset.clone()).expect("Export failed");
         let imported = import_preset_json(json).expect("Import failed");
         assert_eq!(preset, imported);
+    }
+
+    #[test]
+    fn test_parse_log_level_filter() {
+        assert_eq!(parse_log_level_filter(Some("error")), log::LevelFilter::Error);
+        assert_eq!(parse_log_level_filter(Some("ERROR")), log::LevelFilter::Error);
+        assert_eq!(parse_log_level_filter(Some("warn")), log::LevelFilter::Warn);
+        assert_eq!(parse_log_level_filter(Some("warning")), log::LevelFilter::Warn);
+        assert_eq!(parse_log_level_filter(Some("info")), log::LevelFilter::Info);
+        assert_eq!(parse_log_level_filter(Some("debug")), log::LevelFilter::Debug);
+        assert_eq!(parse_log_level_filter(Some("trace")), log::LevelFilter::Trace);
+        assert_eq!(parse_log_level_filter(Some("  Info  ")), log::LevelFilter::Info);
+
+        if cfg!(debug_assertions) {
+            assert_eq!(parse_log_level_filter(None), log::LevelFilter::Debug);
+            assert_eq!(parse_log_level_filter(Some("unknown")), log::LevelFilter::Debug);
+        } else {
+            assert_eq!(parse_log_level_filter(None), log::LevelFilter::Info);
+            assert_eq!(parse_log_level_filter(Some("unknown")), log::LevelFilter::Info);
+        }
     }
 }

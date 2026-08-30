@@ -7,6 +7,7 @@ import { initSettings } from './settings.js';
 import { initGamutViewer } from './gamut_viewer.js';
 import { initPresets } from './presets.js';
 import { wizardState } from './state.js';
+import { logger } from './logger.js';
 
 const { invoke } = window.__TAURI__.core;
 
@@ -73,7 +74,7 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
       initFn();
     } catch (e) {
-      console.error(`[ICCery Init Error] Failed to initialize ${name}:`, e);
+      logger.error(`Failed to initialize ${name}: ${e}`, 'AppInit');
     }
   };
 
