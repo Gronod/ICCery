@@ -189,6 +189,7 @@ export function initTargen() {
             selectedPathDisplay.textContent = `Directory: ${currentWorkingDir}`;
           }
           updateGenerateButton();
+          wizardState.setTarget(basename, currentWorkingDir);
         }
       } catch (err) {
         console.error("Failed to open file dialog:", err);
@@ -358,20 +359,5 @@ export function initTargen() {
 }
 
 function advanceToStage2() {
-  const steps = document.querySelectorAll('.step');
-  const stages = document.querySelectorAll('.stage');
-
-  // Update stepper
-  steps.forEach((s) => s.classList.remove('active'));
-  if (steps[1]) steps[1].classList.add('active');
-
-  // Update sections
-  stages.forEach((s) => {
-    s.classList.remove('active');
-    s.classList.add('hidden');
-  });
-  if (stages[1]) {
-    stages[1].classList.remove('hidden');
-    stages[1].classList.add('active');
-  }
+  wizardState.navigateToStage(2);
 }
