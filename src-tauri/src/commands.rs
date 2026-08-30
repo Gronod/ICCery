@@ -30,6 +30,13 @@ pub async fn kill_process(
     state.kill(&id).await
 }
 
+#[tauri::command]
+pub async fn kill_all_processes(
+    state: State<'_, ProcessManager>,
+) -> Result<usize, String> {
+    Ok(state.kill_all().await)
+}
+
 pub fn get_binary_candidates(binary_name: &str) -> Vec<String> {
     if cfg!(windows) && !binary_name.to_lowercase().ends_with(".exe") {
         vec![format!("{}.exe", binary_name), binary_name.to_string()]
