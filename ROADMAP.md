@@ -71,11 +71,13 @@ ICCery is a native, cross-platform desktop application built with:
 - [x] **v0.3.4 & v0.3.5 (#119, #134)**: TIFF preview metadata extraction, printtarg custom patch labels, and robust `instlist` JSON parsing.
 - [x] **v0.3.6 (#137)**: Interactive `chartread` support for multi-key prompts (accept/override key combos).
 
-### Milestone 10 — Production Ready Features (`v0.5.0` & `v0.5.1`)
+### Milestone 10 — Production Ready Features (`v0.5.0` – `v0.5.5`)
 - [x] **Structured Logging (#139)**: Integrated `tauri-plugin-log` with rotating logs in native OS app log directory and ArgyllCMS stdout/stderr stream capture.
 - [x] **Stage 3 Direct Resume (#140)**: Open existing `.ti2` target file in Stage 1 to parse header metadata and jump directly to Stage 3 (Measurement).
 - [x] **Stage 1 Additional Customisation & Tooltips (#141)**: Exposure of 11 advanced `targen` tuning parameters (`-g`, `-s`, `-n`, `-c`, `-N`, `-G`, `-A`, algorithm selection, `-l`, `-V`, `-p`) in a collapsible section with contextual guidance tooltips and preset support.
 - [x] **Subprocess Lifecycle & Clean Exit (#147, #149)**: Tauri application and window close hooks invoking `ProcessManager::kill_all` to prevent orphaned hardware-locking processes.
+- [x] **Stage 1 Layout Normalization & Stage 2 Deterministic Target Generation (#162, #163)** (`v0.5.5`): Reorganized Stage 1 Advanced Options into structured 2-column grids with normalized heights; enforced deterministic `-R 1` target generation with custom seed and raster order (`-r`) support in Stage 2.
+- [x] **macOS Universal Binary Target (#164)** (`v0.5.5`): Added macOS Universal Binary (`universal-apple-darwin`) build target combining Intel (`x86_64`) and Apple Silicon (`arm64`), ArgyllCMS universal sidecar packaging, runtime fallback resolution, and CI release asset automation.
 
 ---
 

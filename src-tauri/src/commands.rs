@@ -65,8 +65,20 @@ pub async fn resolve_binary(app: AppHandle, binary_name: String) -> Result<Strin
     let platform = match (std::env::consts::OS, std::env::consts::ARCH) {
         ("linux", "x86_64") => "linux-x86_64",
         ("windows", "x86_64") => "windows-x86_64",
-        ("macos", "aarch64") => "macos-aarch64",
-        ("macos", "x86_64") => "macos-x86_64",
+        ("macos", "aarch64") => {
+            if app.path().resolve("argyll/macos-universal/instlist", tauri::path::BaseDirectory::Resource).map(|p| p.exists()).unwrap_or(false) {
+                "macos-universal"
+            } else {
+                "macos-aarch64"
+            }
+        },
+        ("macos", "x86_64") => {
+            if app.path().resolve("argyll/macos-universal/instlist", tauri::path::BaseDirectory::Resource).map(|p| p.exists()).unwrap_or(false) {
+                "macos-universal"
+            } else {
+                "macos-x86_64"
+            }
+        },
         _ => "linux-x86_64",
     };
 
@@ -557,6 +569,10 @@ fn default_dpi() -> u32 {
     300
 }
 
+fn default_random_seed() -> Option<u32> {
+    Some(1)
+}
+
 #[derive(Debug, Deserialize, Serialize)]
 pub struct PrinttargConfig {
     pub instrument: String,   // One of: "i1", "p3", "CM", "SS", "20", "22", "41", "51"
@@ -565,6 +581,10 @@ pub struct PrinttargConfig {
     #[serde(default = "default_dpi")]
     pub dpi: u32,             // TIFF resolution, defaults to 300 DPI
     pub custom_label: Option<String>, // Custom chart label / description metadata string (-d)
+    #[serde(default = "default_random_seed")]
+    pub random_seed: Option<u32>, // Random seed (-R <seed>), defaults to Some(1) for deterministic target generation
+    #[serde(default)]
+    pub no_randomize: bool,   // If true, pass -r (raster layout / no randomization)
     pub basename: String,     // Must match the .ti1 basename from Stage 1
     pub cwd: String,          // Working directory where the .ti1 file resides
 }
@@ -697,6 +717,13 @@ pub fn build_printtarg_args(config: &PrinttargConfig) -> Vec<String> {
         "-p".to_string(),
         config.page_size.clone(),
     ];
+
+    if config.no_randomize {
+        args.push("-r".to_string());
+    } else if let Some(seed) = config.random_seed {
+        args.push("-R".to_string());
+        args.push(seed.to_string());
+    }
 
     if let Some(ref label) = config.custom_label {
         args.push("-d".to_string());
@@ -1289,11 +1316,13 @@ mod tests {
             bit_depth: 8,
             dpi: 100,
             custom_label: None,
+            random_seed: Some(1),
+            no_randomize: false,
             basename: "my_profile".to_string(),
             cwd: "/tmp".to_string(),
         };
         let args = build_printtarg_args(&config);
-        assert_eq!(args, vec!["-v", "-u", "-i", "i1", "-p", "A4", "-t", "100", "my_profile"]);
+        assert_eq!(args, vec!["-v", "-u", "-i", "i1", "-p", "A4", "-R", "1", "-t", "100", "my_profile"]);
     }
 
     #[test]
@@ -1304,11 +1333,13 @@ mod tests {
             bit_depth: 16,
             dpi: 300,
             custom_label: None,
+            random_seed: Some(1),
+            no_randomize: false,
             basename: "cmyk_profile".to_string(),
             cwd: "/home/user".to_string(),
         };
         let args = build_printtarg_args(&config);
-        assert_eq!(args, vec!["-v", "-u", "-i", "CM", "-p", "Letter", "-T", "300", "cmyk_profile"]);
+        assert_eq!(args, vec!["-v", "-u", "-i", "CM", "-p", "Letter", "-R", "1", "-T", "300", "cmyk_profile"]);
     }
 
     #[test]
@@ -1319,11 +1350,13 @@ mod tests {
             bit_depth: 8,
             dpi: 150,
             custom_label: None,
+            random_seed: Some(1),
+            no_randomize: false,
             basename: "custom_target".to_string(),
             cwd: "/tmp".to_string(),
         };
         let args = build_printtarg_args(&config);
-        assert_eq!(args, vec!["-v", "-u", "-i", "SS", "-p", "200x400", "-t", "150", "custom_target"]);
+        assert_eq!(args, vec!["-v", "-u", "-i", "SS", "-p", "200x400", "-R", "1", "-t", "150", "custom_target"]);
     }
 
     #[test]
@@ -1334,6 +1367,8 @@ mod tests {
             bit_depth: 8,
             dpi: 300,
             custom_label: Some("ICCery - Pro900 - Luster - 29/08/2026 12:00".to_string()),
+            random_seed: Some(1),
+            no_randomize: false,
             basename: "my_profile".to_string(),
             cwd: "/tmp".to_string(),
         };
@@ -1347,6 +1382,8 @@ mod tests {
                 "i1",
                 "-p",
                 "A4",
+                "-R",
+                "1",
                 "-d",
                 "ICCery - Pro900 - Luster - 29/08/2026 12:00",
                 "-t",
@@ -1354,6 +1391,40 @@ mod tests {
                 "my_profile"
             ]
         );
+    }
+
+    #[test]
+    fn test_build_printtarg_args_with_custom_seed() {
+        let config = PrinttargConfig {
+            instrument: "i1".to_string(),
+            page_size: "A4".to_string(),
+            bit_depth: 8,
+            dpi: 300,
+            custom_label: None,
+            random_seed: Some(42),
+            no_randomize: false,
+            basename: "my_profile".to_string(),
+            cwd: "/tmp".to_string(),
+        };
+        let args = build_printtarg_args(&config);
+        assert_eq!(args, vec!["-v", "-u", "-i", "i1", "-p", "A4", "-R", "42", "-t", "300", "my_profile"]);
+    }
+
+    #[test]
+    fn test_build_printtarg_args_with_raster_order() {
+        let config = PrinttargConfig {
+            instrument: "i1".to_string(),
+            page_size: "A4".to_string(),
+            bit_depth: 8,
+            dpi: 300,
+            custom_label: None,
+            random_seed: Some(1), // Should be superseded by no_randomize
+            no_randomize: true,
+            basename: "my_profile".to_string(),
+            cwd: "/tmp".to_string(),
+        };
+        let args = build_printtarg_args(&config);
+        assert_eq!(args, vec!["-v", "-u", "-i", "i1", "-p", "A4", "-r", "-t", "300", "my_profile"]);
     }
 
     #[test]

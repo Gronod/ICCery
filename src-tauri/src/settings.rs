@@ -42,6 +42,12 @@ pub struct ProfilingPreset {
     pub dark_emphasis: Option<f64>,
     #[serde(default)]
     pub device_power: Option<f64>,
+
+    // Stage 2 fields
+    #[serde(default)]
+    pub random_seed: Option<u32>,
+    #[serde(default)]
+    pub no_randomize: Option<bool>,
 }
 
 #[derive(Debug, Deserialize, Serialize, Default, Clone)]
@@ -322,6 +328,8 @@ mod tests {
             total_ink_limit: Some(320),
             dark_emphasis: Some(1.5),
             device_power: Some(1.2),
+            random_seed: Some(42),
+            no_randomize: Some(false),
         };
 
         let json = export_preset_json(preset.clone()).expect("Export failed");

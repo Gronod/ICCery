@@ -221,6 +221,23 @@ export async function initPresets() {
       tiffDpi.value = preset.dpi;
     }
 
+    const printtargLayoutOrder = document.getElementById("printtargLayoutOrder");
+    const printtargCustomSeedGroup = document.getElementById("printtargCustomSeedGroup");
+    const printtargCustomSeed = document.getElementById("printtargCustomSeed");
+    if (printtargLayoutOrder) {
+      if (preset.no_randomize) {
+        printtargLayoutOrder.value = "raster";
+        if (printtargCustomSeedGroup) printtargCustomSeedGroup.classList.add("hidden");
+      } else if (preset.random_seed && preset.random_seed !== 1) {
+        printtargLayoutOrder.value = "custom_seed";
+        if (printtargCustomSeed) printtargCustomSeed.value = preset.random_seed;
+        if (printtargCustomSeedGroup) printtargCustomSeedGroup.classList.remove("hidden");
+      } else {
+        printtargLayoutOrder.value = "deterministic";
+        if (printtargCustomSeedGroup) printtargCustomSeedGroup.classList.add("hidden");
+      }
+    }
+
     // Stage 4 controls
     const colprofQuality = document.getElementById("colprofQuality");
     if (colprofQuality && preset.colprof_quality) colprofQuality.value = preset.colprof_quality;
@@ -296,6 +313,22 @@ export async function initPresets() {
     const tiffDpi = document.getElementById("tiffDpi");
     const dpi = tiffDpi && tiffDpi.value ? parseInt(tiffDpi.value, 10) || 300 : 300;
 
+    const printtargLayoutOrder = document.getElementById("printtargLayoutOrder");
+    const printtargCustomSeed = document.getElementById("printtargCustomSeed");
+    let random_seed = 1;
+    let no_randomize = false;
+    if (printtargLayoutOrder) {
+      if (printtargLayoutOrder.value === "raster") {
+        no_randomize = true;
+        random_seed = null;
+      } else if (printtargLayoutOrder.value === "custom_seed") {
+        const s = printtargCustomSeed ? parseInt(printtargCustomSeed.value, 10) : 1;
+        random_seed = isNaN(s) || s < 1 ? 1 : s;
+      } else {
+        random_seed = 1;
+      }
+    }
+
     const colprofQuality = document.getElementById("colprofQuality");
     const colprof_quality = colprofQuality ? colprofQuality.value : "m";
 
@@ -325,6 +358,8 @@ export async function initPresets() {
       page_size,
       bit_depth,
       dpi,
+      random_seed,
+      no_randomize,
       colprof_algorithm,
       colprof_quality,
       colprof_intent: null,

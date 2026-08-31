@@ -33,12 +33,25 @@ export function initPrinttarg() {
   const customPageH = document.getElementById("customPageH");
   const bitDepthRadios = document.querySelectorAll('input[name="bitDepth"]');
   const tiffDpi = document.getElementById("tiffDpi");
+  const printtargLayoutOrder = document.getElementById("printtargLayoutOrder");
+  const printtargCustomSeedGroup = document.getElementById("printtargCustomSeedGroup");
+  const printtargCustomSeed = document.getElementById("printtargCustomSeed");
   const btnCreateLayout = document.getElementById("btnCreateLayout");
   const logContainer = document.getElementById("printtargLogContainer");
   const logPre = document.getElementById("printtargLog");
   const tiffGallery = document.getElementById("tiffGallery");
   const galleryInfo = document.getElementById("galleryInfo");
   const galleryGrid = document.getElementById("galleryGrid");
+
+  if (printtargLayoutOrder && printtargCustomSeedGroup) {
+    printtargLayoutOrder.addEventListener("change", () => {
+      if (printtargLayoutOrder.value === "custom_seed") {
+        printtargCustomSeedGroup.classList.remove("hidden");
+      } else {
+        printtargCustomSeedGroup.classList.add("hidden");
+      }
+    });
+  }
 
   // Target Label & Metadata elements (printtarg -d)
   const targetMetadataPrinter = document.getElementById("targetMetadataPrinter");
@@ -402,12 +415,30 @@ export function initPrinttarg() {
       customLabel = targetLabelPreview.value.trim();
     }
 
+    // Determine layout order & random seed
+    let randomSeed = 1;
+    let noRandomize = false;
+    const layoutOrder = printtargLayoutOrder ? printtargLayoutOrder.value : "deterministic";
+    if (layoutOrder === "raster") {
+      noRandomize = true;
+      randomSeed = null;
+    } else if (layoutOrder === "custom_seed") {
+      const parsedSeed = printtargCustomSeed ? parseInt(printtargCustomSeed.value, 10) : 1;
+      randomSeed = isNaN(parsedSeed) || parsedSeed < 1 ? 1 : parsedSeed;
+      noRandomize = false;
+    } else {
+      randomSeed = 1;
+      noRandomize = false;
+    }
+
     const config = {
       instrument: instrumentSelect.value,
       page_size: pageSize,
       bit_depth: bitDepth,
       dpi: dpi,
       custom_label: customLabel,
+      random_seed: randomSeed,
+      no_randomize: noRandomize,
       basename: stage1Basename,
       cwd: stage1Cwd,
     };

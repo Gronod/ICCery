@@ -24,7 +24,12 @@ jobs:
             os: macos-15
             target: aarch64-apple-darwin
             binary_dir: macos-aarch64
-            arch: aarm64
+            arch: arm64
+          - name: Universal (Intel + Apple Silicon)
+            os: macos-15
+            target: universal-apple-darwin
+            binary_dir: macos-universal
+            arch: universal
     
     steps:
       - name: Checkout repository
@@ -40,7 +45,7 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
         with:
           toolchain: stable
-          targets: ${{ matrix.platform.target }}
+          targets: ${{ matrix.platform.target == 'universal-apple-darwin' && 'x86_64-apple-darwin, aarch64-apple-darwin' || matrix.platform.target }}
 
       - name: Rust Cache
         uses: Swatinem/rust-cache@v2
@@ -70,7 +75,7 @@ jobs:
           echo "PREFIX=ICCery_${TAG}-${SHORT_SHA}-macos-${{ matrix.platform.arch }}" >> $GITHUB_ENV
 
       - name: Build Tauri App
-        run: npm run tauri build
+        run: npm run tauri build -- --target ${{ matrix.platform.target }}
 
       - name: Prepare Release Assets
         shell: bash
@@ -78,18 +83,18 @@ jobs:
           mkdir -p release-assets
           
           # Stage DMG package
-          for dmg in src-tauri/target/release/bundle/dmg/*.dmg; do
-            if [ -f "$dmg" ]; then
-              cp "$dmg" "release-assets/${PREFIX}.dmg"
-            fi
-          done
+          DMG_FILE=$(find src-tauri/target -type f -name "*.dmg" | head -n 1)
+          if [ -n "$DMG_FILE" ] && [ -f "$DMG_FILE" ]; then
+            cp "$DMG_FILE" "release-assets/${PREFIX}.dmg"
+          fi
 
           # Stage ZIP archive of .app bundle
-          for app in src-tauri/target/release/bundle/macos/*.app; do
-            if [ -d "$app" ]; then
-              (cd src-tauri/target/release/bundle/macos && zip -r "../../../../../release-assets/${PREFIX}.zip" "$(basename "$app")")
-            fi
-          done
+          APP_DIR=$(find src-tauri/target -type d -name "*.app" | head -n 1)
+          if [ -n "$APP_DIR" ] && [ -d "$APP_DIR" ]; then
+            APP_PARENT=$(dirname "$APP_DIR")
+            APP_NAME=$(basename "$APP_DIR")
+            (cd "$APP_PARENT" && zip -r "${PWD}/release-assets/${PREFIX}.zip" "$APP_NAME")
+          fi
 
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4

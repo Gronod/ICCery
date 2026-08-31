@@ -27,4 +27,6 @@ src-tauri/argyll/linux-x86_64/
 src-tauri/argyll/windows-x86_64/
 src-tauri/argyll/macos-x86_64/
 src-tauri/argyll/macos-aarch64/
+src-tauri/argyll/macos-universal/
 src-tauri/argyll/usb/
+

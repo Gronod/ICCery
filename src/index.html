@@ -144,142 +144,156 @@
             </div>
 
             <!-- Collapsible Advanced Section -->
-            <details id="targenAdvancedDetails" class="advanced-section-details" style="margin-top: 10px; border: 1px solid var(--border-color, #333); border-radius: 8px; padding: 10px 14px; background: rgba(0,0,0,0.15);">
-              <summary style="font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: space-between; user-select: none;">
+            <details id="targenAdvancedDetails" class="advanced-section-details">
+              <summary>
                 <span>⚙️ Advanced Target Generation Options</span>
                 <span class="summary-badge" style="font-size: 0.75rem; opacity: 0.6;">Click to expand</span>
               </summary>
 
-              <div class="advanced-content" style="margin-top: 14px; display: flex; flex-direction: column; gap: 12px;">
-                <!-- Grey & Single Channel Steps -->
-                <div class="input-row">
-                  <div class="form-group has-tooltip" style="flex: 1;">
-                    <label for="targenGreySteps" class="sub-label">Grey / Combined Axis Steps (-g)</label>
-                    <input type="number" id="targenGreySteps" min="0" max="256" placeholder="0">
+              <div class="advanced-content">
+                <!-- Group 1: Neutral Axis & Preconditioning -->
+                <div class="advanced-group">
+                  <div class="advanced-group-title">Neutral Axis &amp; Preconditioning</div>
+                  
+                  <div class="form-group has-tooltip" style="margin-bottom: 0;">
+                    <label for="targenPrecondProfile" class="sub-label">Preconditioning Profile (-c)</label>
+                    <div class="input-row has-btn">
+                      <input type="text" id="targenPrecondProfile" placeholder="Optional previous profile (.icc / .icm)">
+                      <button type="button" id="btnBrowsePrecondProfile" class="secondary">Browse...</button>
+                    </div>
                     <div class="tooltip-text">
-                      Number of evenly-spaced steps along the combined grey axis (equal R=G=B or C=M=Y).<br>
-                      These patches improve neutral-axis rendering and are useful when device will later be used as source space. 0 = none.
+                      Optional previous ICC/ICM (or MPP) profile of this or a similar device.<br>
+                      Used by targen to estimate perceptual distances, colourspace curvature and the true neutral axis. Enables adaptive OFPS and Neutral Axis Steps.
                     </div>
                   </div>
-                  <div class="form-group has-tooltip" style="flex: 1;">
-                    <label for="targenSingleChannelSteps" class="sub-label">Single-Channel Steps (-s)</label>
-                    <input type="number" id="targenSingleChannelSteps" min="0" max="256" placeholder="0">
-                    <div class="tooltip-text">
-                      Number of steps for each individual colorant wedge (R, G, B or C, M, Y, K).<br>
-                      Useful for diagnosing per-channel non-linearity and source-space characterisation. 0 = none.
+
+                  <div class="advanced-grid-2col">
+                    <div class="form-group has-tooltip">
+                      <label for="targenNeutralSteps" class="sub-label">Neutral Axis Steps (-n)</label>
+                      <input type="number" id="targenNeutralSteps" min="0" max="256" placeholder="0">
+                      <div class="tooltip-text">
+                        Number of patches placed along the true neutral axis as estimated by preconditioning profile.<br>
+                        Requires a Preconditioning Profile. Improves neutral rendering of final profile.
+                      </div>
+                    </div>
+                    <div class="form-group has-tooltip">
+                      <label for="targenNeutralConcentration" class="sub-label">Neutral Axis Concentration (-N)</label>
+                      <div class="slider-input-container">
+                        <input type="range" id="targenNeutralConcentration" min="0.0" max="1.0" step="0.05" value="0.5">
+                        <span id="targenNeutralConcVal" class="slider-val-badge">0.50</span>
+                      </div>
+                      <div class="tooltip-text">
+                        How strongly the patch distribution should favour the neutral axis (0 = none, 1 = maximum).<br>
+                        Default 0.5. Most effective with preconditioning profile and high OFPS Adaptation.
+                      </div>
                     </div>
                   </div>
                 </div>
 
-                <!-- Preconditioning Profile & Neutral Axis Steps -->
-                <div class="form-group has-tooltip">
-                  <label for="targenPrecondProfile" class="sub-label">Preconditioning Profile (-c)</label>
-                  <div class="input-row has-btn">
-                    <input type="text" id="targenPrecondProfile" placeholder="Optional previous profile (.icc / .icm)">
-                    <button type="button" id="btnBrowsePrecondProfile" class="secondary">Browse...</button>
+                <!-- Group 2: Patch Distribution & Sampling -->
+                <div class="advanced-group">
+                  <div class="advanced-group-title">Patch Distribution &amp; Sampling</div>
+                  
+                  <div class="advanced-grid-2col">
+                    <div class="form-group has-tooltip">
+                      <label for="targenGreySteps" class="sub-label">Grey / Combined Axis Steps (-g)</label>
+                      <input type="number" id="targenGreySteps" min="0" max="256" placeholder="0">
+                      <div class="tooltip-text">
+                        Number of evenly-spaced steps along the combined grey axis (equal R=G=B or C=M=Y).<br>
+                        These patches improve neutral-axis rendering and are useful when device will later be used as source space. 0 = none.
+                      </div>
+                    </div>
+                    <div class="form-group has-tooltip">
+                      <label for="targenSingleChannelSteps" class="sub-label">Single-Channel Steps (-s)</label>
+                      <input type="number" id="targenSingleChannelSteps" min="0" max="256" placeholder="0">
+                      <div class="tooltip-text">
+                        Number of steps for each individual colorant wedge (R, G, B or C, M, Y, K).<br>
+                        Useful for diagnosing per-channel non-linearity and source-space characterisation. 0 = none.
+                      </div>
+                    </div>
                   </div>
-                  <div class="tooltip-text">
-                    Optional previous ICC/ICM (or MPP) profile of this or a similar device.<br>
-                    Used by targen to estimate perceptual distances, colourspace curvature and the true neutral axis. Enables adaptive OFPS and Neutral Axis Steps.
-                  </div>
-                </div>
 
-                <div class="input-row">
-                  <div class="form-group has-tooltip" style="flex: 1;">
-                    <label for="targenNeutralSteps" class="sub-label">Neutral Axis Steps (-n)</label>
-                    <input type="number" id="targenNeutralSteps" min="0" max="256" placeholder="0">
-                    <div class="tooltip-text">
-                      Number of patches placed along the true neutral axis as estimated by preconditioning profile.<br>
-                      Requires a Preconditioning Profile. Improves neutral rendering of final profile.
+                  <div class="advanced-grid-2col">
+                    <div class="form-group has-tooltip">
+                      <label for="targenAdaptation" class="sub-label">OFPS Adaptation (-A)</label>
+                      <div class="slider-input-container">
+                        <input type="range" id="targenAdaptation" min="0.0" max="1.0" step="0.05" value="0.1">
+                        <span id="targenAdaptationVal" class="slider-val-badge">0.10</span>
+                      </div>
+                      <div class="tooltip-text">
+                        Degree to which OFPS adapts to device behaviour from preconditioning profile (0 = ignore, 1 = fully adapt).<br>
+                        Default 0.1; automatically rises to 1.0 when preconditioning profile is supplied.
+                      </div>
+                    </div>
+                    <div class="form-group has-tooltip">
+                      <label for="targenDarkEmphasis" class="sub-label">Dark Region Emphasis (-V)</label>
+                      <div class="slider-input-container">
+                        <input type="range" id="targenDarkEmphasis" min="1.0" max="4.0" step="0.1" value="1.0">
+                        <span id="targenDarkEmphasisVal" class="slider-val-badge">1.00</span>
+                      </div>
+                      <div class="tooltip-text">
+                        Concentrates more patches toward dark tones (1.0 = none, up to 4.0 = strong).<br>
+                        Useful for devices with non-linearity or important shadow detail. Default 1.0.
+                      </div>
                     </div>
                   </div>
-                  <div class="form-group has-tooltip" style="flex: 1;">
-                    <label for="targenNeutralConcentration" class="sub-label">Neutral Axis Concentration (-N)</label>
-                    <div style="display: flex; align-items: center; gap: 8px;">
-                      <input type="range" id="targenNeutralConcentration" min="0.0" max="1.0" step="0.05" value="0.5" style="flex: 1;">
-                      <span id="targenNeutralConcVal" style="font-family: monospace; font-size: 0.8rem; min-width: 35px;">0.50</span>
-                    </div>
-                    <div class="tooltip-text">
-                      How strongly the patch distribution should favour the neutral axis (0 = none, 1 = maximum).<br>
-                      Default 0.5. Most effective with preconditioning profile and high OFPS Adaptation.
-                    </div>
-                  </div>
-                </div>
 
-                <!-- Quality & Algorithm -->
-                <div class="input-row">
-                  <div class="form-group has-tooltip" style="flex: 1;">
-                    <label for="targenAlgorithm" class="sub-label">Full-spread Algorithm</label>
-                    <select id="targenAlgorithm">
-                      <option value="ofps" selected>OFPS (Optimised Farthest Point Sampling - Default)</option>
-                      <option value="t">Incremental Far Point (-t)</option>
-                      <option value="r">Device Random (-r)</option>
-                      <option value="R">Perceptual Random (-R)</option>
-                      <option value="q">Device Quasi-Random (-q)</option>
-                      <option value="Q">Perceptual Quasi-Random (-Q)</option>
-                      <option value="i">Device BCC (-i)</option>
-                      <option value="I">Perceptual BCC (-I)</option>
-                    </select>
-                    <div class="tooltip-text">
-                      Algorithm used to place remaining “full-spread” patches.<br>
-                      • OFPS (default) – best evenness in most cases.<br>
-                      • Incremental Far Point – used automatically for >4 channels.<br>
-                      • Device/Perceptual random or BCC – alternative space-filling methods.
+                  <div class="advanced-grid-2col">
+                    <div class="form-group has-tooltip">
+                      <label for="targenDevicePower" class="sub-label">Device Value Power (-p)</label>
+                      <input type="number" id="targenDevicePower" min="0.1" max="4.0" step="0.1" placeholder="Linear (1.0)">
+                      <div class="tooltip-text">
+                        Optional power-like remapping applied to device values after generation.<br>
+                        Values &gt; 1 tighten spacing near 0; values &lt; 1 tighten spacing near 1. Leave empty for linear spacing.
+                      </div>
                     </div>
-                  </div>
-                  <div class="form-group has-tooltip" style="flex: 1; display: flex; flex-direction: column; justify-content: flex-end;">
-                    <label style="cursor: pointer; display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
-                      <input type="checkbox" id="targenHighQuality">
-                      <span style="font-size: 0.85rem;">High Quality OFPS (-G)</span>
-                    </label>
-                    <div class="tooltip-text">
-                      When checked, targen runs the OFPS algorithm in “good” mode (more iterations).<br>
-                      Produces a more evenly distributed set of patches at cost of longer generation time. Recommended for final production charts.
-                    </div>
-                  </div>
-                </div>
-
-                <!-- Adaptation & Ink Limit & Tone Remapping -->
-                <div class="input-row">
-                  <div class="form-group has-tooltip" style="flex: 1;">
-                    <label for="targenAdaptation" class="sub-label">OFPS Adaptation (-A)</label>
-                    <div style="display: flex; align-items: center; gap: 8px;">
-                      <input type="range" id="targenAdaptation" min="0.0" max="1.0" step="0.05" value="0.1" style="flex: 1;">
-                      <span id="targenAdaptationVal" style="font-family: monospace; font-size: 0.8rem; min-width: 35px;">0.10</span>
-                    </div>
-                    <div class="tooltip-text">
-                      Degree to which OFPS adapts to device behaviour from preconditioning profile (0 = ignore, 1 = fully adapt).<br>
-                      Default 0.1; automatically rises to 1.0 when preconditioning profile is supplied.
-                    </div>
-                  </div>
-                  <div class="form-group has-tooltip" id="targenInkLimitGroup" style="flex: 1;">
-                    <label for="targenInkLimit" class="sub-label">Total Ink Limit / TAC (-l %)</label>
-                    <input type="number" id="targenInkLimit" min="0" max="400" placeholder="e.g. 320" disabled>
-                    <div class="tooltip-text">
-                      Maximum total ink coverage (Total Area Coverage) in percent.<br>
-                      Essential for CMYK to avoid over-inking. Set at least 10% higher than final profile TAC. Disabled in RGB mode.
+                    <div class="form-group has-tooltip" id="targenInkLimitGroup">
+                      <label for="targenInkLimit" class="sub-label">Total Ink Limit / TAC (-l %)</label>
+                      <input type="number" id="targenInkLimit" min="0" max="400" placeholder="e.g. 320" disabled>
+                      <div class="tooltip-text">
+                        Maximum total ink coverage (Total Area Coverage) in percent.<br>
+                        Essential for CMYK to avoid over-inking. Set at least 10% higher than final profile TAC. Disabled in RGB mode.
+                      </div>
                     </div>
                   </div>
                 </div>
 
-                <div class="input-row">
-                  <div class="form-group has-tooltip" style="flex: 1;">
-                    <label for="targenDarkEmphasis" class="sub-label">Dark Region Emphasis (-V)</label>
-                    <div style="display: flex; align-items: center; gap: 8px;">
-                      <input type="range" id="targenDarkEmphasis" min="1.0" max="4.0" step="0.1" value="1.0" style="flex: 1;">
-                      <span id="targenDarkEmphasisVal" style="font-family: monospace; font-size: 0.8rem; min-width: 35px;">1.00</span>
+                <!-- Group 3: Algorithm & Quality -->
+                <div class="advanced-group">
+                  <div class="advanced-group-title">Algorithm &amp; Quality</div>
+
+                  <div class="advanced-grid-2col">
+                    <div class="form-group has-tooltip">
+                      <label for="targenAlgorithm" class="sub-label">Full-spread Algorithm</label>
+                      <select id="targenAlgorithm">
+                        <option value="ofps" selected>OFPS (Optimised Farthest Point Sampling - Default)</option>
+                        <option value="t">Incremental Far Point (-t)</option>
+                        <option value="r">Device Random (-r)</option>
+                        <option value="R">Perceptual Random (-R)</option>
+                        <option value="q">Device Quasi-Random (-q)</option>
+                        <option value="Q">Perceptual Quasi-Random (-Q)</option>
+                        <option value="i">Device BCC (-i)</option>
+                        <option value="I">Perceptual BCC (-I)</option>
+                      </select>
+                      <div class="tooltip-text">
+                        Algorithm used to place remaining “full-spread” patches.<br>
+                        • OFPS (default) – best evenness in most cases.<br>
+                        • Incremental Far Point – used automatically for &gt;4 channels.<br>
+                        • Device/Perceptual random or BCC – alternative space-filling methods.
+                      </div>
                     </div>
-                    <div class="tooltip-text">
-                      Concentrates more patches toward dark tones (1.0 = none, up to 4.0 = strong).<br>
-                      Useful for devices with non-linearity or important shadow detail. Default 1.0.
-                    </div>
-                  </div>
-                  <div class="form-group has-tooltip" style="flex: 1;">
-                    <label for="targenDevicePower" class="sub-label">Device Value Power (-p)</label>
-                    <input type="number" id="targenDevicePower" min="0.1" max="4.0" step="0.1" placeholder="Linear (1.0)">
-                    <div class="tooltip-text">
-                      Optional power-like remapping applied to device values after generation.<br>
-                      Values &gt; 1 tighten spacing near 0; values &lt; 1 tighten spacing near 1. Leave empty for linear spacing.
+                    <div class="form-group has-tooltip">
+                      <label class="sub-label">Quality Optimization</label>
+                      <div class="checkbox-control-container">
+                        <label>
+                          <input type="checkbox" id="targenHighQuality">
+                          <span style="font-size: 0.85rem;">High Quality OFPS (-G)</span>
+                        </label>
+                      </div>
+                      <div class="tooltip-text">
+                        When checked, targen runs the OFPS algorithm in “good” mode (more iterations).<br>
+                        Produces a more evenly distributed set of patches at cost of longer generation time. Recommended for final production charts.
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -361,6 +375,27 @@
             <div class="form-group">
               <label for="tiffDpi">Target Resolution (DPI)</label>
               <input type="number" id="tiffDpi" min="72" max="600" value="300" placeholder="300">
+            </div>
+
+            <div class="form-group has-tooltip">
+              <label for="printtargLayoutOrder">Patch Layout Order</label>
+              <div class="input-row" style="align-items: center; gap: 10px;">
+                <select id="printtargLayoutOrder" style="flex: 2;">
+                  <option value="deterministic" selected>Deterministic Random (Default, Seed = 1)</option>
+                  <option value="custom_seed">Custom Random Seed (-R)</option>
+                  <option value="raster">Raster Order (Sequential, -r)</option>
+                </select>
+                <div id="printtargCustomSeedGroup" class="hidden" style="flex: 1; display: flex; align-items: center; gap: 6px;">
+                  <label for="printtargCustomSeed" class="sub-label" style="margin: 0; white-space: nowrap;">Seed:</label>
+                  <input type="number" id="printtargCustomSeed" min="1" max="2147483647" value="1" placeholder="1" style="flex: 1;">
+                </div>
+              </div>
+              <div class="tooltip-text">
+                Controls patch distribution across target pages.<br>
+                • <strong>Deterministic (Seed = 1)</strong>: Guarantees identical .ti2 and TIFF target generation each run for the same .ti1.<br>
+                • <strong>Custom Seed</strong>: Reproducible pseudo-random distribution using an explicit integer seed (-R &lt;seed&gt;).<br>
+                • <strong>Raster Order</strong>: Unrandomized sequential order (-r) across rows and columns.
+              </div>
             </div>
 
             <!-- Target Label & Metadata (printtarg -d) -->

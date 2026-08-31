@@ -43,6 +43,12 @@ const PLATFORMS = {
     destDir: path.join(TAURI_ARGYLL_DIR, 'macos-aarch64'),
     isWindows: false,
   },
+  'macos-universal': {
+    assetSuffix: '_macOS_universal_bin.tgz',
+    markerBinary: 'instlist',
+    destDir: path.join(TAURI_ARGYLL_DIR, 'macos-universal'),
+    isWindows: false,
+  },
 };
 
 function parseArgs() {
