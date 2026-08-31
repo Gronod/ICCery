@@ -87,6 +87,8 @@ pub fn get_default_presets() -> Vec<ProfilingPreset> {
             total_ink_limit: None,
             dark_emphasis: None,
             device_power: None,
+            random_seed: Some(1),
+            no_randomize: Some(false),
         },
         ProfilingPreset {
             id: "preset-hq-cmyk".to_string(),
@@ -114,6 +116,8 @@ pub fn get_default_presets() -> Vec<ProfilingPreset> {
             total_ink_limit: Some(320),
             dark_emphasis: None,
             device_power: None,
+            random_seed: Some(1),
+            no_randomize: Some(false),
         },
         ProfilingPreset {
             id: "preset-draft-rgb".to_string(),
@@ -141,6 +145,8 @@ pub fn get_default_presets() -> Vec<ProfilingPreset> {
             total_ink_limit: None,
             dark_emphasis: None,
             device_power: None,
+            random_seed: Some(1),
+            no_randomize: Some(false),
         },
         ProfilingPreset {
             id: "preset-ultra-rgb".to_string(),
@@ -168,6 +174,8 @@ pub fn get_default_presets() -> Vec<ProfilingPreset> {
             total_ink_limit: None,
             dark_emphasis: None,
             device_power: None,
+            random_seed: Some(1),
+            no_randomize: Some(false),
         },
     ]
 }
