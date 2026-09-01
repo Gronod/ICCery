@@ -225,12 +225,28 @@ async function main() {
   const releaseTag = process.env.ARGYLL_RELEASE_TAG || '';
   const token = process.env.GITEA_TOKEN || process.env.GITHUB_TOKEN || '';
 
-  const releaseData = await getReleaseData(server, repo, releaseTag, token);
+  let releaseData = await getReleaseData(server, repo, releaseTag, token);
   console.log(`Selected release tag: ${releaseData.tag_name || releaseTag || 'latest'}`);
 
-  const matchingAsset = (releaseData.assets || []).find((asset) =>
+  let matchingAsset = (releaseData.assets || []).find((asset) =>
     asset.name.endsWith(targetConfig.assetSuffix)
   );
+
+  // If asset not found on custom server (e.g. Gitea instance), fallback to GitHub upstream releases
+  if (!matchingAsset && server && !server.includes('github.com')) {
+    console.log(`Asset '${targetConfig.assetSuffix}' not found on ${server}. Falling back to GitHub upstream releases...`);
+    try {
+      const githubRelease = await getReleaseData('https://api.github.com', repo, releaseTag, process.env.GITHUB_TOKEN || '');
+      matchingAsset = (githubRelease.assets || []).find((asset) =>
+        asset.name.endsWith(targetConfig.assetSuffix)
+      );
+      if (matchingAsset) {
+        console.log(`Found asset on GitHub releases: ${matchingAsset.name}`);
+      }
+    } catch (err) {
+      console.warn(`GitHub fallback failed: ${err.message}`);
+    }
+  }
 
   if (!matchingAsset) {
     console.error(`Error: No asset matching suffix '${targetConfig.assetSuffix}' found in release.`);
@@ -249,9 +265,12 @@ async function main() {
       'User-Agent': 'ICCery-fetch-argyll',
       Accept: 'application/octet-stream',
     };
-    if (token) {
+    const isAssetFromGitHub = matchingAsset.browser_download_url.includes('github.com');
+    if (token && !isAssetFromGitHub) {
       const isGitHub = !server || server.includes('github.com');
       downloadHeaders.Authorization = isGitHub ? `Bearer ${token}` : `token ${token}`;
+    } else if (process.env.GITHUB_TOKEN && isAssetFromGitHub) {
+      downloadHeaders.Authorization = `Bearer ${process.env.GITHUB_TOKEN}`;
     }
 
     console.log(`Downloading ${matchingAsset.browser_download_url}...`);
