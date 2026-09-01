@@ -8,10 +8,14 @@ import { initGamutViewer } from './gamut_viewer.js';
 import { initPresets } from './presets.js';
 import { wizardState } from './state.js';
 import { logger } from './logger.js';
+import { CgatsInterop } from './cgats_interop.js';
 
 const { invoke } = window.__TAURI__.core;
 
 document.addEventListener('DOMContentLoaded', () => {
+  // Initialize interoperability handlers
+  new CgatsInterop(wizardState);
+
   // Wizard stepper navigation with re-validation
   const steps = document.querySelectorAll('.step');
   steps.forEach(step => {
