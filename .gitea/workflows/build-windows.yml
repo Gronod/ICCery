@@ -74,6 +74,23 @@ jobs:
           "SHORT_SHA=$SHORT_SHA" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
           "PREFIX=ICCery_${TAG}-${SHORT_SHA}-windows-x86_64" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
 
+      - name: Setup Code Signing Certificate
+        shell: powershell
+        env:
+          WINDOWS_CODESIGN_CERT_BASE64: ${{ secrets.WINDOWS_CODESIGN_CERT_BASE64 }}
+          WINDOWS_CODESIGN_PASSWORD: ${{ secrets.WINDOWS_CODESIGN_PASSWORD }}
+        run: |
+          if ($env:WINDOWS_CODESIGN_CERT_BASE64) {
+            $certPath = "$env:TEMP\codesign.pfx"
+            $bytes = [Convert]::FromBase64String($env:WINDOWS_CODESIGN_CERT_BASE64)
+            [IO.File]::WriteAllBytes($certPath, $bytes)
+            "WINDOWS_CODESIGN_CERT_PATH=$certPath" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+            "WINDOWS_CODESIGN_PASSWORD=$env:WINDOWS_CODESIGN_PASSWORD" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+            Write-Host "Code signing certificate initialized at $certPath"
+          } else {
+            Write-Host "No code signing certificate secret provided. Skipping signing setup."
+          }
+
       - name: Build Tauri App
         run: npm run tauri build -- -v
 
@@ -133,4 +150,13 @@ jobs:
             }
           } catch {
             Write-Host "Skipping release asset upload: $_"
+          }
+
+      - name: Cleanup Code Signing Certificate
+        if: always()
+        shell: powershell
+        run: |
+          if (Test-Path "$env:TEMP\codesign.pfx") {
+            Remove-Item -Force "$env:TEMP\codesign.pfx"
+            Write-Host "Temporary code signing certificate cleaned up."
           }
