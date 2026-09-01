@@ -38,6 +38,6 @@ windows = { version = "0.61", features = [
 
 [profile.release]
 panic = "abort"
-codegen-units = 1
+codegen-units = 16
 lto = "thin"
 strip = true
