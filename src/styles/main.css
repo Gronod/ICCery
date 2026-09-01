@@ -127,7 +127,8 @@ button.primary {
   background-color: var(--accent-color);
   color: white;
   border: none;
-  padding: 9px 18px;
+  padding: 0 18px;
+  height: 36px;
   font-size: 0.95rem;
   border-radius: 4px;
   cursor: pointer;
@@ -157,7 +158,8 @@ button.primary:hover {
 
 select,
 .form-group select {
-  padding: 8px 12px;
+  padding: 0 12px;
+  height: 36px;
   background-color: var(--bg-color);
   color: #ffffff;
   border: 1px solid var(--border-color);
@@ -233,7 +235,8 @@ select option:checked {
 }
 
 input[type="number"], input[type="text"] {
-  padding: 8px;
+  padding: 0 8px;
+  height: 36px;
   background-color: var(--bg-color);
   color: var(--text-color);
   border: 1px solid var(--border-color);
@@ -256,7 +259,8 @@ button.secondary {
   background-color: #444;
   color: white;
   border: 1px solid var(--border-color);
-  padding: 8px 16px;
+  padding: 0 16px;
+  height: 36px;
   border-radius: 4px;
   cursor: pointer;
 }
@@ -1257,7 +1261,16 @@ button.danger:hover {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 14px;
-  align-items: start;
+}
+
+.advanced-grid-2col .form-group {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.advanced-grid-2col .form-group > :nth-child(2):not(.tooltip-text) {
+  margin-bottom: auto;
 }
 
 .slider-input-container {
@@ -1265,6 +1278,7 @@ button.danger:hover {
   align-items: center;
   gap: 10px;
   height: 36px;
+  box-sizing: border-box;
 }
 
 .slider-input-container input[type="range"] {
@@ -1284,6 +1298,7 @@ button.danger:hover {
   display: flex;
   align-items: center;
   height: 36px;
+  box-sizing: border-box;
 }
 
 .checkbox-control-container label {
