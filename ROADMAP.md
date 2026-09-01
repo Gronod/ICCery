@@ -79,13 +79,13 @@ ICCery is a native, cross-platform desktop application built with:
 - [x] **Stage 1 Layout Normalization & Stage 2 Deterministic Target Generation (#162, #163)** (`v0.5.5`): Reorganized Stage 1 Advanced Options into structured 2-column grids with normalized heights; enforced deterministic `-R 1` target generation with custom seed and raster order (`-r`) support in Stage 2.
 - [x] **macOS Universal Binary Target (#164)** (`v0.5.5`): Added macOS Universal Binary (`universal-apple-darwin`) build target combining Intel (`x86_64`) and Apple Silicon (`arm64`), ArgyllCMS universal sidecar packaging, runtime fallback resolution, and CI release asset automation.
 
-### Milestone 11 — Enterprise Colour Workflow (`v0.6.0` – `v0.6.7`)
+### Milestone 11 — Enterprise Colour Workflow (`v0.6.0` – `v0.6.8`)
 - [x] **CGATS Dataset Interoperability (#94)** (`v0.6.0`): Native Rust CGATS and Argyll `.ti3` dataset parser, canonical normalizer (0-255 scaling, field aliasing, metadata synthesis), and direct-jump workflow to Stage 4 (Profile Generation) and Stage 5 (Verification) using imported external datasets.
 - [x] **Stage 1 Layout Normalization (#162)** (`v0.6.1`): Standardized control heights and structural flexbox auto-margin layout for multi-column Stage 1 advanced settings.
 - [x] **Overlay Tooltip Rendering (#171)** (`v0.6.2`): Rendered tooltips as absolute overlay popups on hover/focus to prevent layout jitter while preserving in-flow hints in global tooltip toggle mode.
 - [x] **Preconditioning Profile File Type Filter (#172)** (`v0.6.3`): Dedicated `select_profile_file` command allowing selection of `.icc`, `.icm`, and `.mpp` files for Stage 1 preconditioning profile input.
 - [x] **Windows Authenticode Code Signing in Gitea CI** (`v0.6.4` – `v0.6.6`): Integrated Tauri bundle signing hooks via `sign.cmd` batch wrapper with PATH resolution, Gitea Actions secret-based PFX materialization, and ephemeral signing pipeline.
-- [x] **Stage 3 Chartread Completion & Save (#175)** (`v0.6.7`): Added dedicated `Done & Save .ti3` action (`d\n`), `Undo Strip` action (`u\n`), and automated completion state detection to cleanly finalize measurement passes.
+- [x] **Stage 3 Chartread Completion & Snapshot IPC Fix (#175)** (`v0.6.7` – `v0.6.8`): Added dedicated `Done & Save .ti3` action (`d\n`), `Undo Strip` action (`u\n`), automated completion state detection, and corrected Tauri IPC deserialization parameter (`passIndex`) in `snapshot_ti3`.
 
 ---
 
