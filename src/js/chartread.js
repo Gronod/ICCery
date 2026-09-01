@@ -446,7 +446,7 @@ export function initChartread() {
               const filename = await invoke("snapshot_ti3", {
                 cwd: cwd,
                 basename: basename,
-                pass_index: passIndex,
+                passIndex: passIndex,
               });
 
               currentPassIndex = passIndex;
