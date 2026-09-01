@@ -8,8 +8,9 @@ let unlistenJsonRow = null;
 /**
  * Start listening for row events from a chartread process.
  * @param {string} processId - The process ID (e.g. "chartread_my_profile")
+ * @param {Function} [onRowComplete] - Optional callback invoked on each completed row
  */
-export async function startSwatchListener(processId) {
+export async function startSwatchListener(processId, onRowComplete) {
   const grid = document.getElementById("swatchGrid");
   const progressBar = document.getElementById("readProgress");
   const progressText = document.getElementById("readProgressText");
@@ -34,6 +35,15 @@ export async function startSwatchListener(processId) {
     }
 
     if (data.event !== "row_complete") return;
+
+    if (onRowComplete && typeof onRowComplete === "function") {
+      onRowComplete({
+        rowIndex: data.row_index,
+        totalRows: data.total_rows,
+        rowId: data.row_id,
+        isAllComplete: data.row_index + 1 >= data.total_rows,
+      });
+    }
 
     // Update progress bar
     const progress = ((data.row_index + 1) / data.total_rows) * 100;
