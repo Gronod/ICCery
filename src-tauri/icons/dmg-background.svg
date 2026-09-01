@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 660 400" width="660" height="400">
+  <defs>
+    <!-- Logo Clip Path -->
+    <clipPath id="coneClip">
+      <path d="M 50 82 L 110 82 L 80 142 Z" />
+    </clipPath>
+    <!-- Logo Text Gradient -->
+    <linearGradient id="textGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#00AEEF" />
+      <stop offset="100%" stop-color="#0066CC" />
+    </linearGradient>
+    <!-- Arrow Drop Shadow Filter -->
+    <filter id="arrowShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#000000" flood-opacity="0.35"/>
+    </filter>
+  </defs>
+
+  <!-- Solid Background (matches app --bg-color: #1e1e1e) -->
+  <rect width="660" height="400" fill="#1e1e1e" />
+
+  <!-- Top-Left Branding Logo & Text (standard header height) -->
+  <g transform="translate(24, 18) scale(0.44)">
+    <!-- Drop Shadow -->
+    <ellipse cx="80" cy="145" rx="25" ry="5" fill="#1E293B" opacity="0.1" />
+
+    <!-- Ice Cream Cone (Waffle) -->
+    <path d="M 50 82 L 110 82 L 80 142 Z" fill="#FAD7A1" stroke="#E59866" stroke-width="2.5" stroke-linejoin="round"/>
+    <g clip-path="url(#coneClip)" stroke="#E59866" stroke-width="2">
+      <line x1="40" y1="80" x2="120" y2="160" />
+      <line x1="55" y1="80" x2="135" y2="160" />
+      <line x1="70" y1="80" x2="150" y2="160" />
+      <line x1="85" y1="80" x2="165" y2="160" />
+
+      <line x1="120" y1="80" x2="40" y2="160" />
+      <line x1="105" y1="80" x2="25" y2="160" />
+      <line x1="90" y1="80" x2="10" y2="160" />
+      <line x1="75" y1="80" x2="-5" y2="160" />
+    </g>
+
+    <!-- CMYK Scoops (C, M, Y) -->
+    <circle cx="63" cy="72" r="22" fill="#00BCEB" stroke="#ffffff" stroke-width="2.5"/>
+    <circle cx="97" cy="72" r="22" fill="#EC008C" stroke="#ffffff" stroke-width="2.5"/>
+    <circle cx="80" cy="48" r="22" fill="#FFED00" stroke="#ffffff" stroke-width="2.5"/>
+
+    <!-- Black (Key) Cherry -->
+    <path d="M 80 23 Q 92 12 96 16" fill="none" stroke="#1E293B" stroke-width="2" stroke-linecap="round"/>
+    <circle cx="80" cy="24" r="7" fill="#1E293B" stroke="#ffffff" stroke-width="1.5"/>
+
+    <!-- Highlights on scoops for 3D effect -->
+    <circle cx="58" cy="67" r="4" fill="#ffffff" opacity="0.35"/>
+    <circle cx="92" cy="67" r="4" fill="#ffffff" opacity="0.35"/>
+    <circle cx="75" cy="43" r="4" fill="#ffffff" opacity="0.45"/>
+    <circle cx="78" cy="22" r="1.5" fill="#ffffff" opacity="0.6"/>
+
+    <!-- Text: ICCery -->
+    <text font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="58" font-weight="800" x="140" y="105" fill="#ffffff" letter-spacing="-1">ICC<tspan fill="url(#textGrad)">ery</tspan></text>
+  </g>
+
+  <!-- Center White Arrow (Pointing right between App Icon and Applications folder) -->
+  <g filter="url(#arrowShadow)">
+    <path d="M 285 214 
+             L 342 214 
+             L 342 201 
+             Q 342 198 345 199.5
+             L 380 217.5 
+             Q 383 219 383 220 
+             Q 383 221 380 222.5 
+             L 345 240.5 
+             Q 342 242 342 239 
+             L 342 226 
+             L 285 226 
+             Q 282 226 282 223 
+             L 282 217 
+             Q 282 214 285 214 Z" 
+          fill="#ffffff" />
+  </g>
+</svg>

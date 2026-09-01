@@ -132,16 +132,16 @@ export const wizardState = {
         basename: this.basename,
       });
 
-      // Strict sequential gating:
+      // Gating Logic:
       // Stage 1: always accessible
       // Stage 2: unlocked if .ti1 exists (stage1_complete)
       // Stage 3: unlocked if .ti1 + .ti2 exist
-      // Stage 4: unlocked if .ti1 + .ti2 + .ti3 exist
-      // Stage 5: unlocked if .ti1 + .ti2 + .ti3 + profile exist
+      // Stage 4: unlocked if .ti3 exists (handles imported workflows bypassing .ti1/.ti2)
+      // Stage 5: unlocked if .ti3 + profile exist
       const stage1Valid = true;
       const stage2Valid = !!status.stage1_complete;
       const stage3Valid = stage2Valid && !!status.stage2_complete;
-      const stage4Valid = stage3Valid && !!status.stage3_complete;
+      const stage4Valid = !!status.stage3_complete;
       const stage5Valid = stage4Valid && !!status.stage4_complete;
 
       const unlocked = [

@@ -131,7 +131,10 @@
             <div class="form-group has-tooltip">
               <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
                 <label style="margin: 0;">Project Directory &amp; Filename</label>
-                <button type="button" id="btnOpenExisting" class="secondary" style="font-size: 0.75rem; padding: 2px 8px;" title="Open existing .ti1 or .ti2 target file">📂 Open Target...</button>
+                <div>
+                  <button type="button" id="btn-import-dataset" class="secondary" style="font-size: 0.75rem; padding: 2px 8px; margin-right: 4px;" title="Import external dataset (.ti3, .csv) and jump to Profiling">📥 Import Dataset...</button>
+                  <button type="button" id="btnOpenExisting" class="secondary" style="font-size: 0.75rem; padding: 2px 8px;" title="Open existing .ti1 or .ti2 target file">📂 Open Target...</button>
+                </div>
               </div>
               <div class="input-row has-btn">
                 <input type="text" id="targetBasename" placeholder="e.g. my_paper_profile">
