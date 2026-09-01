@@ -279,7 +279,7 @@ impl CgatsDataset {
         let mut in_data = false;
         let mut format_keys = Vec::new();
 
-        for (line_idx, line) in lines.iter().enumerate() {
+        for line in lines.iter() {
             let line = line.trim();
             if line.is_empty() || line.starts_with('#') {
                 continue;

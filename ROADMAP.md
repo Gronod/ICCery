@@ -79,8 +79,8 @@ ICCery is a native, cross-platform desktop application built with:
 - [x] **Stage 1 Layout Normalization & Stage 2 Deterministic Target Generation (#162, #163)** (`v0.5.5`): Reorganized Stage 1 Advanced Options into structured 2-column grids with normalized heights; enforced deterministic `-R 1` target generation with custom seed and raster order (`-r`) support in Stage 2.
 - [x] **macOS Universal Binary Target (#164)** (`v0.5.5`): Added macOS Universal Binary (`universal-apple-darwin`) build target combining Intel (`x86_64`) and Apple Silicon (`arm64`), ArgyllCMS universal sidecar packaging, runtime fallback resolution, and CI release asset automation.
 
-### Milestone 11 — Enterprise Colour Workflow: Step 1 (`v0.6.0`)
-- [ ] **Custom CGATS Export (#94)**: Export and import industry-standard `.ti3` / `.txt` / `.csv` CGATS datasets. Direct jump to Stage 4 (Profile Generation) and Stage 5 (Verification) using imported datasets.
+### Milestone 11 — Enterprise Colour Workflow (`v0.6.0`)
+- [x] **CGATS Dataset Interoperability (#94)**: Native Rust CGATS and Argyll `.ti3` dataset parser, canonical normalizer (0-255 scaling, field aliasing, metadata synthesis), and direct-jump workflow to Stage 4 (Profile Generation) and Stage 5 (Verification) using imported external datasets.
 
 ---
 
@@ -89,8 +89,8 @@ ICCery is a native, cross-platform desktop application built with:
 ### Milestone 9 — macOS Native Support & Enhanced Print Spooling (`v0.4.0`)
 - [ ] **macOS Platform Bundle**: Build and sign universal macOS `.dmg` bundles with notarization.
 - [ ] **macOS Raw Spooling**: Native CoreGraphics/CUPS raw print dialog bypass.
-- [ ] **SpectroScan & Automated Table Support**: Support XY automated scanning tables (i1iO / SpectroScan) in `chartread`.
+- [ ] **SpectroScan & Automated Table Support (#93)**: Support XY automated scanning tables (i1iO / SpectroScan) in `chartread` (deferred).
 
-### Milestone 11 — Enterprise Colour Workflow (`v1.0.0`)
-- [ ] **Batch Verification & Drift Tracking**: Track printer drift over time by comparing periodic verification measurements against a baseline profile.
-- [ ] **Multi-Language Localization**: Full UI internationalization (English, German, French, Japanese).
+### Milestone 12 — Future Workflow & Advanced Analytics (Deferred)
+- [ ] **Batch Verification & Drift Tracking (#95)**: Track printer drift over time by comparing periodic verification measurements against a baseline profile.
+- [ ] **Multi-Language Localization (#96)**: Full UI internationalization (English, German, French, Japanese).
