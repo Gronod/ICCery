@@ -50,6 +50,7 @@ const STATE = {
   CALIBRATING: "CALIBRATING",
   AWAITING_STRIP: "AWAITING_STRIP",
   READING: "READING",
+  ALL_STRIPS_READ: "ALL_STRIPS_READ",
   WARNING: "WARNING",
   PROMPT_CONTINUE: "PROMPT_CONTINUE",
   ERROR: "ERROR",
@@ -65,8 +66,10 @@ const recordedPasses = [];
 export function initChartread() {
   const btnStartRead = document.getElementById("btnStartRead");
   const btnCalibrate = document.getElementById("btnCalibrate");
+  const btnDoneRead = document.getElementById("btnDoneRead");
   const btnAccept = document.getElementById("btnAccept");
   const btnRetry = document.getElementById("btnRetry");
+  const btnUndo = document.getElementById("btnUndo");
   const btnSkip = document.getElementById("btnSkip");
   const btnCancel = document.getElementById("btnCancel");
   const btnDetectInstruments = document.getElementById("btnDetectInstruments");
@@ -205,8 +208,10 @@ export function initChartread() {
 
     // Show/hide buttons based on state
     if (btnCalibrate) btnCalibrate.classList.add("hidden");
+    if (btnDoneRead) btnDoneRead.classList.add("hidden");
     if (btnAccept) btnAccept.classList.add("hidden");
     if (btnRetry) btnRetry.classList.add("hidden");
+    if (btnUndo) btnUndo.classList.add("hidden");
     if (btnSkip) btnSkip.classList.add("hidden");
     if (btnCancel) btnCancel.classList.add("hidden");
     if (btnStartRead) btnStartRead.classList.add("hidden");
@@ -229,10 +234,36 @@ export function initChartread() {
           btnRetry.textContent = "↻ Retry Strip";
           btnRetry.classList.remove("hidden");
         }
+        if (btnUndo) {
+          btnUndo.disabled = false;
+          btnUndo.classList.remove("hidden");
+        }
         if (btnSkip) btnSkip.classList.remove("hidden");
+        if (btnDoneRead) {
+          btnDoneRead.disabled = false;
+          btnDoneRead.textContent = "💾 Done & Save .ti3";
+          btnDoneRead.classList.remove("hidden");
+        }
         if (btnCancel) btnCancel.classList.remove("hidden");
         break;
       case STATE.READING:
+        if (btnCancel) btnCancel.classList.remove("hidden");
+        break;
+      case STATE.ALL_STRIPS_READ:
+        if (btnDoneRead) {
+          btnDoneRead.disabled = false;
+          btnDoneRead.textContent = "💾 Done & Save .ti3";
+          btnDoneRead.classList.remove("hidden");
+        }
+        if (btnRetry) {
+          btnRetry.disabled = false;
+          btnRetry.textContent = "↻ Re-read Last Strip";
+          btnRetry.classList.remove("hidden");
+        }
+        if (btnUndo) {
+          btnUndo.disabled = false;
+          btnUndo.classList.remove("hidden");
+        }
         if (btnCancel) btnCancel.classList.remove("hidden");
         break;
       case STATE.WARNING:
@@ -261,6 +292,10 @@ export function initChartread() {
           btnRetry.disabled = false;
           btnRetry.textContent = "↻ Retry Strip";
           btnRetry.classList.remove("hidden");
+        }
+        if (btnUndo) {
+          btnUndo.disabled = false;
+          btnUndo.classList.remove("hidden");
         }
         if (btnSkip) btnSkip.classList.remove("hidden");
         if (btnCancel) btnCancel.classList.remove("hidden");
@@ -314,8 +349,13 @@ export function initChartread() {
 
       currentProcessId = `chartread_${basename}`;
 
-      // Start swatch grid listener
-      await startSwatchListener(currentProcessId);
+      // Start swatch grid listener with completion callback
+      await startSwatchListener(currentProcessId, ({ rowIndex, totalRows, rowId, isAllComplete }) => {
+        if (isAllComplete && currentState !== STATE.FINISHED) {
+          setState(STATE.ALL_STRIPS_READ);
+          setPrompt(`🎉 All ${totalRows} strips measured! Click 'Done & Save .ti3' to write measurements and finish.`);
+        }
+      });
 
       try {
         const unlistenStdout = await listen("process:stdout", (event) => {
@@ -329,6 +369,19 @@ export function initChartread() {
           const lineLower = line.toLowerCase();
 
           if (
+            lineLower.includes("'d' if done") ||
+            lineLower.includes("'d' when done") ||
+            lineLower.includes("d if done") ||
+            lineLower.includes("d when done") ||
+            lineLower.includes("d to finish") ||
+            lineLower.includes("d to save") ||
+            lineLower.includes("all strips read") ||
+            lineLower.includes("all patches read") ||
+            lineLower.includes("done reading")
+          ) {
+            setState(STATE.ALL_STRIPS_READ);
+            setPrompt(`🎉 ${line.trim()} — Click 'Done & Save .ti3' to save.`);
+          } else if (
             lineLower.includes("(warning)") ||
             lineLower.includes("use it anyway") ||
             lineLower.includes("seem to have read strip pass") ||
@@ -575,6 +628,37 @@ export function initChartread() {
         setState(STATE.READING);
         setPrompt("Retrying strip read...");
       } catch (e) { console.error("send_stdin error:", e); }
+    });
+  }
+
+  // Done & Save button — sends "d\n"
+  if (btnDoneRead) {
+    btnDoneRead.addEventListener("click", async () => {
+      try {
+        btnDoneRead.disabled = true;
+        btnDoneRead.textContent = "⏳ Saving .ti3...";
+        setPrompt("Saving measurement data to .ti3 (sending done signal to chartread)...");
+        await invoke("send_stdin", { id: currentProcessId, input: "d\n" });
+      } catch (e) {
+        console.error("send_stdin error for done:", e);
+        btnDoneRead.disabled = false;
+        btnDoneRead.textContent = "💾 Done & Save .ti3";
+        setPrompt(`Failed to send done signal: ${e}`);
+      }
+    });
+  }
+
+  // Undo button — sends "u\n"
+  if (btnUndo) {
+    btnUndo.addEventListener("click", async () => {
+      try {
+        await invoke("send_stdin", { id: currentProcessId, input: "u\n" });
+        setState(STATE.READING);
+        setPrompt("Undoing previous strip measurement. Preparing to re-read...");
+      } catch (e) {
+        console.error("send_stdin error for undo:", e);
+        setPrompt(`Failed to send undo signal: ${e}`);
+      }
     });
   }
 
