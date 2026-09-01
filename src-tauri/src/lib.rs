@@ -1,5 +1,6 @@
 use tauri::Manager;
 
+mod cgats;
 mod commands;
 mod events;
 mod print;
@@ -44,6 +45,9 @@ pub fn run() {
             commands::log_frontend_message,
             commands::open_log_dir,
             commands::parse_ti2_header,
+            commands::import_measurement_dataset,
+            commands::export_measurement_dataset,
+            commands::inspect_dataset_preview,
             commands::select_existing_target,
             commands::select_target_file,
             commands::select_directory,

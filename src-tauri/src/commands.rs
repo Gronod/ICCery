@@ -1148,6 +1148,59 @@ pub async fn print_target_native(
     }
 }
 
+#[tauri::command]
+pub async fn import_measurement_dataset(
+    file_path: String,
+    target_cwd: Option<String>,
+    target_basename: Option<String>,
+) -> Result<crate::cgats::DatasetSummary, String> {
+    let path = std::path::PathBuf::from(&file_path);
+    if !path.exists() {
+        return Err(format!("File does not exist: {}", file_path));
+    }
+
+    let dataset = crate::cgats::CgatsDataset::parse(&path)?;
+    let summary = dataset.summary();
+
+    if let (Some(cwd), Some(basename)) = (target_cwd, target_basename) {
+        let out_dir = std::path::PathBuf::from(cwd);
+        let out_path = out_dir.join(format!("{}.ti3", basename));
+        dataset.to_canonical_ti3(&out_path)?;
+    }
+
+    Ok(summary)
+}
+
+#[tauri::command]
+pub async fn export_measurement_dataset(
+    cwd: String,
+    basename: String,
+    _format: String,
+    _destination_path: String,
+) -> Result<(), String> {
+    // Currently only parses .ti3 and can save to other formats
+    let src_path = std::path::PathBuf::from(&cwd).join(format!("{}.ti3", basename));
+    if !src_path.exists() {
+        return Err("Source .ti3 does not exist.".to_string());
+    }
+    
+    // We would parse and then serialize, but for now we'll just copy for .ti3
+    // Further implementation for CSV / CGATS.17 would be added here
+    Err("Export formats beyond .ti3 not fully implemented yet".to_string())
+}
+
+#[tauri::command]
+pub async fn inspect_dataset_preview(
+    file_path: String,
+) -> Result<crate::cgats::DatasetSummary, String> {
+    let path = std::path::PathBuf::from(&file_path);
+    if !path.exists() {
+        return Err(format!("File does not exist: {}", file_path));
+    }
+    let dataset = crate::cgats::CgatsDataset::parse(&path)?;
+    Ok(dataset.summary())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
