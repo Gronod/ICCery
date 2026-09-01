@@ -1189,6 +1189,10 @@ button.danger:hover {
 
 .tooltip-text {
   display: none;
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
   font-size: 0.78rem;
   line-height: 1.35;
   color: #e0e0e0;
@@ -1196,9 +1200,9 @@ button.danger:hover {
   border: 1px solid #444455;
   border-radius: 6px;
   padding: 8px 10px;
-  margin-top: 6px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
-  z-index: 10;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
+  z-index: 100;
+  box-sizing: border-box;
 }
 
 .has-tooltip:hover .tooltip-text,
@@ -1208,6 +1212,9 @@ button.danger:hover {
 
 .show-all-tooltips .tooltip-text {
   display: block !important;
+  position: static !important;
+  margin-top: 6px !important;
+  box-shadow: none !important;
 }
 
 .advanced-section-details {
