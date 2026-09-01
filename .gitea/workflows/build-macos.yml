@@ -91,7 +91,7 @@ jobs:
           if [ -n "$APP_DIR" ] && [ -d "$APP_DIR" ]; then
             APP_PARENT=$(dirname "$APP_DIR")
             APP_NAME=$(basename "$APP_DIR")
-            (cd "$APP_PARENT" && zip -r "${PWD}/release-assets/${PREFIX}.zip" "$APP_NAME")
+            (cd "$APP_PARENT" && zip -r "${GITHUB_WORKSPACE}/release-assets/${PREFIX}.zip" "$APP_NAME")
           fi
 
       - name: Upload Artifacts
