@@ -2,7 +2,7 @@
 
 > Modern, cross-platform native desktop application for printer profiling, powered by ArgyllCMS.
 
-[![Release](https://img.shields.io/badge/version-v0.6.4-blue.svg)](https://git.i3omb.com/gronod/ICCery)
+[![Release](https://img.shields.io/badge/version-v0.6.5-blue.svg)](https://git.i3omb.com/gronod/ICCery)
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux-lightgrey.svg)](https://git.i3omb.com/gronod/ICCery)
 [![Framework](https://img.shields.io/badge/framework-Tauri%20v2%20%2B%20Rust-orange.svg)](https://tauri.app)
 [![License](https://img.shields.io/badge/license-Proprietary%20%2F%20EULA-blue.svg)](LICENCE.md)

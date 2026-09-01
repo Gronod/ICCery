@@ -92,6 +92,8 @@ jobs:
           }
 
       - name: Build Tauri App
+        env:
+          WINDOWS_CODESIGN_PASSWORD: ${{ secrets.WINDOWS_CODESIGN_PASSWORD }}
         run: npm run tauri build -- -v
 
       - name: Prepare Release Assets
