@@ -16,7 +16,11 @@ dist-ssr
 .vscode/*
 !.vscode/extensions.json
 .idea
+# OS metadata
+Thumbs.db
+ehthumbs.db
 .DS_Store
+
 *.suo
 *.ntvs*
 *.njsproj
