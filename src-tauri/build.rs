@@ -14,11 +14,26 @@ fn main() {
     let target_os = std::env::var("CARGO_CFG_TARGET_OS").unwrap_or_default();
     let target_arch = std::env::var("CARGO_CFG_TARGET_ARCH").unwrap_or_default();
 
+    let manifest_dir = std::env::var("CARGO_MANIFEST_DIR").unwrap_or_else(|_| ".".to_string());
+    let argyll_dir = Path::new(&manifest_dir).join("argyll");
+
     let platform_dir = match (target_os.as_str(), target_arch.as_str()) {
         ("linux", "x86_64") => "linux-x86_64",
         ("windows", "x86_64") => "windows-x86_64",
-        ("macos", "aarch64") => "macos-aarch64",
-        ("macos", "x86_64") => "macos-x86_64",
+        ("macos", "aarch64") => {
+            if argyll_dir.join("macos-universal").join("instlist").exists() {
+                "macos-universal"
+            } else {
+                "macos-aarch64"
+            }
+        },
+        ("macos", "x86_64") => {
+            if argyll_dir.join("macos-universal").join("instlist").exists() {
+                "macos-universal"
+            } else {
+                "macos-x86_64"
+            }
+        },
         _ => "linux-x86_64",
     };
 
@@ -28,9 +43,7 @@ fn main() {
         "instlist"
     };
 
-    let manifest_dir = std::env::var("CARGO_MANIFEST_DIR").unwrap_or_else(|_| ".".to_string());
-    let sidecar_path = Path::new(&manifest_dir)
-        .join("argyll")
+    let sidecar_path = argyll_dir
         .join(platform_dir)
         .join(binary_name);
 
