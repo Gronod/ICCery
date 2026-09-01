@@ -16,17 +16,17 @@ jobs:
       matrix:
         platform:
           - name: Intel
-            os: macos-15-intel
+            os: macos-latest
             target: x86_64-apple-darwin
             binary_dir: macos-x86_64
             arch: x86_64
           - name: Apple Silicon
-            os: macos-15
+            os: macos-latest
             target: aarch64-apple-darwin
             binary_dir: macos-aarch64
             arch: arm64
           - name: Universal (Intel + Apple Silicon)
-            os: macos-15
+            os: macos-latest
             target: universal-apple-darwin
             binary_dir: macos-universal
             arch: universal
@@ -45,7 +45,7 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
         with:
           toolchain: stable
-          targets: ${{ matrix.platform.target == 'universal-apple-darwin' && 'x86_64-apple-darwin, aarch64-apple-darwin' || matrix.platform.target }}
+          targets: ${{ matrix.platform.target == 'universal-apple-darwin' && 'x86_64-apple-darwin,aarch64-apple-darwin' || matrix.platform.target }}
 
       - name: Rust Cache
         uses: Swatinem/rust-cache@v2
@@ -83,13 +83,13 @@ jobs:
           mkdir -p release-assets
           
           # Stage DMG package
-          DMG_FILE=$(find src-tauri/target -type f -name "*.dmg" | head -n 1)
+          DMG_FILE=$(find src-tauri/target -type f -path "*/release/bundle/dmg/*.dmg" | head -n 1)
           if [ -n "$DMG_FILE" ] && [ -f "$DMG_FILE" ]; then
             cp "$DMG_FILE" "release-assets/${PREFIX}.dmg"
           fi
 
           # Stage ZIP archive of .app bundle
-          APP_DIR=$(find src-tauri/target -type d -name "*.app" | head -n 1)
+          APP_DIR=$(find src-tauri/target -type d -path "*/release/bundle/macos/*.app" | head -n 1)
           if [ -n "$APP_DIR" ] && [ -d "$APP_DIR" ]; then
             APP_PARENT=$(dirname "$APP_DIR")
             APP_NAME=$(basename "$APP_DIR")
@@ -108,3 +108,4 @@ jobs:
           files: release-assets/*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          
