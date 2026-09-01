@@ -93,7 +93,7 @@ export function initTargen() {
   if (btnBrowsePrecondProfile && targenPrecondProfile) {
     btnBrowsePrecondProfile.addEventListener("click", async () => {
       try {
-        const filePath = await invoke("select_existing_target", {
+        const filePath = await invoke("select_profile_file", {
           defaultDir: currentWorkingDir || null,
         });
         if (filePath) {

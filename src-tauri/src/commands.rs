@@ -366,6 +366,32 @@ pub async fn select_existing_target(
 }
 
 #[tauri::command]
+pub async fn select_profile_file(
+    app: AppHandle,
+    default_dir: Option<String>,
+) -> Result<Option<String>, String> {
+    use tauri_plugin_dialog::DialogExt;
+
+    let mut builder = app
+        .dialog()
+        .file()
+        .add_filter("ICC/ICM & MPP Profiles (*.icc, *.icm, *.mpp)", &["icc", "icm", "mpp"]);
+    if let Some(ref dir) = default_dir {
+        if !dir.trim().is_empty() {
+            builder = builder.set_directory(std::path::PathBuf::from(dir));
+        }
+    }
+
+    let (tx, rx) = tokio::sync::oneshot::channel();
+    builder.pick_file(move |file_path| {
+        let res = file_path.map(|p| p.to_string());
+        let _ = tx.send(res);
+    });
+
+    rx.await.map_err(|e| format!("Dialog channel error: {}", e))
+}
+
+#[tauri::command]
 pub async fn select_target_file(
     app: AppHandle,
     default_dir: Option<String>,

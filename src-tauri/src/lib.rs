@@ -49,6 +49,7 @@ pub fn run() {
             commands::export_measurement_dataset,
             commands::inspect_dataset_preview,
             commands::select_existing_target,
+            commands::select_profile_file,
             commands::select_target_file,
             commands::select_directory,
             commands::send_stdin,
