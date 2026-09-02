@@ -58,8 +58,8 @@ fn is_relevant_cups_option(key: &str, value: &str) -> bool {
     if key.starts_with("com.apple.") {
         return false;
     }
-    // We always set AP_ColorMatchingMode ourselves in build_lp_args.
-    if key == "AP_ColorMatchingMode" {
+    // We always set AP_ColorMatchingMode (and dot-notation) ourselves in build_lp_args.
+    if key == "AP_ColorMatchingMode" || key == "AP.ColorMatchingMode" {
         return false;
     }
     // Skip empty values (e.g. "AP_D_InputSlot=").
@@ -213,25 +213,48 @@ fn run_native_print_panel(
         }
     }
 
-    // Set AP_ColorMatchingMode = AP_ApplicationColorMatching so the driver's
-    // ColorSync / vendor color management controls are greyed out in the panel.
+    // Set AP_ColorMatchingMode = AP_ApplicationColorMatching (and the
+    // dot-notation variant) so the driver\'s ColorSync / vendor color
+    // management controls are greyed out and locked in the panel.
     let cm_key = CFString::from_str("AP_ColorMatchingMode");
+    let cm_dot_key = CFString::from_str("AP.ColorMatchingMode");
     let cm_val = CFString::from_str("AP_ApplicationColorMatching");
     let cm_val_ref: &objc2_core_foundation::CFType = &*cm_val;
-    let set_status = unsafe {
-        PMPrintSettingsSetValue(pm_settings, &cm_key, Some(cm_val_ref), false)
-    };
-    if set_status != 0 {
-        log::warn!(
-            "PMPrintSettingsSetValue(AP_ColorMatchingMode) returned status {}",
-            set_status
-        );
+    for cm_key_ref in [&cm_key, &cm_dot_key] {
+        let set_status = unsafe {
+            PMPrintSettingsSetValue(pm_settings, cm_key_ref, Some(cm_val_ref), true)
+        };
+        if set_status != 0 {
+            log::warn!(
+                "PMPrintSettingsSetValue({}) returned status {}",
+                cm_key_ref,
+                set_status
+            );
+        }
     }
 
     print_info.updateFromPMPageFormat();
 
     // Sync the PMPrintSettings changes back into the NSPrintInfo object.
     print_info.updateFromPMPrintSettings();
+
+    // Also write the color-matching keys directly into the NSPrintInfo
+    // printSettings dictionary. This is the dictionary that AppKit print
+    // dialog extensions (PDEs) and some raster drivers inspect, so the
+    // value must appear here as well as in the PMPrintSettings object.
+    let cm_key_ns = NSString::from_str("AP_ColorMatchingMode");
+    let cm_dot_key_ns = NSString::from_str("AP.ColorMatchingMode");
+    let cm_val_ns = NSString::from_str("AP_ApplicationColorMatching");
+
+    // Safety: `NSString` has the same memory layout as its root `AnyObject`
+    // (`isa`), so we can borrow it as `&AnyObject` for the dictionary.
+    let as_any = |s: &NSString| -> &objc2::runtime::AnyObject {
+        unsafe { &*(s as *const _ as *const objc2::runtime::AnyObject) }
+    };
+
+    let print_settings = unsafe { print_info.printSettings() };
+    print_settings.insert(&cm_key_ns, as_any(&cm_val_ns));
+    print_settings.insert(&cm_dot_key_ns, as_any(&cm_val_ns));
 
     // Create and configure the print panel.
     let panel = NSPrintPanel::printPanel(mtm);
@@ -339,9 +362,12 @@ pub fn build_lp_args(
         title,
     ];
 
-    // Always apply ColorSync bypass on macOS for targeting.
+    // Always apply ColorSync bypass on macOS for targeting. The dot-notation
+    // variant is a legacy form used by some raster drivers and PDEs.
     args.push("-o".to_string());
     args.push("AP_ColorMatchingMode=AP_ApplicationColorMatching".to_string());
+    args.push("-o".to_string());
+    args.push("AP.ColorMatchingMode=AP_ApplicationColorMatching".to_string());
 
     // Track which option keys have already been added from cups_options so we
     // don't duplicate them from the explicit PrintOptions fields.

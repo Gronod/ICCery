@@ -25,12 +25,12 @@ When adding fields to `Printer` in `src-tauri/src/print/mod.rs`, update every pl
 The "Preferences" button opens the native macOS `NSPrintPanel` (not CUPS web UI or System Settings).
 - The CUPS destination ID is bound to the panel via Core Printing `PMPrinterCreateFromPrinterID` and `PMSessionSetCurrentPMPrinter`
 - A `Printer.display_name` (from CUPS `printer-info`) is cached at enumeration as a fallback for `NSPrinter::printerWithName`
-- Pre-configured with `AP_ColorMatchingMode=AP_ApplicationColorMatching` so driver color management is greyed out
+- Pre-configured with both `AP_ColorMatchingMode=AP_ApplicationColorMatching` and `AP.ColorMatchingMode=AP_ApplicationColorMatching` (dot-notation) as a locked PMPrintSettings value and in the `NSPrintInfo` job ticket, so driver color management is greyed out
 - Captures user's media type / quality selections as a CUPS options string with `PMPrintSettingsToOptions`
 - Returns a `PrintPropertiesResult` with the effective `selected_printer` and captured `PrintOptions`
 - Cancellation is returned as `None`, not an error
 - Captured options are stored in frontend `capturedCupsOptions` map and passed via `PrintOptions.cups_options`
-- `build_lp_args` in `macos.rs` always adds `-o AP_ColorMatchingMode=AP_ApplicationColorMatching` and forwards captured options
+- `build_lp_args` in `macos.rs` always adds both `-o AP_ColorMatchingMode=AP_ApplicationColorMatching` and `-o AP.ColorMatchingMode=AP_ApplicationColorMatching`, and forwards captured options
 
 ## Key Dependencies (macOS only)
 

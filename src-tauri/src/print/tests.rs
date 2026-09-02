@@ -288,9 +288,10 @@ printer Custom_Queue unknown state\n\
         assert_eq!(args_raw[1], printer);
         assert_eq!(args_raw[2], "-t");
         assert_eq!(args_raw[3], "ICCery Target - target_page_1.tif");
-        assert_eq!(args_raw[4], "-o");
-        assert_eq!(args_raw[5], "AP_ColorMatchingMode=AP_ApplicationColorMatching");
-        assert_eq!(args_raw[6], path);
+        assert!(args_raw.contains(&"-o".to_string()));
+        assert!(args_raw.contains(&"AP_ColorMatchingMode=AP_ApplicationColorMatching".to_string()));
+        assert!(args_raw.contains(&"AP.ColorMatchingMode=AP_ApplicationColorMatching".to_string()));
+        assert_eq!(args_raw.last().unwrap(), path);
 
         // PPD uncorrected passthrough mode with options
         let opts = PrintOptions {
@@ -300,8 +301,9 @@ printer Custom_Queue unknown state\n\
             ..Default::default()
         };
         let args_ppd = macos_build_lp_args(printer, path, Some(&opts));
-        assert_eq!(args_ppd[4], "-o");
-        assert_eq!(args_ppd[5], "AP_ColorMatchingMode=AP_ApplicationColorMatching");
+        assert!(args_ppd.contains(&"-o".to_string()));
+        assert!(args_ppd.contains(&"AP_ColorMatchingMode=AP_ApplicationColorMatching".to_string()));
+        assert!(args_ppd.contains(&"AP.ColorMatchingMode=AP_ApplicationColorMatching".to_string()));
         assert!(args_ppd.contains(&"orientation-requested=4".to_string()));
         assert!(args_ppd.contains(&"PageSize=A4".to_string()));
         assert_eq!(args_ppd.last().unwrap(), path);
