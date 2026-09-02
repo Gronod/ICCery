@@ -1152,26 +1152,30 @@ pub async fn get_printer_capabilities(
 
 #[tauri::command]
 pub async fn show_printer_properties(
+    app: AppHandle,
     state: State<'_, crate::print::PrinterDevModeStore>,
     printer_name: String,
-) -> Result<(), String> {
+) -> Result<Option<crate::print::PrintOptions>, String> {
     #[cfg(windows)]
     {
-        crate::print::windows::show_printer_properties(&printer_name, &state)
+        let _ = (app, state);
+        crate::print::windows::show_printer_properties(&printer_name, &state)?;
+        Ok(None)
     }
     #[cfg(target_os = "macos")]
     {
         let _ = state;
-        crate::print::macos::show_printer_properties(&printer_name)
+        let opts = crate::print::macos::show_printer_properties(&printer_name, &app).await?;
+        Ok(Some(opts))
     }
     #[cfg(all(unix, not(target_os = "macos")))]
     {
-        let _ = (state, printer_name);
-        Ok(())
+        let _ = (app, state, printer_name);
+        Ok(None)
     }
     #[cfg(not(any(windows, unix)))]
     {
-        let _ = (state, printer_name);
+        let _ = (app, state, printer_name);
         Err("Printer properties dialog is not supported on this platform.".to_string())
     }
 }

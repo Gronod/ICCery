@@ -72,6 +72,7 @@ mod integration_tests {
             paper_size: Some("A4".to_string()),
             media_type: Some("1".to_string()),
             ppd_uncorrected_passthrough: Some(false),
+            cups_options: Some("MediaType=1".to_string()),
         };
 
         let json = serde_json::to_string(&opts).expect("Failed to serialize PrintOptions");
@@ -81,6 +82,26 @@ mod integration_tests {
         assert_eq!(deserialized.orientation.as_deref(), Some("landscape"));
         assert_eq!(deserialized.paper_size.as_deref(), Some("A4"));
         assert_eq!(deserialized.media_type.as_deref(), Some("1"));
+        assert_eq!(deserialized.cups_options.as_deref(), Some("MediaType=1"));
+    }
+
+    #[test]
+    fn test_print_options_cups_options_default_none() {
+        // When cups_options is not set, it should default to None and
+        // serialize/deserialize correctly.
+        let opts = PrintOptions {
+            paper_source: None,
+            orientation: None,
+            paper_size: None,
+            media_type: None,
+            ppd_uncorrected_passthrough: None,
+            cups_options: None,
+        };
+        let json = serde_json::to_string(&opts).expect("Failed to serialize");
+        assert!(!json.contains("cups_options") || json.contains("\"cups_options\":null"));
+        let deserialized: PrintOptions =
+            serde_json::from_str(&json).expect("Failed to deserialize");
+        assert_eq!(deserialized.cups_options, None);
     }
 
     #[test]
@@ -230,6 +251,7 @@ printer Custom_Queue unknown state\n\
             paper_size: None,
             media_type: Some("4".to_string()),
             ppd_uncorrected_passthrough: None,
+            cups_options: None,
         };
 
         let mut work_buf = retrieved;

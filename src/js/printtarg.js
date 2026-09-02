@@ -10,6 +10,11 @@ let stage1Cwd = "";
 let currentManifest = null;
 let discoveredPrinters = [];
 
+// Captured CUPS options from the native macOS print panel, keyed by printer
+// name. These are fed back into print_target_native so the lp job uses the
+// user's media type / quality / color-bypass selections.
+let capturedCupsOptions = {};
+
 let updateLabelPreviewFn = null;
 
 /**
@@ -256,6 +261,8 @@ export function initPrinttarg() {
     const paperSource = trayVal ? parseInt(trayVal, 10) : null;
     const ppdFallback = chkPpdFallback ? chkPpdFallback.checked : false;
     const mediaType = printerMediaTypeSelect ? printerMediaTypeSelect.value : "";
+    const activePrinter = printerSelect ? printerSelect.value : "";
+    const cupsOpts = (activePrinter && capturedCupsOptions[activePrinter]) ? capturedCupsOptions[activePrinter] : null;
 
     return {
       paper_source: paperSource,
@@ -263,6 +270,7 @@ export function initPrinttarg() {
       paper_size: pageSizeSelect ? pageSizeSelect.value : null,
       media_type: mediaType ? mediaType : null,
       ppd_uncorrected_passthrough: ppdFallback,
+      cups_options: cupsOpts,
     };
   }
 
@@ -373,11 +381,39 @@ export function initPrinttarg() {
 
       try {
         showNotification("info", `Opening native printer preferences for '${printerName}'...`);
-        await invoke("show_printer_properties", { printerName });
-        showNotification("success", `✓ Printer driver preferences configured for '${printerName}'.`);
+        const result = await invoke("show_printer_properties", { printerName });
+
+        if (result) {
+          // macOS: the backend returned a PrintOptions snapshot with captured
+          // CUPS options from the native print panel.
+          if (result.cups_options) {
+            capturedCupsOptions[printerName] = result.cups_options;
+          } else {
+            delete capturedCupsOptions[printerName];
+          }
+
+          // If a media type was captured, update the dropdown to match.
+          if (result.media_type && printerMediaTypeSelect) {
+            const matchOpt = Array.from(printerMediaTypeSelect.options).find(
+              o => o.value === result.media_type
+            );
+            if (matchOpt) {
+              printerMediaTypeSelect.value = result.media_type;
+            }
+          }
+
+          showNotification("success", `Printer driver preferences configured for '${printerName}'.`);
+        } else {
+          // Windows / Linux: no captured options returned.
+          showNotification("success", `Printer driver preferences configured for '${printerName}'.`);
+        }
       } catch (err) {
         console.error("[ICCery Print] Failed to open printer properties:", err);
-        showNotification("error", `Could not open printer properties: ${err}`);
+        if (String(err).includes("cancelled")) {
+          showNotification("info", "Printer properties dialog cancelled.");
+        } else {
+          showNotification("error", `Could not open printer properties: ${err}`);
+        }
       }
     });
   }

@@ -166,7 +166,11 @@ pub fn parse_lpoptions_l(output: &str) -> (Vec<PrinterTray>, Vec<PrinterPaperSiz
                         name: clean_val.to_string(),
                     });
                 }
-            } else if key_name.eq_ignore_ascii_case("CNIJMediaType") || key_name.eq_ignore_ascii_case("MediaType") || key_name.eq_ignore_ascii_case("StpMediaType") {
+            } else if key_name.eq_ignore_ascii_case("CNIJMediaType")
+                || key_name.eq_ignore_ascii_case("MediaType")
+                || key_name.eq_ignore_ascii_case("StpMediaType")
+                || key_name.eq_ignore_ascii_case("EPIJ_Medi")
+            {
                 for val in values {
                     let clean_val = val.trim_start_matches('*');
                     media_types.push(PrinterMediaType {
@@ -184,7 +188,11 @@ pub fn parse_lpoptions_l(output: &str) -> (Vec<PrinterTray>, Vec<PrinterPaperSiz
 pub fn parse_ppd_media_types(ppd_content: &str) -> Vec<PrinterMediaType> {
     let mut media = Vec::new();
     for line in ppd_content.lines() {
-        if line.starts_with("*CNIJMediaType ") || line.starts_with("*MediaType ") || line.starts_with("*StpMediaType ") {
+        if line.starts_with("*CNIJMediaType ")
+            || line.starts_with("*MediaType ")
+            || line.starts_with("*StpMediaType ")
+            || line.starts_with("*EPIJ_Medi ")
+        {
             if let Some((id_part, name_part)) = line.split_once('/') {
                 let id = id_part.split_whitespace().last().unwrap_or("").trim().to_string();
                 let name = name_part.split(':').next().unwrap_or("").trim().to_string();
@@ -202,6 +210,13 @@ pub fn detect_driver_color_bypass(output: &str) -> Option<(&'static str, &'stati
         Some(("CNIJIntent2", "4"))
     } else if output.contains("CNIJIntent") {
         Some(("CNIJIntent", "4"))
+    } else if output.contains("EPIJ_CCor") {
+        // Epson driver color-correction key. The "Off (No Color Adjustment)"
+        // equivalent is the value that disables driver-side color management
+        // so the application ICC profile passes through unmodified.
+        Some(("EPIJ_CCor", "0"))
+    } else if output.contains("EPIJ_OSColMat") {
+        Some(("EPIJ_OSColMat", "0"))
     } else if output.contains("ColorCorrection") {
         Some(("ColorCorrection", "Uncorrected"))
     } else if output.contains("StpColorCorrection") {
@@ -216,11 +231,31 @@ pub fn detect_driver_color_bypass(output: &str) -> Option<(&'static str, &'stati
 pub fn detect_media_type_key(output: &str) -> &'static str {
     if output.contains("CNIJMediaType") {
         "CNIJMediaType"
+    } else if output.contains("EPIJ_Medi") {
+        "EPIJ_Medi"
     } else if output.contains("StpMediaType") {
         "StpMediaType"
     } else {
         "MediaType"
     }
+}
+
+/// Parse a CUPS options string of the form `"name=value name=value ..."` into
+/// an ordered vector of `(name, value)` pairs. Whitespace separates pairs and
+/// `=` separates the name from the value. Empty values are preserved so the
+/// caller can decide whether to forward them to `lp`.
+pub fn parse_cups_options_string(options: &str) -> Vec<(String, String)> {
+    let mut out = Vec::new();
+    for token in options.split_whitespace() {
+        if let Some((name, value)) = token.split_once('=') {
+            let name = name.trim().to_string();
+            let value = value.trim().to_string();
+            if !name.is_empty() {
+                out.push((name, value));
+            }
+        }
+    }
+    out
 }
 
 /// Query CUPS printer capabilities via `lpoptions -p <printer> -l`.
@@ -477,8 +512,37 @@ Duplex/2-Sided Printing: *None DuplexNoTumble DuplexTumble\n\
     #[test]
     fn test_detect_driver_color_bypass() {
         assert_eq!(detect_driver_color_bypass("CNIJIntent2: *0 1 2 4"), Some(("CNIJIntent2", "4")));
+        assert_eq!(detect_driver_color_bypass("EPIJ_CCor: *0 3 4 6 12"), Some(("EPIJ_CCor", "0")));
         assert_eq!(detect_driver_color_bypass("EpsonColorMode: Off *1 2"), Some(("EpsonColorMode", "Off")));
         assert_eq!(detect_driver_color_bypass("SomethingElse: 1"), None);
+    }
+
+    #[test]
+    fn test_detect_media_type_key_epson() {
+        assert_eq!(detect_media_type_key("EPIJ_Medi: *0 92 13"), "EPIJ_Medi");
+        assert_eq!(detect_media_type_key("CNIJMediaType: *1 2"), "CNIJMediaType");
+        assert_eq!(detect_media_type_key("StpMediaType: *1"), "StpMediaType");
+        assert_eq!(detect_media_type_key("MediaType: *Plain"), "MediaType");
+    }
+
+    #[test]
+    fn test_parse_cups_options_string() {
+        let opts = parse_cups_options_string("MediaType=92 EPIJ_CCor=0 PageSize=A4");
+        assert_eq!(opts, vec![
+            ("MediaType".to_string(), "92".to_string()),
+            ("EPIJ_CCor".to_string(), "0".to_string()),
+            ("PageSize".to_string(), "A4".to_string()),
+        ]);
+
+        // Empty / malformed tokens are skipped
+        let empty = parse_cups_options_string("");
+        assert!(empty.is_empty());
+
+        let no_eq = parse_cups_options_string("foo bar baz");
+        assert!(no_eq.is_empty());
+
+        let empty_val = parse_cups_options_string("AP_D_InputSlot=");
+        assert_eq!(empty_val, vec![("AP_D_InputSlot".to_string(), "".to_string())]);
     }
 
     #[test]

@@ -43,6 +43,12 @@ pub struct PrintOptions {
     pub paper_size: Option<String>,
     pub media_type: Option<String>,
     pub ppd_uncorrected_passthrough: Option<bool>,
+    /// Optional CUPS option string ("name=value name=value ...") captured from
+    /// the native macOS print panel. On macOS these are appended to the `lp`
+    /// invocation as additional `-o name=value` arguments, taking precedence
+    /// over auto-detected defaults. On other platforms this field is ignored.
+    #[serde(default)]
+    pub cups_options: Option<String>,
 }
 
 #[derive(Clone, Default)]
