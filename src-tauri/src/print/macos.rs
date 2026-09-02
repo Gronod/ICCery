@@ -32,19 +32,38 @@ pub fn build_lp_args(
         .and_then(|o| o.ppd_uncorrected_passthrough)
         .unwrap_or(false);
 
-    if ppd_fallback {
-        args.push("-o".to_string());
-        args.push("ColorModel=Gray".to_string());
-        args.push("-o".to_string());
-        args.push("cm-calibration".to_string());
-    } else {
-        args.push("-o".to_string());
-        args.push("raw".to_string());
-    }
-
-    // macOS Apple ColorSync suppression flags
+    // Always apply ColorSync bypass on macOS for targeting
     args.push("-o".to_string());
     args.push("AP_ColorMatchingMode=AP_ApplicationColorMatching".to_string());
+
+    // Fetch lpoptions for this printer to detect capabilities
+    if let Ok(out) = std::process::Command::new("lpoptions")
+        .args(["-p", printer_name, "-l"])
+        .output()
+    {
+        if out.status.success() {
+            let output_str = String::from_utf8_lossy(&out.stdout);
+
+            if let Some(opts) = options {
+                if let Some(ref media_type) = opts.media_type {
+                    if !media_type.trim().is_empty() {
+                        let key = crate::print::unix::detect_media_type_key(&output_str);
+                        args.push("-o".to_string());
+                        args.push(format!("{}={}", key, media_type.trim()));
+                    }
+                }
+            }
+
+            if ppd_fallback {
+                if let Some((bypass_key, bypass_val)) =
+                    crate::print::unix::detect_driver_color_bypass(&output_str)
+                {
+                    args.push("-o".to_string());
+                    args.push(format!("{}={}", bypass_key, bypass_val));
+                }
+            }
+        }
+    }
 
     if let Some(opts) = options {
         if let Some(ref orient) = opts.orientation {
@@ -104,11 +123,12 @@ pub fn print_target(
 
 /// Open macOS printer queue / properties management or inspect queue options.
 pub fn show_printer_properties(printer_name: &str) -> Result<(), String> {
-    // On macOS, open Print & Scan preference pane or query printer status via lpstat
+    // macOS System Preferences don't show PPD driver options.
+    // We open the CUPS web interface instead.
+    let url = format!("http://localhost:631/printers/{}", printer_name);
     let _ = std::process::Command::new("open")
-        .args(["x-apple.systempreferences:com.apple.preference.printfax"])
+        .args([&url])
         .spawn();
 
-    let _ = printer_name;
     Ok(())
 }
