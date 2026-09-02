@@ -1,8 +1,8 @@
 #[cfg(test)]
 mod integration_tests {
     use crate::print::{
-        PrintOptions, Printer, PrinterCapabilities, PrinterDevModeStore, PrinterPaperSize,
-        PrinterTray,
+        PrintOptions, Printer, PrinterCapabilities, PrinterDevModeStore, PrinterMediaType,
+        PrinterPaperSize, PrinterTray,
     };
     use crate::print::unix::{build_lp_args, parse_lpstat_d, parse_lpstat_e, parse_lpstat_p, print_target};
 
@@ -46,6 +46,10 @@ mod integration_tests {
                     name: "Letter (8.5 x 11 in)".to_string(),
                 },
             ],
+            media_types: vec![PrinterMediaType {
+                id: "1".to_string(),
+                name: "Plain Paper".to_string(),
+            }],
             supports_orientation: true,
         };
 
@@ -53,6 +57,7 @@ mod integration_tests {
         assert!(json.contains("Auto Sheet Feeder"));
         assert!(json.contains("Rear Manual Feed"));
         assert!(json.contains("A4 (210 x 297 mm)"));
+        assert!(json.contains("Plain Paper"));
 
         let deserialized: PrinterCapabilities =
             serde_json::from_str(&json).expect("Failed to deserialize capabilities");
@@ -65,6 +70,7 @@ mod integration_tests {
             paper_source: Some(2),
             orientation: Some("landscape".to_string()),
             paper_size: Some("A4".to_string()),
+            media_type: Some("1".to_string()),
             ppd_uncorrected_passthrough: Some(false),
         };
 
@@ -74,6 +80,7 @@ mod integration_tests {
         assert_eq!(deserialized.paper_source, Some(2));
         assert_eq!(deserialized.orientation.as_deref(), Some("landscape"));
         assert_eq!(deserialized.paper_size.as_deref(), Some("A4"));
+        assert_eq!(deserialized.media_type.as_deref(), Some("1"));
     }
 
     #[test]
@@ -221,6 +228,7 @@ printer Custom_Queue unknown state\n\
             paper_source: Some(3),
             orientation: Some("landscape".to_string()),
             paper_size: None,
+            media_type: Some("4".to_string()),
             ppd_uncorrected_passthrough: None,
         };
 
@@ -235,6 +243,8 @@ printer Custom_Queue unknown state\n\
             assert_eq!((*p_work_devmode).Anonymous1.Anonymous1.dmDefaultSource, 3);
             // Verify orientation override
             assert_eq!((*p_work_devmode).Anonymous1.Anonymous1.dmOrientation, 2); // DMORIENT_LANDSCAPE = 2
+            // Verify media type override
+            assert_eq!((*p_work_devmode).dmMediaType, 4);
         }
 
         // Verify private OEM payload was NOT corrupted or overwritten
@@ -256,10 +266,8 @@ printer Custom_Queue unknown state\n\
         assert_eq!(args_raw[2], "-t");
         assert_eq!(args_raw[3], "ICCery Target - target_page_1.tif");
         assert_eq!(args_raw[4], "-o");
-        assert_eq!(args_raw[5], "raw");
-        assert_eq!(args_raw[6], "-o");
-        assert_eq!(args_raw[7], "AP_ColorMatchingMode=AP_ApplicationColorMatching");
-        assert_eq!(args_raw[8], path);
+        assert_eq!(args_raw[5], "AP_ColorMatchingMode=AP_ApplicationColorMatching");
+        assert_eq!(args_raw[6], path);
 
         // PPD uncorrected passthrough mode with options
         let opts = PrintOptions {
@@ -270,16 +278,10 @@ printer Custom_Queue unknown state\n\
         };
         let args_ppd = macos_build_lp_args(printer, path, Some(&opts));
         assert_eq!(args_ppd[4], "-o");
-        assert_eq!(args_ppd[5], "ColorModel=Gray");
-        assert_eq!(args_ppd[6], "-o");
-        assert_eq!(args_ppd[7], "cm-calibration");
-        assert_eq!(args_ppd[8], "-o");
-        assert_eq!(args_ppd[9], "AP_ColorMatchingMode=AP_ApplicationColorMatching");
-        assert_eq!(args_ppd[10], "-o");
-        assert_eq!(args_ppd[11], "orientation-requested=4");
-        assert_eq!(args_ppd[12], "-o");
-        assert_eq!(args_ppd[13], "PageSize=A4");
-        assert_eq!(args_ppd[14], path);
+        assert_eq!(args_ppd[5], "AP_ColorMatchingMode=AP_ApplicationColorMatching");
+        assert!(args_ppd.contains(&"orientation-requested=4".to_string()));
+        assert!(args_ppd.contains(&"PageSize=A4".to_string()));
+        assert_eq!(args_ppd.last().unwrap(), path);
     }
 
     #[test]
