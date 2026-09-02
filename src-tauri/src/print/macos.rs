@@ -50,10 +50,7 @@ unsafe fn set_session_color_matching_mode(pm_session: PMPrintSession) {
     let lock_ptr = dlsym(RTLD_DEFAULT, name_lock.as_ptr() as *const c_char);
 
     if set_ptr.is_null() || lock_ptr.is_null() {
-        log::warn!(
-            "PMSessionSetColorMatchingMode symbols not found; "
-            "color controls will not be grayed"
-        );
+        log::warn!("PMSessionSetColorMatchingMode symbols not found; color controls will not be grayed");
         return;
     }
 
