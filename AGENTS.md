@@ -16,6 +16,10 @@
   - `unix.rs`: Generic Unix/CUPS utilities (printer enumeration, PPD parsing, `lp` args)
   - `windows.rs`: Windows-specific printing via Win32 API and DEVMODE
 
+## Cross-Platform `Printer` Field Notes
+
+When adding fields to `Printer` in `src-tauri/src/print/mod.rs`, update every platform-specific constructor in `src-tauri/src/print/windows.rs`, `src-tauri/src/print/macos.rs`, and `src-tauri/src/print/unix.rs` to avoid build regressions on any target. Use `..Default::default()` where possible, or explicitly provide values (e.g. `display_name: None` on Windows).
+
 ## macOS Print Properties (Issue #188)
 
 The "Preferences" button opens the native macOS `NSPrintPanel` (not CUPS web UI or System Settings).
