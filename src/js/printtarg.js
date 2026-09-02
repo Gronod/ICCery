@@ -146,6 +146,7 @@ export function initPrinttarg() {
   const btnRefreshPrinters = document.getElementById("btnRefreshPrinters");
   const btnPrinterProperties = document.getElementById("btnPrinterProperties");
   const printerTraySelect = document.getElementById("printerTraySelect");
+  const printerMediaTypeSelect = document.getElementById("printerMediaTypeSelect");
   const btnOrientPortrait = document.getElementById("btnOrientPortrait");
   const btnOrientLandscape = document.getElementById("btnOrientLandscape");
   const printerStatusBadge = document.getElementById("printerStatusBadge");
@@ -219,6 +220,9 @@ export function initPrinttarg() {
   async function loadPrinterCapabilities(printerName) {
     if (!printerTraySelect || !printerName) return;
     printerTraySelect.innerHTML = '<option value="" selected>Default / Auto Select</option>';
+    if (printerMediaTypeSelect) {
+      printerMediaTypeSelect.innerHTML = '<option value="" selected>Default / Auto Select</option>';
+    }
 
     try {
       const caps = await invoke("get_printer_capabilities", { printerName });
@@ -228,6 +232,15 @@ export function initPrinttarg() {
           opt.value = tray.id;
           opt.textContent = tray.name;
           printerTraySelect.appendChild(opt);
+        });
+      }
+      
+      if (caps && caps.media_types && caps.media_types.length > 0 && printerMediaTypeSelect) {
+        caps.media_types.forEach(media => {
+          const opt = document.createElement("option");
+          opt.value = media.id;
+          opt.textContent = media.name;
+          printerMediaTypeSelect.appendChild(opt);
         });
       }
     } catch (err) {
@@ -242,11 +255,13 @@ export function initPrinttarg() {
     const trayVal = printerTraySelect ? printerTraySelect.value : "";
     const paperSource = trayVal ? parseInt(trayVal, 10) : null;
     const ppdFallback = chkPpdFallback ? chkPpdFallback.checked : false;
+    const mediaType = printerMediaTypeSelect ? printerMediaTypeSelect.value : "";
 
     return {
       paper_source: paperSource,
       orientation: selectedOrientation,
       paper_size: pageSizeSelect ? pageSizeSelect.value : null,
+      media_type: mediaType ? mediaType : null,
       ppd_uncorrected_passthrough: ppdFallback,
     };
   }

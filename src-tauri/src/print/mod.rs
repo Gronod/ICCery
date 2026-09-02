@@ -22,9 +22,17 @@ pub struct PrinterPaperSize {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct PrinterMediaType {
+    pub id: String,
+    pub name: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct PrinterCapabilities {
     pub trays: Vec<PrinterTray>,
     pub paper_sizes: Vec<PrinterPaperSize>,
+    #[serde(default)]
+    pub media_types: Vec<PrinterMediaType>,
     pub supports_orientation: bool,
 }
 
@@ -33,6 +41,7 @@ pub struct PrintOptions {
     pub paper_source: Option<u16>,
     pub orientation: Option<String>,
     pub paper_size: Option<String>,
+    pub media_type: Option<String>,
     pub ppd_uncorrected_passthrough: Option<bool>,
 }
 

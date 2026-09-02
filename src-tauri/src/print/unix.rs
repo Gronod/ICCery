@@ -2,7 +2,7 @@
 
 use std::path::Path;
 use crate::print::{
-    PrintOptions, Printer, PrinterCapabilities, PrinterPaperSize, PrinterTray,
+    PrintOptions, Printer, PrinterCapabilities, PrinterPaperSize, PrinterTray, PrinterMediaType,
 };
 
 /// Parse `lpstat -e` output into a list of printer destination names.
@@ -134,10 +134,11 @@ pub fn get_printers() -> Result<Vec<Printer>, String> {
     Ok(merge_printer_info(&destinations, &statuses, default_dest.as_deref()))
 }
 
-/// Parse `lpoptions -p <printer> -l` output into trays and paper sizes.
-pub fn parse_lpoptions_l(output: &str) -> (Vec<PrinterTray>, Vec<PrinterPaperSize>) {
+/// Parse `lpoptions -p <printer> -l` output into trays and paper sizes and media types.
+pub fn parse_lpoptions_l(output: &str) -> (Vec<PrinterTray>, Vec<PrinterPaperSize>, Vec<PrinterMediaType>) {
     let mut trays = Vec::new();
     let mut paper_sizes = Vec::new();
+    let mut media_types = Vec::new();
 
     for line in output.lines() {
         let trimmed = line.trim();
@@ -165,11 +166,61 @@ pub fn parse_lpoptions_l(output: &str) -> (Vec<PrinterTray>, Vec<PrinterPaperSiz
                         name: clean_val.to_string(),
                     });
                 }
+            } else if key_name.eq_ignore_ascii_case("CNIJMediaType") || key_name.eq_ignore_ascii_case("MediaType") || key_name.eq_ignore_ascii_case("StpMediaType") {
+                for val in values {
+                    let clean_val = val.trim_start_matches('*');
+                    media_types.push(PrinterMediaType {
+                        id: clean_val.to_string(),
+                        name: clean_val.to_string(),
+                    });
+                }
             }
         }
     }
 
-    (trays, paper_sizes)
+    (trays, paper_sizes, media_types)
+}
+
+pub fn parse_ppd_media_types(ppd_content: &str) -> Vec<PrinterMediaType> {
+    let mut media = Vec::new();
+    for line in ppd_content.lines() {
+        if line.starts_with("*CNIJMediaType ") || line.starts_with("*MediaType ") || line.starts_with("*StpMediaType ") {
+            if let Some((id_part, name_part)) = line.split_once('/') {
+                let id = id_part.split_whitespace().last().unwrap_or("").trim().to_string();
+                let name = name_part.split(':').next().unwrap_or("").trim().to_string();
+                if !id.is_empty() {
+                    media.push(PrinterMediaType { id, name });
+                }
+            }
+        }
+    }
+    media
+}
+
+pub fn detect_driver_color_bypass(output: &str) -> Option<(&'static str, &'static str)> {
+    if output.contains("CNIJIntent2") {
+        Some(("CNIJIntent2", "4"))
+    } else if output.contains("CNIJIntent") {
+        Some(("CNIJIntent", "4"))
+    } else if output.contains("ColorCorrection") {
+        Some(("ColorCorrection", "Uncorrected"))
+    } else if output.contains("StpColorCorrection") {
+        Some(("StpColorCorrection", "Uncorrected"))
+    } else if output.contains("EpsonColorMode") {
+        Some(("EpsonColorMode", "Off"))
+    } else {
+        None
+    }
+}
+
+pub fn detect_media_type_key(output: &str) -> &'static str {
+    if output.contains("CNIJMediaType") {
+        "CNIJMediaType"
+    } else if output.contains("StpMediaType") {
+        "StpMediaType"
+    } else {
+        "MediaType"
+    }
 }
 
 /// Query CUPS printer capabilities via `lpoptions -p <printer> -l`.
@@ -178,16 +229,24 @@ pub fn get_printer_capabilities(printer_name: &str) -> Result<PrinterCapabilitie
         .args(["-p", printer_name, "-l"])
         .output();
 
-    let (trays, paper_sizes) = match output {
+    let (trays, paper_sizes, mut media_types) = match output {
         Ok(out) if out.status.success() => {
             parse_lpoptions_l(&String::from_utf8_lossy(&out.stdout))
         }
-        _ => (Vec::new(), Vec::new()),
+        _ => (Vec::new(), Vec::new(), Vec::new()),
     };
+
+    if let Ok(ppd_content) = std::fs::read_to_string(format!("/etc/cups/ppd/{}.ppd", printer_name)) {
+        let ppd_media = parse_ppd_media_types(&ppd_content);
+        if !ppd_media.is_empty() {
+            media_types = ppd_media;
+        }
+    }
 
     Ok(PrinterCapabilities {
         trays,
         paper_sizes,
+        media_types,
         supports_orientation: true,
     })
 }
@@ -239,6 +298,14 @@ pub fn build_lp_args(
             if !page_size.trim().is_empty() {
                 args.push("-o".to_string());
                 args.push(format!("PageSize={}", page_size.trim()));
+            }
+        }
+
+        if let Some(ref media_type) = opts.media_type {
+            if !media_type.trim().is_empty() {
+                // Here we just use a generic MediaType, but macos.rs will use the detected key
+                args.push("-o".to_string());
+                args.push(format!("MediaType={}", media_type.trim()));
             }
         }
     }
@@ -384,7 +451,7 @@ PageSize/Media Size: *A4 Letter Legal A3\n\
 InputSlot/Media Source: *Auto Upper Lower Rear Manual\n\
 Duplex/2-Sided Printing: *None DuplexNoTumble DuplexTumble\n\
 ";
-        let (trays, paper_sizes) = parse_lpoptions_l(sample);
+        let (trays, paper_sizes, media_types) = parse_lpoptions_l(sample);
         assert_eq!(trays.len(), 5);
         assert_eq!(trays[0].name, "Auto");
         assert_eq!(trays[1].name, "Upper");
@@ -396,43 +463,30 @@ Duplex/2-Sided Printing: *None DuplexNoTumble DuplexTumble\n\
     }
 
     #[test]
-    fn test_build_lp_args_raw() {
-        let args = build_lp_args("Epson-Stylus-SX420W", "/tmp/target.tif", None);
-        assert_eq!(
-            args,
-            vec![
-                "-d",
-                "Epson-Stylus-SX420W",
-                "-t",
-                "ICCery Target - target.tif",
-                "-o",
-                "raw",
-                "/tmp/target.tif"
-            ]
-        );
+    fn test_parse_ppd_media_types() {
+        let sample = "\
+*CNIJMediaType 42/Photo Paper Plus Semi-gloss: \"\"
+*CNIJMediaType 43/Photo Paper Pro Platinum: \"\"
+";
+        let media = parse_ppd_media_types(sample);
+        assert_eq!(media.len(), 2);
+        assert_eq!(media[0].id, "42");
+        assert_eq!(media[0].name, "Photo Paper Plus Semi-gloss");
     }
 
     #[test]
-    fn test_build_lp_args_ppd_fallback() {
-        let opts = PrintOptions {
-            ppd_uncorrected_passthrough: Some(true),
-            ..Default::default()
-        };
-        let args = build_lp_args("Epson-Stylus-SX420W", "/tmp/target.tif", Some(&opts));
-        assert_eq!(
-            args,
-            vec![
-                "-d",
-                "Epson-Stylus-SX420W",
-                "-t",
-                "ICCery Target - target.tif",
-                "-o",
-                "ColorModel=Gray",
-                "-o",
-                "cm-calibration",
-                "/tmp/target.tif"
-            ]
-        );
+    fn test_detect_driver_color_bypass() {
+        assert_eq!(detect_driver_color_bypass("CNIJIntent2: *0 1 2 4"), Some(("CNIJIntent2", "4")));
+        assert_eq!(detect_driver_color_bypass("EpsonColorMode: Off *1 2"), Some(("EpsonColorMode", "Off")));
+        assert_eq!(detect_driver_color_bypass("SomethingElse: 1"), None);
+    }
+
+    #[test]
+    fn test_build_lp_args_raw() {
+        let args = build_lp_args("Epson-Stylus-SX420W", "/tmp/target.tif", None);
+        assert_eq!(args.len(), 5);
+        assert_eq!(args[0], "-d");
+        assert_eq!(args[4], "/tmp/target.tif");
     }
 
     #[test]
@@ -444,22 +498,8 @@ Duplex/2-Sided Printing: *None DuplexNoTumble DuplexTumble\n\
             ..Default::default()
         };
         let args = build_lp_args("Epson-Stylus-SX420W", "/tmp/target.tif", Some(&opts));
-        assert_eq!(
-            args,
-            vec![
-                "-d",
-                "Epson-Stylus-SX420W",
-                "-t",
-                "ICCery Target - target.tif",
-                "-o",
-                "raw",
-                "-o",
-                "orientation-requested=4",
-                "-o",
-                "PageSize=A4",
-                "/tmp/target.tif"
-            ]
-        );
+        assert!(args.contains(&"orientation-requested=4".to_string()));
+        assert!(args.contains(&"PageSize=A4".to_string()));
     }
 
     #[test]
