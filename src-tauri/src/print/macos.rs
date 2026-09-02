@@ -253,8 +253,8 @@ fn run_native_print_panel(
     };
 
     let print_settings = unsafe { print_info.printSettings() };
-    print_settings.insert(&cm_key_ns, as_any(&cm_val_ns));
-    print_settings.insert(&cm_dot_key_ns, as_any(&cm_val_ns));
+    print_settings.insert(&*cm_key_ns, as_any(&*cm_val_ns));
+    print_settings.insert(&*cm_dot_key_ns, as_any(&*cm_val_ns));
 
     // Create and configure the print panel.
     let panel = NSPrintPanel::printPanel(mtm);
