@@ -1,12 +1,9 @@
 #![allow(dead_code)]
 
 use std::path::Path;
-use crate::print::{
-    PrintOptions, Printer, PrinterCapabilities,
-};
+use crate::print::PrintOptions;
 pub use crate::print::unix::{
-    get_printer_capabilities, get_printers, merge_printer_info, parse_lpoptions_l,
-    parse_lpstat_d, parse_lpstat_e, parse_lpstat_p,
+    get_printer_capabilities, get_printers,
 };
 
 /// Construct `lp` command line arguments for target printing on macOS with ColorSync bypass flags.

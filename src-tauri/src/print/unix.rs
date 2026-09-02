@@ -451,7 +451,7 @@ PageSize/Media Size: *A4 Letter Legal A3\n\
 InputSlot/Media Source: *Auto Upper Lower Rear Manual\n\
 Duplex/2-Sided Printing: *None DuplexNoTumble DuplexTumble\n\
 ";
-        let (trays, paper_sizes, media_types) = parse_lpoptions_l(sample);
+        let (trays, paper_sizes, _media_types) = parse_lpoptions_l(sample);
         assert_eq!(trays.len(), 5);
         assert_eq!(trays[0].name, "Auto");
         assert_eq!(trays[1].name, "Upper");
@@ -484,9 +484,14 @@ Duplex/2-Sided Printing: *None DuplexNoTumble DuplexTumble\n\
     #[test]
     fn test_build_lp_args_raw() {
         let args = build_lp_args("Epson-Stylus-SX420W", "/tmp/target.tif", None);
-        assert_eq!(args.len(), 5);
+        assert_eq!(args.len(), 7);
         assert_eq!(args[0], "-d");
-        assert_eq!(args[4], "/tmp/target.tif");
+        assert_eq!(args[1], "Epson-Stylus-SX420W");
+        assert_eq!(args[2], "-t");
+        assert_eq!(args[3], "ICCery Target - target.tif");
+        assert_eq!(args[4], "-o");
+        assert_eq!(args[5], "raw");
+        assert_eq!(args[6], "/tmp/target.tif");
     }
 
     #[test]
