@@ -17,7 +17,8 @@ use windows::Win32::Graphics::Printing::{
 use windows::Win32::UI::WindowsAndMessaging::GetForegroundWindow;
 
 use crate::print::{
-    PrintOptions, Printer, PrinterCapabilities, PrinterDevModeStore, PrinterPaperSize, PrinterTray,
+    PrintOptions, Printer, PrinterCapabilities, PrinterDevModeStore, PrinterMediaType,
+    PrinterPaperSize, PrinterTray,
 };
 
 #[repr(C)]
@@ -54,11 +55,14 @@ const DM_ICMMETHOD: u32 = 0x00800000;
 const DMICMMETHOD_NONE: u32 = 1;
 const DMORIENT_PORTRAIT: i16 = 1;
 const DMORIENT_LANDSCAPE: i16 = 2;
+const DM_MEDIATYPE: u32 = 0x02000000;
 
 const DC_PAPERS: u16 = 2;
 const DC_BINS: u16 = 6;
 const DC_BINNAMES: u16 = 12;
 const DC_PAPERNAMES: u16 = 16;
+const DC_MEDIATYPENAMES: u16 = 34;
+const DC_MEDIATYPES: u16 = 35;
 const IDOK: i32 = 1;
 
 fn to_wide(s: &str) -> Vec<u16> {
@@ -262,9 +266,58 @@ pub fn get_printer_capabilities(printer_name: &str) -> Result<PrinterCapabilitie
             }
         }
 
+        // Query media types
+        let num_media = DeviceCapabilitiesW(
+            PCWSTR(printer_wide.as_ptr()),
+            PCWSTR::null(),
+            DC_MEDIATYPES,
+            std::ptr::null_mut(),
+            std::ptr::null(),
+        );
+
+        let mut media_types = Vec::new();
+        if num_media > 0 {
+            let mut media_ids = vec![0u32; num_media as usize];
+            let mut media_names_raw = vec![0u16; num_media as usize * 64];
+
+            let res_ids = DeviceCapabilitiesW(
+                PCWSTR(printer_wide.as_ptr()),
+                PCWSTR::null(),
+                DC_MEDIATYPES,
+                media_ids.as_mut_ptr() as *mut u16,
+                std::ptr::null(),
+            );
+
+            let res_names = DeviceCapabilitiesW(
+                PCWSTR(printer_wide.as_ptr()),
+                PCWSTR::null(),
+                DC_MEDIATYPENAMES,
+                media_names_raw.as_mut_ptr(),
+                std::ptr::null(),
+            );
+
+            if res_ids > 0 && res_names > 0 {
+                for i in 0..num_media as usize {
+                    let id = media_ids[i];
+                    let name_slice = &media_names_raw[i * 64..(i + 1) * 64];
+                    let name = extract_null_terminated_string(name_slice);
+                    let display_name = if name.is_empty() {
+                        format!("Media Type {}", id)
+                    } else {
+                        name
+                    };
+                    media_types.push(PrinterMediaType {
+                        id: id.to_string(),
+                        name: display_name,
+                    });
+                }
+            }
+        }
+
         Ok(PrinterCapabilities {
             trays,
             paper_sizes,
+            media_types,
             supports_orientation: true,
         })
     }
@@ -368,6 +421,13 @@ pub fn apply_print_options_to_devmode(
                     (*p_devmode).Anonymous1.Anonymous1.dmOrientation = DMORIENT_LANDSCAPE;
                 } else {
                     (*p_devmode).Anonymous1.Anonymous1.dmOrientation = DMORIENT_PORTRAIT;
+                }
+            }
+
+            if let Some(ref media_type) = opts.media_type {
+                if let Ok(media_id) = media_type.parse::<u32>() {
+                    (*p_devmode).dmFields |= DEVMODE_FIELD_FLAGS(DM_MEDIATYPE);
+                    (*p_devmode).dmMediaType = media_id;
                 }
             }
         }
