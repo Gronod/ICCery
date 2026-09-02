@@ -4,12 +4,85 @@ use std::ffi::CStr;
 use std::path::Path;
 use std::ptr::NonNull;
 
+use objc2_application_services::PMPrintSession;
+
 use crate::print::{PrintOptions, PrintPropertiesResult};
 pub use crate::print::unix::{get_printer_capabilities, get_printers};
 
 extern "C" {
     fn free(ptr: *mut std::ffi::c_void);
 }
+
+/// Run `lpoptions -p <printer> -l` and return the raw PPD option listing,
+/// or `None` if the command is not available or the printer is not found.
+fn get_lpoptions_output(printer_name: &str) -> Option<String> {
+    std::process::Command::new("lpoptions")
+        .args(["-p", printer_name, "-l"])
+        .output()
+        .ok()
+        .filter(|o| o.status.success())
+        .map(|o| String::from_utf8_lossy(&o.stdout).into_owned())
+}
+
+#[cfg(target_os = "macos")]
+extern "C" {
+    fn dlsym(handle: *mut std::ffi::c_void, symbol: *const std::ffi::c_char) -> *mut std::ffi::c_void;
+}
+
+/// Set the Core Printing session's color matching mode to "application" and
+/// lock it. This is the private SPI used by Photoshop, Lightroom and X-Rite
+/// i1Profiler to gray-out the Color Matching controls in driver PDEs.
+///
+/// The symbols are resolved at runtime with `dlsym` so the binary does not
+/// hard-depend on an undocumented symbol.
+#[cfg(target_os = "macos")]
+unsafe fn set_session_color_matching_mode(pm_session: PMPrintSession) {
+    use std::ffi::{c_char, c_int, c_void};
+    use objc2_core_foundation::CFString;
+
+    // RTLD_DEFAULT is a special handle that searches all loaded images.
+    const RTLD_DEFAULT: *mut c_void = (-2isize) as *mut c_void;
+
+    let name_set = c"PMSessionSetColorMatchingMode";
+    let name_lock = c"PMSessionSetColorMatchingModeLock";
+
+    let set_ptr = dlsym(RTLD_DEFAULT, name_set.as_ptr() as *const c_char);
+    let lock_ptr = dlsym(RTLD_DEFAULT, name_lock.as_ptr() as *const c_char);
+
+    if set_ptr.is_null() || lock_ptr.is_null() {
+        log::warn!(
+            "PMSessionSetColorMatchingMode symbols not found; "
+            "color controls will not be grayed"
+        );
+        return;
+    }
+
+    // Likely signatures:
+    //   OSStatus PMSessionSetColorMatchingMode(PMPrintSession, CFStringRef);
+    //   OSStatus PMSessionSetColorMatchingModeLock(PMPrintSession, Boolean);
+    // The mode value is the public kPMApplicationColorMatching string.
+    type SetFn = unsafe extern "C" fn(PMPrintSession, *const CFString) -> c_int;
+    type LockFn = unsafe extern "C" fn(PMPrintSession, u8) -> c_int;
+
+    let set_fn: SetFn = std::mem::transmute(set_ptr);
+    let lock_fn: LockFn = std::mem::transmute(lock_ptr);
+
+    let mode = CFString::from_str("AP_ApplicationColorMatching");
+    let status = set_fn(pm_session, &*mode as *const CFString);
+    if status != 0 {
+        log::warn!("PMSessionSetColorMatchingMode returned {}", status);
+    }
+
+    let lock_status = lock_fn(pm_session, 1); // 1 == true
+    if lock_status != 0 {
+        log::warn!("PMSessionSetColorMatchingModeLock returned {}", lock_status);
+    }
+}
+
+#[cfg(not(target_os = "macos"))]
+unsafe fn set_session_color_matching_mode(_pm_session: PMPrintSession) {}
+
+
 
 /// PPD/driver-relevant CUPS option key names that we forward to `lp` when
 /// captured from the native print panel. Keys not in this set (internal Apple
@@ -133,7 +206,7 @@ fn run_native_print_panel(
     use objc2_app_kit::{NSPrintInfo, NSPrintPanel, NSPrintPanelOptions, NSPrinter};
     use objc2_application_services::{
         PMPageFormat, PMPrinter, PMPrinterCreateFromPrinterID,
-        PMPrinterGetID, PMPrintSession, PMPrintSettings, PMPrintSettingsSetValue,
+        PMPrinterGetID, PMPrintSettings, PMPrintSettingsSetValue,
         PMPrintSettingsToOptions, PMRelease, PMSessionDefaultPageFormat,
         PMSessionDefaultPrintSettings, PMSessionGetCurrentPrinter,
         PMSessionSetCurrentPMPrinter,
@@ -213,9 +286,14 @@ fn run_native_print_panel(
         }
     }
 
+    // Use the private PMSessionSetColorMatchingMode SPI to gray out and lock
+    // the Color Matching controls in the driver PDE (ColorSync vs. vendor
+    // color). This is separate from the AP_ColorMatchingMode spool setting.
+    unsafe { set_session_color_matching_mode(pm_session); }
+
     // Set AP_ColorMatchingMode = AP_ApplicationColorMatching (and the
-    // dot-notation variant) so the driver\'s ColorSync / vendor color
-    // management controls are greyed out and locked in the panel.
+    // dot-notation variant) so the CUPS backend/cgpdftoraster knows the
+    // application already handled color matching.
     let cm_key = CFString::from_str("AP_ColorMatchingMode");
     let cm_dot_key = CFString::from_str("AP.ColorMatchingMode");
     let cm_val = CFString::from_str("AP_ApplicationColorMatching");
@@ -230,6 +308,28 @@ fn run_native_print_panel(
                 cm_key_ref,
                 set_status
             );
+        }
+    }
+
+    // Pre-select the driver-specific "no color adjustment" PPD option in the
+    // print settings so the panel shows it as the current choice.
+    let lpoptions = get_lpoptions_output(printer_name);
+    if let Some(ref output) = lpoptions {
+        if let Some((bypass_key, bypass_val)) =
+            crate::print::unix::detect_driver_color_bypass(output)
+        {
+            let bypass_key_cf = CFString::from_str(bypass_key);
+            let bypass_val_cf = CFString::from_str(bypass_val);
+            let bypass_val_ref: &objc2_core_foundation::CFType = &*bypass_val_cf;
+            let set_status = unsafe {
+                PMPrintSettingsSetValue(pm_settings, &bypass_key_cf, Some(bypass_val_ref), false)
+            };
+            if set_status != 0 {
+                log::warn!(
+                    "PMPrintSettingsSetValue({}={}) returned status {}",
+                    bypass_key, bypass_val, set_status
+                );
+            }
         }
     }
 
@@ -255,6 +355,18 @@ fn run_native_print_panel(
     let print_settings = unsafe { print_info.printSettings() };
     print_settings.insert(&*cm_key_ns, as_any(&*cm_val_ns));
     print_settings.insert(&*cm_dot_key_ns, as_any(&*cm_val_ns));
+
+    // Also surface the driver-specific color bypass in printSettings so the
+    // panel PDE sees it even if PMPrintSettings didn't sync it.
+    if let Some(ref output) = lpoptions {
+        if let Some((bypass_key, bypass_val)) =
+            crate::print::unix::detect_driver_color_bypass(output)
+        {
+            let bypass_key_ns = NSString::from_str(bypass_key);
+            let bypass_val_ns = NSString::from_str(bypass_val);
+            print_settings.insert(&*bypass_key_ns, as_any(&*bypass_val_ns));
+        }
+    }
 
     // Create and configure the print panel.
     let panel = NSPrintPanel::printPanel(mtm);
@@ -390,12 +502,7 @@ pub fn build_lp_args(
     }
 
     // Fetch lpoptions for this printer to detect capabilities.
-    let lpoptions_output: Option<String> = std::process::Command::new("lpoptions")
-        .args(["-p", printer_name, "-l"])
-        .output()
-        .ok()
-        .filter(|o| o.status.success())
-        .map(|o| String::from_utf8_lossy(&o.stdout).into_owned());
+    let lpoptions_output: Option<String> = get_lpoptions_output(printer_name);
 
     // Add media type from explicit options if not already in cups_options.
     if let Some(opts) = options {
@@ -625,13 +732,24 @@ mod tests {
         // Should contain EPIJ_CMat=3 exactly once (from cups_options).
         let count = args.iter().filter(|a| *a == "EPIJ_CMat=3").count();
         assert_eq!(count, 1);
+
+        // Same for Canon's CNIJIntent2 path.
+        let opts2 = PrintOptions {
+            cups_options: Some("CNIJIntent2=4".to_string()),
+            ..Default::default()
+        };
+        let args2 = build_lp_args("Test_Printer", "/tmp/target.tif", Some(&opts2));
+        let count2 = args2.iter().filter(|a| *a == "CNIJIntent2=4").count();
+        assert_eq!(count2, 1);
     }
 
     #[test]
     fn test_build_lp_args_colorsync_always_present() {
-        // Even with no options, AP_ColorMatchingMode should be present.
+        // Even with no options, AP_ColorMatchingMode and the dot-notation
+        // variant should be present.
         let args = build_lp_args("Test_Printer", "/tmp/target.tif", None);
         assert!(args.contains(&"AP_ColorMatchingMode=AP_ApplicationColorMatching".to_string()));
+        assert!(args.contains(&"AP.ColorMatchingMode=AP_ApplicationColorMatching".to_string()));
     }
 
     #[test]
