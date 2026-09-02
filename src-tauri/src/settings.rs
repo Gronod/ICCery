@@ -99,6 +99,11 @@ pub fn get_default_presets() -> Vec<ProfilingPreset> {
             device_power: None,
             random_seed: Some(1),
             no_randomize: Some(false),
+            colprof_fwa: Some("D50".to_string()),
+            colprof_illuminant: None,
+            colprof_observer: None,
+            colprof_input_viewing_cond: None,
+            colprof_output_viewing_cond: None,
         },
         ProfilingPreset {
             id: "preset-hq-cmyk".to_string(),
@@ -128,6 +133,11 @@ pub fn get_default_presets() -> Vec<ProfilingPreset> {
             device_power: None,
             random_seed: Some(1),
             no_randomize: Some(false),
+            colprof_fwa: Some("D50".to_string()),
+            colprof_illuminant: None,
+            colprof_observer: None,
+            colprof_input_viewing_cond: None,
+            colprof_output_viewing_cond: None,
         },
         ProfilingPreset {
             id: "preset-draft-rgb".to_string(),
@@ -157,6 +167,11 @@ pub fn get_default_presets() -> Vec<ProfilingPreset> {
             device_power: None,
             random_seed: Some(1),
             no_randomize: Some(false),
+            colprof_fwa: Some("D50".to_string()),
+            colprof_illuminant: None,
+            colprof_observer: None,
+            colprof_input_viewing_cond: None,
+            colprof_output_viewing_cond: None,
         },
         ProfilingPreset {
             id: "preset-ultra-rgb".to_string(),
@@ -353,6 +368,11 @@ mod tests {
             device_power: Some(1.2),
             random_seed: Some(42),
             no_randomize: Some(false),
+            colprof_fwa: Some("D50".to_string()),
+            colprof_illuminant: None,
+            colprof_observer: None,
+            colprof_input_viewing_cond: None,
+            colprof_output_viewing_cond: None,
         };
 
         let json = export_preset_json(preset.clone()).expect("Export failed");
