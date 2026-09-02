@@ -244,6 +244,32 @@ export async function initPresets() {
 
     const colprofAlgorithm = document.getElementById("colprofAlgorithm");
     if (colprofAlgorithm && preset.colprof_algorithm) colprofAlgorithm.value = preset.colprof_algorithm;
+
+    const colprofFwa = document.getElementById("colprofFwa");
+    const colprofCustomSpRow = document.getElementById("colprofCustomSpRow");
+    const colprofCustomSpPath = document.getElementById("colprofCustomSpPath");
+    if (colprofFwa) {
+      if (preset.colprof_fwa && preset.colprof_fwa.endsWith(".sp")) {
+        colprofFwa.value = "custom";
+        if (colprofCustomSpPath) colprofCustomSpPath.value = preset.colprof_fwa;
+        if (colprofCustomSpRow) colprofCustomSpRow.classList.remove("hidden");
+      } else {
+        colprofFwa.value = preset.colprof_fwa || "D50";
+        if (colprofCustomSpRow) colprofCustomSpRow.classList.add("hidden");
+      }
+    }
+
+    const colprofIlluminant = document.getElementById("colprofIlluminant");
+    if (colprofIlluminant) colprofIlluminant.value = preset.colprof_illuminant || "";
+
+    const colprofObserver = document.getElementById("colprofObserver");
+    if (colprofObserver) colprofObserver.value = preset.colprof_observer || "";
+
+    const colprofInputViewCond = document.getElementById("colprofInputViewCond");
+    if (colprofInputViewCond) colprofInputViewCond.value = preset.colprof_input_viewing_cond || "none";
+
+    const colprofOutputViewCond = document.getElementById("colprofOutputViewCond");
+    if (colprofOutputViewCond) colprofOutputViewCond.value = preset.colprof_output_viewing_cond || "none";
   }
 
   function collectCurrentSettingsAsPreset(name, description) {
@@ -335,6 +361,29 @@ export async function initPresets() {
     const colprofAlgorithm = document.getElementById("colprofAlgorithm");
     const colprof_algorithm = colprofAlgorithm ? colprofAlgorithm.value : "l";
 
+    const colprofFwa = document.getElementById("colprofFwa");
+    const colprofCustomSpPath = document.getElementById("colprofCustomSpPath");
+    let colprof_fwa = "D50";
+    if (colprofFwa) {
+      if (colprofFwa.value === "custom") {
+        colprof_fwa = colprofCustomSpPath ? colprofCustomSpPath.value : "none";
+      } else {
+        colprof_fwa = colprofFwa.value;
+      }
+    }
+
+    const colprofIlluminant = document.getElementById("colprofIlluminant");
+    const colprof_illuminant = colprofIlluminant && colprofIlluminant.value ? colprofIlluminant.value : null;
+
+    const colprofObserver = document.getElementById("colprofObserver");
+    const colprof_observer = colprofObserver && colprofObserver.value ? colprofObserver.value : null;
+
+    const colprofInputViewCond = document.getElementById("colprofInputViewCond");
+    const colprof_input_viewing_cond = colprofInputViewCond && colprofInputViewCond.value !== "none" ? colprofInputViewCond.value : null;
+
+    const colprofOutputViewCond = document.getElementById("colprofOutputViewCond");
+    const colprof_output_viewing_cond = colprofOutputViewCond && colprofOutputViewCond.value !== "none" ? colprofOutputViewCond.value : null;
+
     return {
       id: `custom-${Date.now()}`,
       name: name || "Custom Preset",
@@ -363,6 +412,11 @@ export async function initPresets() {
       colprof_algorithm,
       colprof_quality,
       colprof_intent: null,
+      colprof_fwa,
+      colprof_illuminant,
+      colprof_observer,
+      colprof_input_viewing_cond,
+      colprof_output_viewing_cond,
     };
   }
 

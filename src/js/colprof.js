@@ -30,8 +30,41 @@ export function initColprof() {
   const successCard = document.getElementById("colprofSuccessCard");
   const successInfo = document.getElementById("colprofSuccessInfo");
   const btnGoToVerify = document.getElementById("btnGoToVerify");
+  const colprofFwa = document.getElementById("colprofFwa");
+  const colprofCustomSpRow = document.getElementById("colprofCustomSpRow");
+  const colprofCustomSpPath = document.getElementById("colprofCustomSpPath");
+  const btnBrowseCustomSp = document.getElementById("btnBrowseCustomSp");
+  const colprofIlluminant = document.getElementById("colprofIlluminant");
+  const colprofObserver = document.getElementById("colprofObserver");
+  const colprofInputViewCond = document.getElementById("colprofInputViewCond");
+  const colprofOutputViewCond = document.getElementById("colprofOutputViewCond");
 
   if (!btnCreateProfile) return;
+
+  if (colprofFwa && colprofCustomSpRow) {
+    colprofFwa.addEventListener("change", () => {
+      if (colprofFwa.value === "custom") {
+        colprofCustomSpRow.classList.remove("hidden");
+      } else {
+        colprofCustomSpRow.classList.add("hidden");
+      }
+    });
+  }
+
+  if (btnBrowseCustomSp && colprofCustomSpPath) {
+    btnBrowseCustomSp.addEventListener("click", async () => {
+      try {
+        const selected = await window.__TAURI__.dialog.open({
+          filters: [{ name: 'Spectrum', extensions: ['sp'] }]
+        });
+        if (selected) {
+          colprofCustomSpPath.value = selected;
+        }
+      } catch (err) {
+        console.error("Failed to open dialog:", err);
+      }
+    });
+  }
 
   btnCreateProfile.addEventListener("click", async () => {
     const basename = chartreadBasename || wizardState.basename;
@@ -65,6 +98,11 @@ export function initColprof() {
       copyright: copyrightInput.value.trim() || null,
       basename: basename,
       cwd: cwd,
+      fwa: colprofFwa.value === "custom" ? (colprofCustomSpPath.value || "none") : colprofFwa.value,
+      illuminant: colprofIlluminant.value || null,
+      observer: colprofObserver.value || null,
+      input_viewing_cond: colprofInputViewCond.value !== "none" ? colprofInputViewCond.value : null,
+      output_viewing_cond: colprofOutputViewCond.value !== "none" ? colprofOutputViewCond.value : null,
     };
 
     const processId = `colprof_${basename}`;

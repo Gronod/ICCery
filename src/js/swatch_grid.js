@@ -1,5 +1,5 @@
 import { computeDeltaE00 } from './delta_e.js';
-import { labToCss, deviceRgbToCss } from './color_convert.js';
+import { labToCss, deviceRgbToCss, deviceCmykToCss } from './color_convert.js';
 
 const { listen } = window.__TAURI__.event;
 
@@ -63,25 +63,46 @@ export async function startSwatchListener(processId, onRowComplete) {
     rowPatches.className = "swatch-row-patches";
 
     for (const patch of data.patches) {
-      if (patch.is_pad) continue; // Skip spacer patches
+      if (patch.is_pad && !patch.measured && (!patch.device || patch.device.every(v => v === 0))) continue;
 
       const patchEl = document.createElement("div");
       patchEl.className = "swatch-patch";
 
-      // Determine the display colour
-      let bgColor;
-      if (patch.measured && patch.measured.Lab) {
-        bgColor = labToCss(patch.measured.Lab);
+      let intendedCss = "#888";
+      if (patch.expected && patch.expected.Lab) {
+        intendedCss = labToCss(patch.expected.Lab);
       } else if (patch.device && patch.device.length === 3) {
-        bgColor = deviceRgbToCss(patch.device);
-      } else {
-        bgColor = "#888";
+        intendedCss = deviceRgbToCss(patch.device);
+      } else if (patch.device && patch.device.length === 4) {
+        intendedCss = deviceCmykToCss(patch.device);
+      }
+
+      let measuredCss = null;
+      if (patch.measured && patch.measured.Lab) {
+        measuredCss = labToCss(patch.measured.Lab);
       }
 
       const swatch = document.createElement("div");
       swatch.className = "swatch-color";
-      swatch.style.backgroundColor = bgColor;
+      
+      if (measuredCss) {
+        swatch.style.background = `linear-gradient(135deg, ${intendedCss} 50%, ${measuredCss} 50%)`;
+      } else {
+        swatch.style.backgroundColor = intendedCss;
+      }
+      
       patchEl.appendChild(swatch);
+
+      let titleStr = `${patch.loc} (ID: ${patch.id})`;
+      if (patch.expected && patch.expected.Lab) {
+        titleStr += `\nIntended Lab: ${patch.expected.Lab.map(v => v.toFixed(1)).join(', ')}`;
+      } else if (patch.device) {
+        titleStr += `\nDevice: ${patch.device.map(v => v.toFixed(1)).join(', ')}`;
+      }
+
+      if (patch.measured && patch.measured.Lab) {
+        titleStr += `\nMeasured Lab: ${patch.measured.Lab.map(v => v.toFixed(1)).join(', ')}`;
+      }
 
       // Compute and display ΔE₀₀ if both expected and measured Lab are present
       if (patch.expected && patch.expected.Lab && patch.measured && patch.measured.Lab) {
@@ -90,6 +111,8 @@ export async function startSwatchListener(processId, onRowComplete) {
         const deLabel = document.createElement("div");
         deLabel.className = "swatch-de";
         deLabel.textContent = deltaE.toFixed(1);
+        
+        titleStr += `\nΔE₀₀: ${deltaE.toFixed(2)}`;
 
         // Traffic light classification
         if (deltaE < 2) {
@@ -108,7 +131,7 @@ export async function startSwatchListener(processId, onRowComplete) {
         if (deltaE > maxDeltaE) maxDeltaE = deltaE;
       }
 
-      patchEl.title = `${patch.loc} (ID: ${patch.id})`;
+      patchEl.title = titleStr;
       rowPatches.appendChild(patchEl);
     }
 

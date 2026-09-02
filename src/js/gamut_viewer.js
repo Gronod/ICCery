@@ -87,61 +87,43 @@ function animate() {
     if (renderer && scene && camera) renderer.render(scene, camera);
 }
 
-export function parseCGATS(text) {
+export function parseGamutFile(text) {
     const lines = text.split('\n');
+    const vertices = [];   // [[L, a, b], ...]
+    const faces = [];      // [[v0, v1, v2], ...]
     let dataStarted = false;
-    const points = [];
-
+    let dataBlock = 0;     // 0 = not in data, 1 = vertices, 2 = faces
+    let fieldCount = 0;
+    
     for (const line of lines) {
-        if (line.startsWith('BEGIN_DATA')) {
+        const trimmed = line.trim();
+        
+        if (trimmed.startsWith('NUMBER_OF_FIELDS')) {
+            fieldCount = parseInt(trimmed.split(/\s+/)[1], 10);
+        }
+        if (trimmed === 'BEGIN_DATA') {
+            dataBlock++;
             dataStarted = true;
             continue;
         }
-        if (line.startsWith('END_DATA')) break;
-
+        if (trimmed === 'END_DATA') {
+            dataStarted = false;
+            continue;
+        }
+        
         if (dataStarted) {
-            const parts = line.trim().split(/\s+/);
-            if (parts.length >= 4) {
-                const L = parseFloat(parts[1]);
-                const a = parseFloat(parts[2]);
-                const b = parseFloat(parts[3]);
-                if (!isNaN(L) && !isNaN(a) && !isNaN(b)) {
-                    points.push({ L, a, b });
-                }
+            const parts = trimmed.split(/\s+/).map(Number);
+            if (dataBlock === 1 && parts.length >= 4) {
+                // Vertex: VERTEX_NO LAB_L LAB_A LAB_B
+                vertices.push([parts[1], parts[2], parts[3]]);  // [L, a, b]
+            } else if (dataBlock === 2 && parts.length >= 3) {
+                // Face: VERTEX_0 VERTEX_1 VERTEX_2
+                faces.push([parts[0], parts[1], parts[2]]);
             }
         }
     }
-    return points;
-}
-
-/**
- * 3D Convex Hull (QuickHull in 3D) for CIELAB point clouds.
- * Input: points array of { L, a, b }
- * Output: { vertices: Float32Array, indices: Uint32Array } or null
- */
-export function compute3DConvexHull(pts) {
-    const faces = computeQuickHull(pts);
-    if (!faces || faces.length === 0) return null;
-
-    const verticesList = [];
-    const indices = [];
-    const ptMap = new Map();
-
-    for (const f of faces) {
-        for (const p of [f.a, f.b, f.c]) {
-            const key = `${p.x}_${p.y}_${p.z}`;
-            if (!ptMap.has(key)) {
-                ptMap.set(key, verticesList.length / 3);
-                verticesList.push(p.x, p.y, p.z);
-            }
-            indices.push(ptMap.get(key));
-        }
-    }
-
-    return {
-        vertices: new Float32Array(verticesList),
-        indices: new Uint32Array(indices)
-    };
+    
+    return { vertices, faces };
 }
 
 export function renderGamutFromText(text, color, isWireframe, previousMesh) {
@@ -153,16 +135,56 @@ export function renderGamutFromText(text, color, isWireframe, previousMesh) {
         if (previousMesh.material) previousMesh.material.dispose();
     }
 
-    const points = parseCGATS(text);
-    if (points.length < 4) return null;
+    const { vertices, faces } = parseGamutFile(text);
+    if (vertices.length < 4) return null;
 
-    const hull = compute3DConvexHull(points);
-    if (!hull) return null;
+    let geometry = new THREE.BufferGeometry();
 
-    const geometry = new THREE.BufferGeometry();
-    geometry.setAttribute('position', new THREE.BufferAttribute(hull.vertices, 3));
-    geometry.setIndex(Array.from(hull.indices));
-    geometry.computeVertexNormals();
+    if (faces.length > 0) {
+        // We have a pre-triangulated mesh
+        const positionArray = new Float32Array(vertices.length * 3);
+        for (let i = 0; i < vertices.length; i++) {
+            const [L, a, b] = vertices[i];
+            positionArray[i * 3]     = a; // x = a*
+            positionArray[i * 3 + 1] = L; // y = L*
+            positionArray[i * 3 + 2] = b; // z = b*
+        }
+        
+        const indexArray = new Uint32Array(faces.length * 3);
+        for (let i = 0; i < faces.length; i++) {
+            indexArray[i * 3]     = faces[i][0];
+            indexArray[i * 3 + 1] = faces[i][1];
+            indexArray[i * 3 + 2] = faces[i][2];
+        }
+
+        geometry.setAttribute('position', new THREE.BufferAttribute(positionArray, 3));
+        geometry.setIndex(new THREE.BufferAttribute(indexArray, 1));
+        geometry.computeVertexNormals();
+    } else {
+        // Fallback to point cloud hull if no faces are present
+        const pts = vertices.map(v => ({ x: v[1], y: v[0], z: v[2] })); // { x: a, y: L, z: b }
+        const hullFaces = computeQuickHull(pts);
+        if (!hullFaces || hullFaces.length === 0) return null;
+
+        const verticesList = [];
+        const indices = [];
+        const ptMap = new Map();
+
+        for (const f of hullFaces) {
+            for (const p of [f.a, f.b, f.c]) {
+                const key = `${p.x}_${p.y}_${p.z}`;
+                if (!ptMap.has(key)) {
+                    ptMap.set(key, verticesList.length / 3);
+                    verticesList.push(p.x, p.y, p.z);
+                }
+                indices.push(ptMap.get(key));
+            }
+        }
+
+        geometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(verticesList), 3));
+        geometry.setIndex(new THREE.BufferAttribute(new Uint32Array(indices), 1));
+        geometry.computeVertexNormals();
+    }
 
     const material = new THREE.MeshLambertMaterial({
         color: color,

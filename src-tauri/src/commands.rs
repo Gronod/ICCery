@@ -968,35 +968,78 @@ pub struct ColprofConfig {
     pub description: Option<String>,
     pub basename: String,
     pub cwd: String,
+    #[serde(default)]
+    pub fwa: Option<String>,
+    #[serde(default)]
+    pub illuminant: Option<String>,
+    #[serde(default)]
+    pub observer: Option<String>,
+    #[serde(default)]
+    pub input_viewing_cond: Option<String>,
+    #[serde(default)]
+    pub output_viewing_cond: Option<String>,
 }
 
 pub fn build_colprof_args(config: &ColprofConfig) -> Vec<String> {
-    let mut args = vec![
-        "-v".to_string(),
-        "-a".to_string(),
-        config.algorithm.clone(),
-        "-q".to_string(),
-        config.quality.clone(),
-    ];
+    let mut args = vec!["-v".to_string(), "-a".to_string(), config.algorithm.clone(), "-q".to_string(), config.quality.clone()];
 
     if let Some(ref intent) = config.intent {
-        if !intent.trim().is_empty() {
-            args.push("-p".to_string());
+        if !intent.is_empty() {
+            args.push("-t".to_string());
             args.push(intent.clone());
         }
     }
 
-    if let Some(ref cr) = config.copyright {
-        if !cr.trim().is_empty() {
-            args.push("-C".to_string());
-            args.push(cr.clone());
+    if let Some(ref fwa) = config.fwa {
+        if fwa.to_lowercase() != "none" {
+            if fwa.is_empty() {
+                args.push("-f".to_string());
+            } else {
+                args.push("-f".to_string());
+                args.push(fwa.clone());
+            }
+        }
+    }
+
+    if let Some(ref illuminant) = config.illuminant {
+        if !illuminant.is_empty() {
+            args.push("-i".to_string());
+            args.push(illuminant.clone());
+        }
+    }
+
+    if let Some(ref observer) = config.observer {
+        if !observer.is_empty() {
+            args.push("-o".to_string());
+            args.push(observer.clone());
+        }
+    }
+
+    if let Some(ref in_cond) = config.input_viewing_cond {
+        if !in_cond.is_empty() && in_cond.to_lowercase() != "none" {
+            args.push("-c".to_string());
+            args.push(in_cond.clone());
+        }
+    }
+
+    if let Some(ref out_cond) = config.output_viewing_cond {
+        if !out_cond.is_empty() && out_cond.to_lowercase() != "none" {
+            args.push("-d".to_string());
+            args.push(out_cond.clone());
         }
     }
 
     if let Some(ref desc) = config.description {
-        if !desc.trim().is_empty() {
+        if !desc.is_empty() {
             args.push("-D".to_string());
             args.push(desc.clone());
+        }
+    }
+
+    if let Some(ref copyright) = config.copyright {
+        if !copyright.is_empty() {
+            args.push("-C".to_string());
+            args.push(copyright.clone());
         }
     }
 
@@ -1602,18 +1645,138 @@ mod tests {
     #[test]
     fn test_build_colprof_args() {
         let config = ColprofConfig {
-            quality: "h".to_string(),
             algorithm: "l".to_string(),
-            intent: None,
-            description: Some("My Profile".to_string()),
-            copyright: Some("2026 ACME".to_string()),
-            basename: "my_profile".to_string(),
-            cwd: "/home/user".to_string(),
+            quality: "h".to_string(),
+            intent: Some("p".to_string()),
+            copyright: Some("Test".to_string()),
+            description: Some("Test Desc".to_string()),
+            basename: "basename".to_string(),
+            cwd: "".to_string(),
+            fwa: None,
+            illuminant: None,
+            observer: None,
+            input_viewing_cond: None,
+            output_viewing_cond: None,
         };
         let args = build_colprof_args(&config);
         assert_eq!(
             args,
-            vec!["-v", "-a", "l", "-q", "h", "-C", "2026 ACME", "-D", "My Profile", "my_profile"]
+            vec!["-v", "-a", "l", "-q", "h", "-t", "p", "-D", "Test Desc", "-C", "Test", "basename"]
+        );
+    }
+
+    #[test]
+    fn test_build_colprof_args_with_fwa_d50() {
+        let config = ColprofConfig {
+            algorithm: "l".to_string(),
+            quality: "h".to_string(),
+            intent: None,
+            copyright: None,
+            description: None,
+            basename: "basename".to_string(),
+            cwd: "".to_string(),
+            fwa: Some("D50".to_string()),
+            illuminant: None,
+            observer: None,
+            input_viewing_cond: None,
+            output_viewing_cond: None,
+        };
+        let args = build_colprof_args(&config);
+        assert_eq!(
+            args,
+            vec!["-v", "-a", "l", "-q", "h", "-f", "D50", "basename"]
+        );
+    }
+
+    #[test]
+    fn test_build_colprof_args_with_fwa_none() {
+        let config = ColprofConfig {
+            algorithm: "l".to_string(),
+            quality: "h".to_string(),
+            intent: None,
+            copyright: None,
+            description: None,
+            basename: "basename".to_string(),
+            cwd: "".to_string(),
+            fwa: Some("none".to_string()),
+            illuminant: None,
+            observer: None,
+            input_viewing_cond: None,
+            output_viewing_cond: None,
+        };
+        let args = build_colprof_args(&config);
+        assert_eq!(
+            args,
+            vec!["-v", "-a", "l", "-q", "h", "basename"]
+        );
+    }
+
+    #[test]
+    fn test_build_colprof_args_with_custom_sp() {
+        let config = ColprofConfig {
+            algorithm: "l".to_string(),
+            quality: "h".to_string(),
+            intent: None,
+            copyright: None,
+            description: None,
+            basename: "basename".to_string(),
+            cwd: "".to_string(),
+            fwa: Some("/path/to/viewing_booth.sp".to_string()),
+            illuminant: None,
+            observer: None,
+            input_viewing_cond: None,
+            output_viewing_cond: None,
+        };
+        let args = build_colprof_args(&config);
+        assert_eq!(
+            args,
+            vec!["-v", "-a", "l", "-q", "h", "-f", "/path/to/viewing_booth.sp", "basename"]
+        );
+    }
+
+    #[test]
+    fn test_build_colprof_args_with_illuminant_observer() {
+        let config = ColprofConfig {
+            algorithm: "l".to_string(),
+            quality: "h".to_string(),
+            intent: None,
+            copyright: None,
+            description: None,
+            basename: "basename".to_string(),
+            cwd: "".to_string(),
+            fwa: None,
+            illuminant: Some("D65".to_string()),
+            observer: Some("1964_10".to_string()),
+            input_viewing_cond: None,
+            output_viewing_cond: None,
+        };
+        let args = build_colprof_args(&config);
+        assert_eq!(
+            args,
+            vec!["-v", "-a", "l", "-q", "h", "-i", "D65", "-o", "1964_10", "basename"]
+        );
+    }
+
+    #[test]
+    fn test_build_colprof_args_with_viewing_conditions() {
+        let config = ColprofConfig {
+            algorithm: "l".to_string(),
+            quality: "h".to_string(),
+            intent: None,
+            copyright: None,
+            description: None,
+            basename: "basename".to_string(),
+            cwd: "".to_string(),
+            fwa: None,
+            illuminant: None,
+            observer: None,
+            input_viewing_cond: Some("pp".to_string()),
+            output_viewing_cond: Some("mt".to_string()),
+        };
+        let args = build_colprof_args(&config);
+        assert_eq!(
+            args,
+            vec!["-v", "-a", "l", "-q", "h", "-c", "pp", "-d", "mt", "basename"]
         );
     }
 
