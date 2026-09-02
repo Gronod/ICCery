@@ -55,6 +55,8 @@ pub fn parse_lpstat_p(output: &str) -> Vec<(String, String)> {
 }
 
 /// Merge printer lists from `lpstat -e`, `lpstat -p`, and `lpstat -d`.
+/// Optionally enriches each printer with a display name fetched from
+/// `lpoptions -p <name>`.
 pub fn merge_printer_info(
     destinations: &[String],
     statuses: &[(String, String)],
@@ -67,6 +69,18 @@ pub fn merge_printer_info(
         .map(|(name, status)| (name.as_str(), status.as_str()))
         .collect();
 
+    fn get_display_name(name: &str) -> Option<String> {
+        let out = std::process::Command::new("lpoptions")
+            .args(["-p", name])
+            .output()
+            .ok()?;
+        if out.status.success() {
+            extract_printer_display_name(&String::from_utf8_lossy(&out.stdout))
+        } else {
+            None
+        }
+    }
+
     let mut seen = std::collections::HashSet::new();
     let mut result = Vec::new();
 
@@ -78,6 +92,7 @@ pub fn merge_printer_info(
                 name: name.clone(),
                 status: status.to_string(),
                 is_default,
+                display_name: get_display_name(name),
             });
         }
     }
@@ -89,11 +104,39 @@ pub fn merge_printer_info(
                 name: name.clone(),
                 status: status.clone(),
                 is_default,
+                display_name: get_display_name(name),
             });
         }
     }
 
     result
+}
+
+/// Extract the CUPS `printer-info` display name from `lpoptions -p <name>` output.
+/// This is the human-readable queue name that macOS uses in the print panel.
+pub fn extract_printer_display_name(output: &str) -> Option<String> {
+    for line in output.lines() {
+        if let Some(info) = line.strip_prefix("printer-info=") {
+            let trimmed = info.trim().trim_matches('\'');
+            if !trimmed.is_empty() {
+                return Some(trimmed.to_string());
+            }
+        }
+    }
+    None
+}
+
+/// Fetch the CUPS `printer-info` display name for a single destination.
+pub fn get_printer_display_name(name: &str) -> Option<String> {
+    let out = std::process::Command::new("lpoptions")
+        .args(["-p", name])
+        .output()
+        .ok()?;
+    if out.status.success() {
+        extract_printer_display_name(&String::from_utf8_lossy(&out.stdout))
+    } else {
+        None
+    }
 }
 
 /// Query available CUPS printers, connection statuses, and default destination.
@@ -210,13 +253,10 @@ pub fn detect_driver_color_bypass(output: &str) -> Option<(&'static str, &'stati
         Some(("CNIJIntent2", "4"))
     } else if output.contains("CNIJIntent") {
         Some(("CNIJIntent", "4"))
-    } else if output.contains("EPIJ_CCor") {
-        // Epson driver color-correction key. The "Off (No Color Adjustment)"
-        // equivalent is the value that disables driver-side color management
-        // so the application ICC profile passes through unmodified.
-        Some(("EPIJ_CCor", "0"))
-    } else if output.contains("EPIJ_OSColMat") {
-        Some(("EPIJ_OSColMat", "0"))
+    } else if output.contains("EPIJ_CMat") {
+        // Epson "Color Settings" option. The value 3 is "Off (No Color
+        // Adjustment)" which disables driver-side color management.
+        Some(("EPIJ_CMat", "3"))
     } else if output.contains("ColorCorrection") {
         Some(("ColorCorrection", "Uncorrected"))
     } else if output.contains("StpColorCorrection") {
@@ -241,15 +281,45 @@ pub fn detect_media_type_key(output: &str) -> &'static str {
 }
 
 /// Parse a CUPS options string of the form `"name=value name=value ..."` into
-/// an ordered vector of `(name, value)` pairs. Whitespace separates pairs and
-/// `=` separates the name from the value. Empty values are preserved so the
-/// caller can decide whether to forward them to `lp`.
+/// an ordered vector of `(name, value)` pairs. Tokens are separated by
+/// whitespace. Values may be quoted with double quotes; the quotes are
+/// preserved in the value so the caller can decide whether to strip them.
+/// Malformed tokens without `=` are skipped.
 pub fn parse_cups_options_string(options: &str) -> Vec<(String, String)> {
     let mut out = Vec::new();
-    for token in options.split_whitespace() {
+    let mut chars = options.chars().peekable();
+
+    while chars.peek().is_some() {
+        // Skip leading whitespace.
+        while chars.peek().map_or(false, |c| c.is_whitespace()) {
+            chars.next();
+        }
+
+        // Collect the token, respecting double-quoted substrings.
+        let mut token = String::new();
+        let mut in_quote = false;
+        while let Some(c) = chars.peek() {
+            match c {
+                '"' => {
+                    in_quote = !in_quote;
+                    token.push(*c);
+                    chars.next();
+                }
+                c if c.is_whitespace() && !in_quote => break,
+                _ => {
+                    token.push(*c);
+                    chars.next();
+                }
+            }
+        }
+
+        if token.is_empty() {
+            continue;
+        }
+
         if let Some((name, value)) = token.split_once('=') {
-            let name = name.trim().to_string();
-            let value = value.trim().to_string();
+            let name = name.trim().trim_matches('"').to_string();
+            let value = value.trim().trim_matches('"').to_string();
             if !name.is_empty() {
                 out.push((name, value));
             }

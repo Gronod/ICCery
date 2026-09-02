@@ -1155,18 +1155,17 @@ pub async fn show_printer_properties(
     app: AppHandle,
     state: State<'_, crate::print::PrinterDevModeStore>,
     printer_name: String,
-) -> Result<Option<crate::print::PrintOptions>, String> {
+) -> Result<Option<crate::print::PrintPropertiesResult>, String> {
     #[cfg(windows)]
     {
-        let _ = (app, state);
+        let _ = app;
         crate::print::windows::show_printer_properties(&printer_name, &state)?;
         Ok(None)
     }
     #[cfg(target_os = "macos")]
     {
         let _ = state;
-        let opts = crate::print::macos::show_printer_properties(&printer_name, &app).await?;
-        Ok(Some(opts))
+        crate::print::macos::show_printer_properties(&printer_name, &app).await
     }
     #[cfg(all(unix, not(target_os = "macos")))]
     {

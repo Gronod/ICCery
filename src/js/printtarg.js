@@ -329,7 +329,10 @@ export function initPrinttarg() {
       discoveredPrinters.forEach((p, idx) => {
         const opt = document.createElement("option");
         opt.value = p.name;
-        opt.textContent = `${p.name}${p.is_default ? ' (Default)' : ''} [${p.status || 'Ready'}]`;
+        const label = p.display_name
+          ? `${p.display_name} (${p.name})`
+          : p.name;
+        opt.textContent = `${label}${p.is_default ? ' (Default)' : ''} [${p.status || 'Ready'}]`;
         if (p.is_default && !defaultSelected) {
           opt.selected = true;
           defaultSelected = true;
@@ -383,37 +386,47 @@ export function initPrinttarg() {
         showNotification("info", `Opening native printer preferences for '${printerName}'...`);
         const result = await invoke("show_printer_properties", { printerName });
 
-        if (result) {
-          // macOS: the backend returned a PrintOptions snapshot with captured
-          // CUPS options from the native print panel.
-          if (result.cups_options) {
-            capturedCupsOptions[printerName] = result.cups_options;
-          } else {
-            delete capturedCupsOptions[printerName];
-          }
-
-          // If a media type was captured, update the dropdown to match.
-          if (result.media_type && printerMediaTypeSelect) {
-            const matchOpt = Array.from(printerMediaTypeSelect.options).find(
-              o => o.value === result.media_type
-            );
-            if (matchOpt) {
-              printerMediaTypeSelect.value = result.media_type;
-            }
-          }
-
-          showNotification("success", `Printer driver preferences configured for '${printerName}'.`);
-        } else {
-          // Windows / Linux: no captured options returned.
-          showNotification("success", `Printer driver preferences configured for '${printerName}'.`);
+        if (result === null) {
+          // User cancelled the native panel.
+          showNotification("info", "Printer properties dialog cancelled.");
+          return;
         }
+
+        // macOS: the backend returned a PrintPropertiesResult with the
+        // effective printer and a PrintOptions snapshot containing captured
+        // CUPS options from the native print panel.
+        const effectivePrinter = result.selected_printer || printerName;
+
+        // If the user switched printer in the panel, update the dropdown.
+        if (result.selected_printer && printerSelect && result.selected_printer !== printerName) {
+          const exists = Array.from(printerSelect.options).some(
+            o => o.value === result.selected_printer
+          );
+          if (exists) {
+            printerSelect.value = result.selected_printer;
+          }
+        }
+
+        if (result.options && result.options.cups_options) {
+          capturedCupsOptions[effectivePrinter] = result.options.cups_options;
+        } else {
+          delete capturedCupsOptions[effectivePrinter];
+        }
+
+        // If a media type was captured, update the dropdown to match.
+        if (result.options && result.options.media_type && printerMediaTypeSelect) {
+          const matchOpt = Array.from(printerMediaTypeSelect.options).find(
+            o => o.value === result.options.media_type
+          );
+          if (matchOpt) {
+            printerMediaTypeSelect.value = result.options.media_type;
+          }
+        }
+
+        showNotification("success", `Printer driver preferences configured for '${effectivePrinter}'.`);
       } catch (err) {
         console.error("[ICCery Print] Failed to open printer properties:", err);
-        if (String(err).includes("cancelled")) {
-          showNotification("info", "Printer properties dialog cancelled.");
-        } else {
-          showNotification("error", `Could not open printer properties: ${err}`);
-        }
+        showNotification("error", `Could not open printer properties: ${err}`);
       }
     });
   }

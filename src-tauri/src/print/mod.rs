@@ -7,6 +7,9 @@ pub struct Printer {
     pub name: String,
     pub status: String,
     pub is_default: bool,
+    /// Human-readable name from CUPS `printer-info` (macOS display name).
+    #[serde(default)]
+    pub display_name: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -49,6 +52,12 @@ pub struct PrintOptions {
     /// over auto-detected defaults. On other platforms this field is ignored.
     #[serde(default)]
     pub cups_options: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct PrintPropertiesResult {
+    pub selected_printer: Option<String>,
+    pub options: PrintOptions,
 }
 
 #[derive(Clone, Default)]

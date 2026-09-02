@@ -4,7 +4,7 @@ use std::ffi::CStr;
 use std::path::Path;
 use std::ptr::NonNull;
 
-use crate::print::PrintOptions;
+use crate::print::{PrintOptions, PrintPropertiesResult};
 pub use crate::print::unix::{get_printer_capabilities, get_printers};
 
 extern "C" {
@@ -28,6 +28,7 @@ const RELEVANT_CUPS_OPTION_KEYS: &[&str] = &[
     // Driver color management bypass
     "CNIJIntent2",
     "CNIJIntent",
+    "EPIJ_CMat",
     "EPIJ_CCor",
     "EPIJ_OSColMat",
     "ColorCorrection",
@@ -118,17 +119,24 @@ fn extract_media_type_from_options(options: &str) -> Option<String> {
 
 /// Show the native macOS `NSPrintPanel` for the selected printer, pre-configured
 /// with application-managed color so the driver's color-management controls are
-/// greyed out. Returns the user's captured print settings as a `PrintOptions`
-/// snapshot.
+/// greyed out. Returns the user-selected printer and captured print settings as
+/// a `PrintPropertiesResult` snapshot, or `None` if the user cancelled the
+/// dialog.
 ///
 /// This function must be called on the Cocoa main thread. The caller is
 /// responsible for dispatching via `AppHandle::run_on_main_thread`.
-fn run_native_print_panel(printer_name: &str) -> Result<PrintOptions, String> {
+fn run_native_print_panel(
+    printer_name: &str,
+    display_name: Option<&str>,
+) -> Result<Option<PrintPropertiesResult>, String> {
     use objc2::MainThreadMarker;
     use objc2_app_kit::{NSPrintInfo, NSPrintPanel, NSPrintPanelOptions, NSPrinter};
     use objc2_application_services::{
-        PMCopyPrintSettings, PMCreatePrintSettings, PMRelease, PMPrintSettings,
-        PMPrintSettingsToOptions, PMPrintSettingsSetValue,
+        PMPageFormat, PMPrinter, PMPrinterCreateFromPrinterID,
+        PMPrinterGetID, PMPrintSession, PMPrintSettings, PMPrintSettingsSetValue,
+        PMPrintSettingsToOptions, PMRelease, PMSessionDefaultPageFormat,
+        PMSessionDefaultPrintSettings, PMSessionGetCurrentPrinter,
+        PMSessionSetCurrentPMPrinter,
     };
     use objc2_core_foundation::CFString;
     use objc2_foundation::NSString;
@@ -136,24 +144,82 @@ fn run_native_print_panel(printer_name: &str) -> Result<PrintOptions, String> {
     let mtm = MainThreadMarker::new()
         .ok_or("Print panel must be invoked on the main thread")?;
 
-    // Look up the NSPrinter by name.
-    let name_ns = NSString::from_str(printer_name);
-    let printer = NSPrinter::printerWithName(&name_ns)
-        .ok_or_else(|| format!("No NSPrinter found for '{}'", printer_name))?;
-
-    // Create a fresh NSPrintInfo and configure it for the selected printer.
+    // Create a fresh NSPrintInfo and initialize it.
     let print_info = NSPrintInfo::new();
-    print_info.setPrinter(&printer);
     print_info.setUpPrintOperationDefaultValues();
 
-    // Set AP_ColorMatchingMode = AP_ApplicationColorMatching on the
-    // underlying PMPrintSettings so the driver's ColorSync / vendor color
-    // management controls are greyed out in the panel.
-    let pm_settings_raw: PMPrintSettings = print_info.PMPrintSettings().as_ptr() as PMPrintSettings;
+    // Bind the CUPS destination (Printer ID) to the session. CUPS destination
+    // IDs are what macOS Core Printing calls "Printer IDs"; they are not the
+    // human-readable display names used by NSPrinter::printerWithName.
+    let printer_id_cf = CFString::from_str(printer_name);
+    let pm_printer: PMPrinter = unsafe { PMPrinterCreateFromPrinterID(&*printer_id_cf) };
+    let mut printer_from_id = !pm_printer.is_null();
+
+    if pm_printer.is_null() {
+        if let Some(dn) = display_name {
+            // Fallback: try the human-readable display name via NSPrinter. This is
+            // less robust than a direct PMPrinter lookup but allows the panel to
+            // open when the queue is not currently registered in the Core Printing
+            // session under its CUPS ID.
+            let name_ns = NSString::from_str(dn);
+            if let Some(ns_printer) = NSPrinter::printerWithName(&name_ns) {
+                print_info.setPrinter(&ns_printer);
+                print_info.setUpPrintOperationDefaultValues();
+            } else {
+                return Err(format!(
+                    "No printer found for '{}' (display name: {:?})",
+                    printer_name, display_name
+                ));
+            }
+        } else {
+            return Err(format!(
+                "No printer found for '{}' (display name: {:?})",
+                printer_name, display_name
+            ));
+        }
+    }
+
+    // Obtain the underlying Core Printing session and settings now that
+    // NSPrintInfo has been configured. These are valid as long as `print_info`
+    // is retained.
+    let pm_session: PMPrintSession = print_info.PMPrintSession().as_ptr() as PMPrintSession;
+    let pm_settings: PMPrintSettings = print_info.PMPrintSettings().as_ptr() as PMPrintSettings;
+    let pm_page_format = print_info.PMPageFormat().as_ptr() as PMPageFormat;
+
+    if !pm_printer.is_null() {
+        let set_status = unsafe { PMSessionSetCurrentPMPrinter(pm_session, pm_printer) };
+        if set_status != 0 {
+            unsafe { PMRelease(pm_printer as _) };
+            return Err(format!(
+                "PMSessionSetCurrentPMPrinter failed with status {}",
+                set_status
+            ));
+        }
+
+        let default_status = unsafe { PMSessionDefaultPrintSettings(pm_session, pm_settings) };
+        if default_status != 0 {
+            log::warn!(
+                "PMSessionDefaultPrintSettings returned status {}",
+                default_status
+            );
+        }
+
+        let default_page_status = unsafe { PMSessionDefaultPageFormat(pm_session, pm_page_format) };
+        if default_page_status != 0 {
+            log::warn!(
+                "PMSessionDefaultPageFormat returned status {}",
+                default_page_status
+            );
+        }
+    }
+
+    // Set AP_ColorMatchingMode = AP_ApplicationColorMatching so the driver's
+    // ColorSync / vendor color management controls are greyed out in the panel.
     let cm_key = CFString::from_str("AP_ColorMatchingMode");
     let cm_val = CFString::from_str("AP_ApplicationColorMatching");
+    let cm_val_ref: &objc2_core_foundation::CFType = &*cm_val;
     let set_status = unsafe {
-        PMPrintSettingsSetValue(pm_settings_raw, &cm_key, Some(cm_val.as_ref()), false)
+        PMPrintSettingsSetValue(pm_settings, &cm_key, Some(cm_val_ref), false)
     };
     if set_status != 0 {
         log::warn!(
@@ -161,6 +227,9 @@ fn run_native_print_panel(printer_name: &str) -> Result<PrintOptions, String> {
             set_status
         );
     }
+
+    print_info.updateFromPMPageFormat();
+
     // Sync the PMPrintSettings changes back into the NSPrintInfo object.
     print_info.updateFromPMPrintSettings();
 
@@ -176,48 +245,46 @@ fn run_native_print_panel(printer_name: &str) -> Result<PrintOptions, String> {
 
     // NSModalResponseOK == NSOKButton == 1.
     if response != 1 {
-        return Err("Printer properties dialog was cancelled".to_string());
+        if !pm_printer.is_null() {
+            unsafe { PMRelease(pm_printer as _) };
+        }
+        return Ok(None);
     }
 
-    // Extract the updated print info from the panel.
-    let updated_info = panel.printInfo();
-    let updated_settings_raw: PMPrintSettings =
-        updated_info.PMPrintSettings().as_ptr() as PMPrintSettings;
-
-    // PMPrintSettingsToOptions may crash when AP_ColorMatchingMode is present
-    // in the settings. To avoid this, copy the settings into a fresh
-    // PMPrintSettings object and then call PMPrintSettingsToOptions on the
-    // copy. The copy will still contain AP_ColorMatchingMode, but we filter
-    // it out of the resulting string.
-    let mut copy_settings: PMPrintSettings = std::ptr::null_mut();
-    let copy_status = unsafe {
-        PMCreatePrintSettings(NonNull::new(&mut copy_settings).unwrap())
+    // Capture the effective printer from the session.
+    let mut current_printer: PMPrinter = std::ptr::null_mut();
+    let get_status = unsafe {
+        PMSessionGetCurrentPrinter(
+            pm_session,
+            NonNull::new(&mut current_printer).unwrap(),
+        )
     };
-    if copy_status != 0 {
-        return Err(format!(
-            "PMCreatePrintSettings failed with status {}",
-            copy_status
-        ));
-    }
-    let copy_result = unsafe { PMCopyPrintSettings(updated_settings_raw, copy_settings) };
-    if copy_result != 0 {
-        unsafe { PMRelease(copy_settings as _) };
-        return Err(format!(
-            "PMCopyPrintSettings failed with status {}",
-            copy_result
-        ));
-    }
+    let selected_printer = if get_status == 0 && !current_printer.is_null() {
+        unsafe {
+            PMPrinterGetID(current_printer).map(|id| format!("{}", id))
+        }
+    } else {
+        if printer_from_id {
+            Some(printer_name.to_string())
+        } else {
+            None
+        }
+    };
+
+    // Extract the updated print settings from the panel.
+    let updated_info = panel.printInfo();
+    let updated_settings: PMPrintSettings =
+        updated_info.PMPrintSettings().as_ptr() as PMPrintSettings;
 
     let mut opts_ptr: *mut std::ffi::c_char = std::ptr::null_mut();
     let to_opts_status = unsafe {
-        PMPrintSettingsToOptions(
-            copy_settings,
-            NonNull::new(&mut opts_ptr).unwrap(),
-        )
+        PMPrintSettingsToOptions(updated_settings, NonNull::new(&mut opts_ptr).unwrap())
     };
-    unsafe { PMRelease(copy_settings as _) };
 
     if to_opts_status != 0 || opts_ptr.is_null() {
+        if !pm_printer.is_null() {
+            unsafe { PMRelease(pm_printer as _) };
+        }
         return Err(format!(
             "PMPrintSettingsToOptions failed with status {}",
             to_opts_status
@@ -227,6 +294,9 @@ fn run_native_print_panel(printer_name: &str) -> Result<PrintOptions, String> {
     let opts_cstr = unsafe { CStr::from_ptr(opts_ptr) };
     let opts_str = opts_cstr.to_string_lossy().into_owned();
     unsafe { free(opts_ptr as *mut _) };
+    if !pm_printer.is_null() {
+        unsafe { PMRelease(pm_printer as _) };
+    }
 
     // Filter to PPD-relevant options.
     let cups_options = filter_cups_options_string(&opts_str);
@@ -236,12 +306,15 @@ fn run_native_print_panel(printer_name: &str) -> Result<PrintOptions, String> {
         .as_ref()
         .and_then(|s| extract_media_type_from_options(s));
 
-    Ok(PrintOptions {
-        media_type,
-        cups_options,
-        ppd_uncorrected_passthrough: Some(true),
-        ..Default::default()
-    })
+    Ok(Some(PrintPropertiesResult {
+        selected_printer,
+        options: PrintOptions {
+            media_type,
+            cups_options,
+            ppd_uncorrected_passthrough: Some(true),
+            ..Default::default()
+        },
+    }))
 }
 
 /// Construct `lp` command line arguments for target printing on macOS with
@@ -323,6 +396,7 @@ pub fn build_lp_args(
     let color_bypass_keys = [
         "cnijintent2",
         "cnijintent",
+        "epij_cmat",
         "epij_ccor",
         "epij_oscolmat",
         "colorcorrection",
@@ -411,20 +485,26 @@ pub fn print_target(
 /// The panel is pre-configured with `AP_ColorMatchingMode=AP_ApplicationColorMatching`
 /// so the driver's color-management controls are greyed out (application manages
 /// color). On OK, the user's media type / quality choices are captured and
-/// returned as a `PrintOptions` snapshot for the frontend to feed back into
-/// `print_target_native`.
+/// returned as a `PrintPropertiesResult` snapshot for the frontend to feed back
+/// into `print_target_native`.
 ///
 /// This function dispatches the dialog to the Cocoa main thread via
 /// `AppHandle::run_on_main_thread` and awaits the result.
 pub async fn show_printer_properties(
     printer_name: &str,
     app: &tauri::AppHandle,
-) -> Result<PrintOptions, String> {
-    let (tx, rx) = tokio::sync::oneshot::channel::<Result<PrintOptions, String>>();
+) -> Result<Option<PrintPropertiesResult>, String> {
+    // Resolve the human-readable display name before entering the main thread
+    // so we have a fallback if PMPrinterCreateFromPrinterID fails.
+    let display_name = crate::print::unix::get_printer_display_name(printer_name);
+
+    let (tx, rx) = tokio::sync::oneshot::channel::<Result<Option<PrintPropertiesResult>, String>>();
     let printer_name_owned = printer_name.to_string();
+    let display_name_owned = display_name;
 
     app.run_on_main_thread(move || {
-        let result = run_native_print_panel(&printer_name_owned);
+        let display_name_ref = display_name_owned.as_deref();
+        let result = run_native_print_panel(&printer_name_owned, display_name_ref);
         let _ = tx.send(result);
     })
     .map_err(|e| format!("Failed to dispatch print panel to main thread: {}", e))?;
@@ -439,12 +519,12 @@ mod tests {
 
     #[test]
     fn test_filter_cups_options_string_basic() {
-        let raw = "MediaType=92 EPIJ_CCor=0 com.apple.print.PrintSettings.PMCopies..n.=1 collate=False PageSize=A4 AP_ColorMatchingMode=AP_ApplicationColorMatching AP_D_InputSlot= copies=1";
+        let raw = "MediaType=92 EPIJ_CMat=3 com.apple.print.PrintSettings.PMCopies..n.=1 collate=False PageSize=A4 AP_ColorMatchingMode=AP_ApplicationColorMatching AP_D_InputSlot= copies=1";
         let filtered = filter_cups_options_string(raw).unwrap();
-        // Should contain MediaType, EPIJ_CCor, PageSize but not com.apple.*,
+        // Should contain MediaType, EPIJ_CMat, PageSize but not com.apple.*,
         // collate, copies, AP_ColorMatchingMode, or empty AP_D_InputSlot.
         assert!(filtered.contains("MediaType=92"));
-        assert!(filtered.contains("EPIJ_CCor=0"));
+        assert!(filtered.contains("EPIJ_CMat=3"));
         assert!(filtered.contains("PageSize=A4"));
         assert!(!filtered.contains("com.apple."));
         assert!(!filtered.contains("collate"));
@@ -461,7 +541,7 @@ mod tests {
 
     #[test]
     fn test_extract_media_type_from_options() {
-        let opts = "MediaType=92 EPIJ_CCor=0 PageSize=A4";
+        let opts = "MediaType=92 EPIJ_CMat=3 PageSize=A4";
         assert_eq!(
             extract_media_type_from_options(opts),
             Some("92".to_string())
@@ -480,14 +560,14 @@ mod tests {
     #[test]
     fn test_build_lp_args_with_cups_options() {
         let opts = PrintOptions {
-            cups_options: Some("MediaType=92 EPIJ_CCor=0 PageSize=A4".to_string()),
+            cups_options: Some("MediaType=92 EPIJ_CMat=3 PageSize=A4".to_string()),
             ppd_uncorrected_passthrough: Some(true),
             ..Default::default()
         };
         let args = build_lp_args("Test_Printer", "/tmp/target.tif", Some(&opts));
         assert!(args.contains(&"AP_ColorMatchingMode=AP_ApplicationColorMatching".to_string()));
         assert!(args.contains(&"MediaType=92".to_string()));
-        assert!(args.contains(&"EPIJ_CCor=0".to_string()));
+        assert!(args.contains(&"EPIJ_CMat=3".to_string()));
         assert!(args.contains(&"PageSize=A4".to_string()));
         assert_eq!(args.last().unwrap(), "/tmp/target.tif");
     }
@@ -512,12 +592,12 @@ mod tests {
         // When cups_options contains a color bypass key, the auto-detected
         // bypass should NOT also be added.
         let opts = PrintOptions {
-            cups_options: Some("EPIJ_CCor=0".to_string()),
+            cups_options: Some("EPIJ_CMat=3".to_string()),
             ..Default::default()
         };
         let args = build_lp_args("Test_Printer", "/tmp/target.tif", Some(&opts));
-        // Should contain EPIJ_CCor=0 exactly once (from cups_options).
-        let count = args.iter().filter(|a| *a == "EPIJ_CCor=0").count();
+        // Should contain EPIJ_CMat=3 exactly once (from cups_options).
+        let count = args.iter().filter(|a| *a == "EPIJ_CMat=3").count();
         assert_eq!(count, 1);
     }
 

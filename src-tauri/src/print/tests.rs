@@ -12,6 +12,7 @@ mod integration_tests {
             name: "Epson-Stylus-Pro-4900".to_string(),
             status: "Idle".to_string(),
             is_default: true,
+            display_name: Some("Epson Stylus Pro 4900".to_string()),
         };
 
         let json = serde_json::to_string(&printer).expect("Failed to serialize printer");

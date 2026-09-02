@@ -19,8 +19,12 @@
 ## macOS Print Properties (Issue #188)
 
 The "Preferences" button opens the native macOS `NSPrintPanel` (not CUPS web UI or System Settings).
+- The CUPS destination ID is bound to the panel via Core Printing `PMPrinterCreateFromPrinterID` and `PMSessionSetCurrentPMPrinter`
+- A `Printer.display_name` (from CUPS `printer-info`) is cached at enumeration as a fallback for `NSPrinter::printerWithName`
 - Pre-configured with `AP_ColorMatchingMode=AP_ApplicationColorMatching` so driver color management is greyed out
-- Captures user's media type / quality selections as a CUPS options string
+- Captures user's media type / quality selections as a CUPS options string with `PMPrintSettingsToOptions`
+- Returns a `PrintPropertiesResult` with the effective `selected_printer` and captured `PrintOptions`
+- Cancellation is returned as `None`, not an error
 - Captured options are stored in frontend `capturedCupsOptions` map and passed via `PrintOptions.cups_options`
 - `build_lp_args` in `macos.rs` always adds `-o AP_ColorMatchingMode=AP_ApplicationColorMatching` and forwards captured options
 
@@ -29,12 +33,12 @@ The "Preferences" button opens the native macOS `NSPrintPanel` (not CUPS web UI 
 - `objc2` 0.6 — MainThreadMarker, rc
 - `objc2-app-kit` 0.3.2 — NSPrintPanel, NSPrintInfo, NSPrinter
 - `objc2-foundation` 0.3.2 — NSString
-- `objc2-core-foundation` 0.3.2 — CFString
-- `objc2-application-services` 0.3.2 — PMCore (PMPrintSettings, PMCreatePrintSettings, etc.)
+- `objc2-core-foundation` 0.3.2 — CFString, CFType
+- `objc2-application-services` 0.3.2 — PMCore (PMPrintSettings, PMPrinter, PMSession, etc.)
 
 ## PPD Option Detection
 
 - Epson media type key: `EPIJ_Medi` (in addition to `CNIJMediaType`, `MediaType`, `StpMediaType`)
-- Epson color bypass: `EPIJ_CCor=0` or `EPIJ_OSColMat=0`
+- Epson color bypass: `EPIJ_CMat=3` (Off / No Color Adjustment)
 - Canon color bypass: `CNIJIntent2=4` or `CNIJIntent=4`
 - Gutenprint: `StpColorCorrection=Uncorrected`
