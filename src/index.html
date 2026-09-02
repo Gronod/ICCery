@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="./styles/main.css" />
     <script src="./js/three.min.js"></script>
     <script src="./js/OrbitControls.js"></script>
+    <script src="./js/CSS2DRenderer.js"></script>
     <script type="module" src="./js/app.js" defer></script>
   </head>
   <body>
@@ -776,8 +777,47 @@
 
           <!-- 3D Gamut Viewer -->
           <div class="gamut-viewer-section">
-            <h3>3D Gamut Visualization (CIELAB)</h3>
-            <div id="gamutViewerContainer"></div>
+            <div class="gamut-viewer-header">
+              <h3>3D Gamut Visualisation <span class="gamut-viewer-subtitle">(CIELAB L* a* b*)</span></h3>
+              <p class="gamut-viewer-hint">Drag to rotate &bull; Scroll to zoom &bull; Right-drag to pan</p>
+            </div>
+
+            <div class="gamut-viewer-wrap" id="gamutViewerWrap">
+              <!-- Three.js canvas is appended here by gamut_viewer.js -->
+              <div id="gamutViewerContainer"></div>
+
+              <!-- Legend & layer controls overlay -->
+              <div class="gamut-controls-panel" id="gamutControlsPanel">
+                <div class="gamut-legend-title">Layers</div>
+
+                <div class="gamut-legend-item">
+                  <span class="gamut-swatch gamut-swatch-profile"></span>
+                  <span class="gamut-legend-label">Profile Gamut</span>
+                  <label class="gamut-toggle" title="Show / hide profile gamut">
+                    <input type="checkbox" id="chkProfileGamut" checked>
+                    <span class="gamut-toggle-slider"></span>
+                  </label>
+                </div>
+
+                <div class="gamut-legend-item">
+                  <span class="gamut-swatch gamut-swatch-srgb"></span>
+                  <span class="gamut-legend-label">sRGB Reference</span>
+                  <label class="gamut-toggle" title="Show / hide sRGB reference">
+                    <input type="checkbox" id="chkSrgbReference" checked>
+                    <span class="gamut-toggle-slider"></span>
+                  </label>
+                </div>
+
+                <div class="gamut-legend-item">
+                  <span class="gamut-swatch gamut-swatch-axes"></span>
+                  <span class="gamut-legend-label">CIELAB Axes</span>
+                  <label class="gamut-toggle" title="Show / hide CIELAB axis scaffold">
+                    <input type="checkbox" id="chkLabAxes" checked>
+                    <span class="gamut-toggle-slider"></span>
+                  </label>
+                </div>
+              </div>
+            </div>
           </div>
 
           <!-- Process Log -->
@@ -837,7 +877,7 @@
           <img src="./assets/ICCery-logo.svg" alt="ICCery Logo" class="about-logo" />
         </div>
         <h2>About ICCery</h2>
-        <p><strong>Version:</strong> <span id="aboutVersion">v0.3.2</span> &bull; <strong>Build Date:</strong> <span id="aboutBuildDate">August 2026</span></p>
+        <p><strong>Version:</strong> <span id="aboutVersion">v0.7.1</span> &bull; <strong>Build Date:</strong> <span id="aboutBuildDate">September 2026</span></p>
         <p><strong>Copyright &copy; 2026 Gordon Bolton. All rights reserved.</strong></p>
         <h3>Licences & EULA</h3>
         <div class="license-text-container">

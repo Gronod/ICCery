@@ -1349,3 +1349,210 @@ button.danger:hover {
 }
 
 
+/* ═══════════════════════════════════════════════════════════════════════════
+   3D Gamut Viewer — Stage 5
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.gamut-viewer-section {
+  margin-top: 24px;
+  border-top: 1px solid var(--border-color, #333);
+  padding-top: 16px;
+}
+
+.gamut-viewer-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.gamut-viewer-header h3 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-color, #d4d4d4);
+}
+
+.gamut-viewer-subtitle {
+  font-weight: 400;
+  opacity: 0.55;
+  font-size: 0.85rem;
+  margin-left: 4px;
+}
+
+.gamut-viewer-hint {
+  margin: 0;
+  font-size: 0.72rem;
+  opacity: 0.45;
+  letter-spacing: 0.02em;
+}
+
+/* Wrapper gives the overlay panel a positioning context */
+.gamut-viewer-wrap {
+  position: relative;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+#gamutViewerContainer {
+  width: 100%;
+  min-height: 420px;
+  background: #0e0e14;
+  display: block;
+  position: relative;
+}
+
+/* Canvas fills the container */
+#gamutViewerContainer canvas {
+  display: block;
+  width: 100% !important;
+}
+
+/* ── Legend / controls panel ─────────────────────────────────────────────── */
+
+.gamut-controls-panel {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 20;
+  min-width: 154px;
+  background: rgba(14, 14, 22, 0.82);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 10px;
+  padding: 10px 13px 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.45);
+}
+
+.gamut-legend-title {
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  opacity: 0.45;
+  font-weight: 600;
+  margin-bottom: 9px;
+}
+
+.gamut-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 7px;
+  font-size: 0.8rem;
+  color: var(--text-color, #d4d4d4);
+}
+
+.gamut-legend-item:last-child {
+  margin-bottom: 0;
+}
+
+.gamut-legend-label {
+  flex: 1;
+  white-space: nowrap;
+  opacity: 0.85;
+}
+
+/* Colour swatches */
+.gamut-swatch {
+  width: 11px;
+  height: 11px;
+  border-radius: 3px;
+  flex-shrink: 0;
+  display: inline-block;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.gamut-swatch-profile {
+  /* Gradient hint at the three primary hue quadrants */
+  background: linear-gradient(135deg, #3b82f6 0%, #ef4444 50%, #22c55e 100%);
+}
+
+.gamut-swatch-srgb {
+  background: #6688aa;
+}
+
+.gamut-swatch-axes {
+  background: #3a3a5a;
+}
+
+/* ── Mini iOS-style toggle switch ─────────────────────────────────────────── */
+
+.gamut-toggle {
+  position: relative;
+  display: inline-block;
+  width: 30px;
+  height: 16px;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+.gamut-toggle input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+  position: absolute;
+}
+
+.gamut-toggle-slider {
+  position: absolute;
+  inset: 0;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 16px;
+  transition: background 0.2s;
+}
+
+.gamut-toggle-slider::before {
+  content: '';
+  position: absolute;
+  width: 11px;
+  height: 11px;
+  left: 2.5px;
+  top: 2.5px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.7);
+  transition: transform 0.2s, background 0.2s;
+}
+
+.gamut-toggle input:checked + .gamut-toggle-slider {
+  background: var(--accent-color, #007acc);
+}
+
+.gamut-toggle input:checked + .gamut-toggle-slider::before {
+  transform: translateX(14px);
+  background: #fff;
+}
+
+/* ── CSS2D axis label styles (injected into overlay DOM by CSS2DRenderer) ── */
+
+.gamut-axis-label {
+  font-family: system-ui, -apple-system, monospace;
+  font-size: 11px;
+  color: rgba(200, 210, 230, 0.85);
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.9), 0 0 8px rgba(0, 0, 0, 0.7);
+  pointer-events: none;
+  user-select: none;
+  white-space: nowrap;
+}
+
+.gamut-axis-primary {
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(220, 230, 255, 0.95);
+}
+
+.gamut-axis-a-pos { color: rgba(255, 160, 150, 0.85); }
+.gamut-axis-a-neg { color: rgba(140, 220, 160, 0.85); }
+.gamut-axis-b-pos { color: rgba(255, 230, 130, 0.85); }
+.gamut-axis-b-neg { color: rgba(140, 170, 255, 0.85); }
+
+.gamut-tick-label {
+  font-size: 10px;
+  opacity: 0.55;
+}
+
+
+
