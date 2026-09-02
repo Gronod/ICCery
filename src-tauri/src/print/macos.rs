@@ -34,46 +34,88 @@ extern "C" {
 /// i1Profiler to gray-out the Color Matching controls in driver PDEs.
 ///
 /// The symbols are resolved at runtime with `dlsym` so the binary does not
-/// hard-depend on an undocumented symbol.
+/// hard-depend on an undocumented symbol. We try three likely signatures
+/// based on the exported symbol names:
+/// 1. PMSessionSetColorMatchingMode(session, mode, lock) — single call
+/// 2. PMSessionSetColorMatchingMode(session, mode) + PMSessionSetColorMatchingModeLock(session, true)
+/// 3. PMSessionSetColorMatchingModeNoLock(session, mode) + PMSessionSetColorMatchingModeLock(session, true)
 #[cfg(target_os = "macos")]
 unsafe fn set_session_color_matching_mode(pm_session: PMPrintSession) {
     use std::ffi::{c_char, c_int, c_void};
     use objc2_core_foundation::CFString;
 
-    // RTLD_DEFAULT is a special handle that searches all loaded images.
-    const RTLD_DEFAULT: *mut c_void = (-2isize) as *mut c_void;
-
-    let name_set = c"PMSessionSetColorMatchingMode";
-    let name_lock = c"PMSessionSetColorMatchingModeLock";
-
-    let set_ptr = dlsym(RTLD_DEFAULT, name_set.as_ptr() as *const c_char);
-    let lock_ptr = dlsym(RTLD_DEFAULT, name_lock.as_ptr() as *const c_char);
-
-    if set_ptr.is_null() || lock_ptr.is_null() {
-        log::warn!("PMSessionSetColorMatchingMode symbols not found; color controls will not be grayed");
+    if pm_session.is_null() {
+        log::warn!("pm_session is null; skipping private color-matching SPI");
         return;
     }
 
-    // Likely signatures:
-    //   OSStatus PMSessionSetColorMatchingMode(PMPrintSession, CFStringRef);
-    //   OSStatus PMSessionSetColorMatchingModeLock(PMPrintSession, Boolean);
-    // The mode value is the public kPMApplicationColorMatching string.
-    type SetFn = unsafe extern "C" fn(PMPrintSession, *const CFString) -> c_int;
-    type LockFn = unsafe extern "C" fn(PMPrintSession, u8) -> c_int;
-
-    let set_fn: SetFn = std::mem::transmute(set_ptr);
-    let lock_fn: LockFn = std::mem::transmute(lock_ptr);
-
+    const RTLD_DEFAULT: *mut c_void = (-2isize) as *mut c_void;
     let mode = CFString::from_str("AP_ApplicationColorMatching");
-    let status = set_fn(pm_session, &*mode as *const CFString);
-    if status != 0 {
-        log::warn!("PMSessionSetColorMatchingMode returned {}", status);
+    let mode_ptr = &*mode as *const CFString;
+
+    // Attempt 1: PMSessionSetColorMatchingMode(session, mode, lock)
+    // The co-existence of the main symbol and Lock strongly suggests a 3-arg variant.
+    let name_main = c"PMSessionSetColorMatchingMode";
+    let name_lock = c"PMSessionSetColorMatchingModeLock";
+    let main_ptr = dlsym(RTLD_DEFAULT, name_main.as_ptr() as *const c_char);
+    let lock_ptr = dlsym(RTLD_DEFAULT, name_lock.as_ptr() as *const c_char);
+
+    if !main_ptr.is_null() && !lock_ptr.is_null() {
+        // Assume: OSStatus fn(PMPrintSession, CFStringRef, Boolean)
+        type Fn3 = unsafe extern "C" fn(PMPrintSession, *const CFString, u8) -> c_int;
+        let fn3: Fn3 = std::mem::transmute(main_ptr);
+        let status = fn3(pm_session, mode_ptr, 1);
+        if status == 0 {
+            log::info!("PMSessionSetColorMatchingMode(mode, lock) succeeded");
+            return;
+        }
+        log::warn!("PMSessionSetColorMatchingMode(mode, lock) returned {}", status);
     }
 
-    let lock_status = lock_fn(pm_session, 1); // 1 == true
-    if lock_status != 0 {
-        log::warn!("PMSessionSetColorMatchingModeLock returned {}", lock_status);
+    // Attempt 2: PMSessionSetColorMatchingMode(session, mode) + Lock call
+    if !main_ptr.is_null() && !lock_ptr.is_null() {
+        // Assume: OSStatus fn(PMPrintSession, CFStringRef) for set
+        //        OSStatus fn(PMPrintSession, Boolean) for lock
+        type SetFn2 = unsafe extern "C" fn(PMPrintSession, *const CFString) -> c_int;
+        type LockFn2 = unsafe extern "C" fn(PMPrintSession, u8) -> c_int;
+        let set_fn: SetFn2 = std::mem::transmute(main_ptr);
+        let lock_fn: LockFn2 = std::mem::transmute(lock_ptr);
+        let status = set_fn(pm_session, mode_ptr);
+        if status == 0 {
+            let lock_status = lock_fn(pm_session, 1);
+            if lock_status == 0 {
+                log::info!("PMSessionSetColorMatchingMode + Lock succeeded");
+                return;
+            }
+            log::warn!("PMSessionSetColorMatchingModeLock returned {}", lock_status);
+        } else {
+            log::warn!("PMSessionSetColorMatchingMode returned {}", status);
+        }
     }
+
+    // Attempt 3: PMSessionSetColorMatchingModeNoLock + Lock
+    let name_nolock = c"PMSessionSetColorMatchingModeNoLock";
+    let nolock_ptr = dlsym(RTLD_DEFAULT, name_nolock.as_ptr() as *const c_char);
+    let lock_ptr3 = dlsym(RTLD_DEFAULT, name_lock.as_ptr() as *const c_char);
+    if !nolock_ptr.is_null() && !lock_ptr3.is_null() {
+        type NoLockFn = unsafe extern "C" fn(PMPrintSession, *const CFString) -> c_int;
+        type LockFn3 = unsafe extern "C" fn(PMPrintSession, u8) -> c_int;
+        let nolock_fn: NoLockFn = std::mem::transmute(nolock_ptr);
+        let lock_fn: LockFn3 = std::mem::transmute(lock_ptr3);
+        let status = nolock_fn(pm_session, mode_ptr);
+        if status == 0 {
+            let lock_status = lock_fn(pm_session, 1);
+            if lock_status == 0 {
+                log::info!("PMSessionSetColorMatchingModeNoLock + Lock succeeded");
+                return;
+            }
+            log::warn!("PMSessionSetColorMatchingModeLock returned {}", lock_status);
+        } else {
+            log::warn!("PMSessionSetColorMatchingModeNoLock returned {}", status);
+        }
+    }
+
+    log::warn!("All PMSessionSetColorMatchingMode variants failed or missing; color controls will not be grayed");
 }
 
 #[cfg(not(target_os = "macos"))]
