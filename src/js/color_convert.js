@@ -65,3 +65,11 @@ export function labToCss(lab) {
   const [r, g, b] = labToSrgb(lab[0], lab[1], lab[2]);
   return `rgb(${r}, ${g}, ${b})`;
 }
+
+export function deviceCmykToCss(device) {
+  const c = device[0] / 100, m = device[1] / 100, y = device[2] / 100, k = device[3] / 100;
+  const r = Math.round(255 * (1 - c) * (1 - k));
+  const g = Math.round(255 * (1 - m) * (1 - k));
+  const b = Math.round(255 * (1 - y) * (1 - k));
+  return `rgb(${r}, ${g}, ${b})`;
+}

@@ -133,9 +133,9 @@ export function initProfcheck() {
       }
     } else {
       // Regex fallbacks for standard profcheck output
-      const avgMatch = stdout.match(/avg\.\s*dE\s*=\s*([\d\.]+)/i) || stdout.match(/average\s*dE\s*:\s*([\d\.]+)/i);
-      const maxMatch = stdout.match(/max\.\s*dE\s*=\s*([\d\.]+)/i) || stdout.match(/peak\s*dE\s*:\s*([\d\.]+)/i);
-      const rmsMatch = stdout.match(/rms\.\s*dE\s*=\s*([\d\.]+)/i) || stdout.match(/rms\s*dE\s*:\s*([\d\.]+)/i);
+      const avgMatch = stdout.match(/avg\.\s*(?:dE\s*)?=\s*([\d\.]+)/i) || stdout.match(/average\s*(?:dE\s*)?[:=]\s*([\d\.]+)/i);
+      const maxMatch = stdout.match(/max\.\s*(?:dE\s*)?=\s*([\d\.]+)/i) || stdout.match(/peak\s*(?:dE\s*)?[:=]\s*([\d\.]+)/i);
+      const rmsMatch = stdout.match(/RMS\s*(?:dE\s*)?=\s*([\d\.]+)/i) || stdout.match(/rms\s*(?:dE\s*)?[:=]\s*([\d\.]+)/i);
 
       if (avgMatch) avgDe = parseFloat(avgMatch[1]);
       if (maxMatch) maxDe = parseFloat(maxMatch[1]);

@@ -18,6 +18,16 @@ pub struct ProfilingPreset {
     pub colprof_algorithm: String,
     pub colprof_quality: String,
     pub colprof_intent: Option<String>,
+    #[serde(default)]
+    pub colprof_fwa: Option<String>,
+    #[serde(default)]
+    pub colprof_illuminant: Option<String>,
+    #[serde(default)]
+    pub colprof_observer: Option<String>,
+    #[serde(default)]
+    pub colprof_input_viewing_cond: Option<String>,
+    #[serde(default)]
+    pub colprof_output_viewing_cond: Option<String>,
 
     // Advanced Stage 1 fields
     #[serde(default)]
@@ -176,6 +186,11 @@ pub fn get_default_presets() -> Vec<ProfilingPreset> {
             device_power: None,
             random_seed: Some(1),
             no_randomize: Some(false),
+            colprof_fwa: Some("D50".to_string()),
+            colprof_illuminant: None,
+            colprof_observer: None,
+            colprof_input_viewing_cond: None,
+            colprof_output_viewing_cond: None,
         },
     ]
 }
