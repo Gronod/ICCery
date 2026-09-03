@@ -128,6 +128,7 @@ pub fn get_printers() -> Result<Vec<Printer>, String> {
                         name,
                         status: "Ready".to_string(),
                         is_default: false,
+                        display_name: None,
                     });
                 }
             }
@@ -158,6 +159,7 @@ pub fn get_printers() -> Result<Vec<Printer>, String> {
                     name,
                     status: "Ready".to_string(),
                     is_default: false,
+                    display_name: None,
                 });
             }
         }

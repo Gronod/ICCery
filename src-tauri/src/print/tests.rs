@@ -12,6 +12,7 @@ mod integration_tests {
             name: "Epson-Stylus-Pro-4900".to_string(),
             status: "Idle".to_string(),
             is_default: true,
+            display_name: Some("Epson Stylus Pro 4900".to_string()),
         };
 
         let json = serde_json::to_string(&printer).expect("Failed to serialize printer");
@@ -72,6 +73,7 @@ mod integration_tests {
             paper_size: Some("A4".to_string()),
             media_type: Some("1".to_string()),
             ppd_uncorrected_passthrough: Some(false),
+            cups_options: Some("MediaType=1".to_string()),
         };
 
         let json = serde_json::to_string(&opts).expect("Failed to serialize PrintOptions");
@@ -81,6 +83,26 @@ mod integration_tests {
         assert_eq!(deserialized.orientation.as_deref(), Some("landscape"));
         assert_eq!(deserialized.paper_size.as_deref(), Some("A4"));
         assert_eq!(deserialized.media_type.as_deref(), Some("1"));
+        assert_eq!(deserialized.cups_options.as_deref(), Some("MediaType=1"));
+    }
+
+    #[test]
+    fn test_print_options_cups_options_default_none() {
+        // When cups_options is not set, it should default to None and
+        // serialize/deserialize correctly.
+        let opts = PrintOptions {
+            paper_source: None,
+            orientation: None,
+            paper_size: None,
+            media_type: None,
+            ppd_uncorrected_passthrough: None,
+            cups_options: None,
+        };
+        let json = serde_json::to_string(&opts).expect("Failed to serialize");
+        assert!(!json.contains("cups_options") || json.contains("\"cups_options\":null"));
+        let deserialized: PrintOptions =
+            serde_json::from_str(&json).expect("Failed to deserialize");
+        assert_eq!(deserialized.cups_options, None);
     }
 
     #[test]
@@ -230,6 +252,7 @@ printer Custom_Queue unknown state\n\
             paper_size: None,
             media_type: Some("4".to_string()),
             ppd_uncorrected_passthrough: None,
+            cups_options: None,
         };
 
         let mut work_buf = retrieved;
@@ -265,9 +288,10 @@ printer Custom_Queue unknown state\n\
         assert_eq!(args_raw[1], printer);
         assert_eq!(args_raw[2], "-t");
         assert_eq!(args_raw[3], "ICCery Target - target_page_1.tif");
-        assert_eq!(args_raw[4], "-o");
-        assert_eq!(args_raw[5], "AP_ColorMatchingMode=AP_ApplicationColorMatching");
-        assert_eq!(args_raw[6], path);
+        assert!(args_raw.contains(&"-o".to_string()));
+        assert!(args_raw.contains(&"AP_ColorMatchingMode=AP_ApplicationColorMatching".to_string()));
+        assert!(args_raw.contains(&"AP.ColorMatchingMode=AP_ApplicationColorMatching".to_string()));
+        assert_eq!(args_raw.last().unwrap(), path);
 
         // PPD uncorrected passthrough mode with options
         let opts = PrintOptions {
@@ -277,8 +301,9 @@ printer Custom_Queue unknown state\n\
             ..Default::default()
         };
         let args_ppd = macos_build_lp_args(printer, path, Some(&opts));
-        assert_eq!(args_ppd[4], "-o");
-        assert_eq!(args_ppd[5], "AP_ColorMatchingMode=AP_ApplicationColorMatching");
+        assert!(args_ppd.contains(&"-o".to_string()));
+        assert!(args_ppd.contains(&"AP_ColorMatchingMode=AP_ApplicationColorMatching".to_string()));
+        assert!(args_ppd.contains(&"AP.ColorMatchingMode=AP_ApplicationColorMatching".to_string()));
         assert!(args_ppd.contains(&"orientation-requested=4".to_string()));
         assert!(args_ppd.contains(&"PageSize=A4".to_string()));
         assert_eq!(args_ppd.last().unwrap(), path);
