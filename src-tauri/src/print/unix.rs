@@ -253,14 +253,17 @@ pub fn detect_driver_color_bypass(output: &str) -> Option<(&'static str, &'stati
         Some(("CNIJIntent2", "4"))
     } else if output.contains("CNIJIntent") {
         Some(("CNIJIntent", "4"))
+    } else if output.contains("EPIJ_CCor") {
+        // Epson "Color Settings" option. The value 0 disables driver-side color correction.
+        Some(("EPIJ_CCor", "0"))
     } else if output.contains("EPIJ_CMat") {
         // Epson "Color Settings" option. The value 3 is "Off (No Color
         // Adjustment)" which disables driver-side color management.
         Some(("EPIJ_CMat", "3"))
-    } else if output.contains("ColorCorrection") {
-        Some(("ColorCorrection", "Uncorrected"))
     } else if output.contains("StpColorCorrection") {
         Some(("StpColorCorrection", "Uncorrected"))
+    } else if output.contains("ColorCorrection") {
+        Some(("ColorCorrection", "Uncorrected"))
     } else if output.contains("EpsonColorMode") {
         Some(("EpsonColorMode", "Off"))
     } else {
@@ -515,38 +518,21 @@ printer Zebra_Label disabled since Wed 10 Jun 2026 - reason: out of ribbon\n\
         let merged = merge_printer_info(&destinations, &statuses, default_dest);
         assert_eq!(merged.len(), 4);
 
-        assert_eq!(
-            merged[0],
-            Printer {
-                name: "Epson-Stylus-SX420W".to_string(),
-                status: "Idle".to_string(),
-                is_default: true,
-            }
-        );
-        assert_eq!(
-            merged[1],
-            Printer {
-                name: "HP_LaserJet".to_string(),
-                status: "Printing".to_string(),
-                is_default: false,
-            }
-        );
-        assert_eq!(
-            merged[2],
-            Printer {
-                name: "Virtual_PDF".to_string(),
-                status: "Idle".to_string(),
-                is_default: false,
-            }
-        );
-        assert_eq!(
-            merged[3],
-            Printer {
-                name: "Zebra_Label".to_string(),
-                status: "Stopped".to_string(),
-                is_default: false,
-            }
-        );
+        assert_eq!(merged[0].name, "Epson-Stylus-SX420W".to_string());
+        assert_eq!(merged[0].status, "Idle".to_string());
+        assert!(merged[0].is_default);
+
+        assert_eq!(merged[1].name, "HP_LaserJet".to_string());
+        assert_eq!(merged[1].status, "Printing".to_string());
+        assert!(!merged[1].is_default);
+
+        assert_eq!(merged[2].name, "Virtual_PDF".to_string());
+        assert_eq!(merged[2].status, "Idle".to_string());
+        assert!(!merged[2].is_default);
+
+        assert_eq!(merged[3].name, "Zebra_Label".to_string());
+        assert_eq!(merged[3].status, "Stopped".to_string());
+        assert!(!merged[3].is_default);
     }
 
     #[test]
