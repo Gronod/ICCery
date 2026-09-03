@@ -25,6 +25,12 @@ The frontend uses a tiered button sizing system defined in `src/styles/main.css`
 - All action rows use one of: `.stage-actions`, `.modal-actions`, `.chartread-actions`, `.print-actions-row`, `.btn-row`, `.btn-row-sm`, `.btn-row-end`, or `.input-row-sm`.
 - Avoid inline `style` on `<button>` elements or their immediate parent rows.
 
+## Settings & Preferences
+
+- Settings are persisted to `settings.json` in the app data directory and include the Stage 3 ΔE₀₀ traffic-light thresholds.
+- Valid threshold values must be non-negative and `delta_e_good_max < delta_e_warning_max`; both the frontend and backend enforce this.
+- Saving settings dispatches a `settings-saved` custom event so live components (e.g. the swatch grid) can re-classify on the fly.
+
 ## Build Commands
 
 - **Rust backend**: `cd src-tauri && CARGO_INCREMENTAL=0 cargo check` (the project lives on a network filesystem that doesn't support file locking, so `CARGO_INCREMENTAL=0` is required)

@@ -1,22 +1,75 @@
 import { computeDeltaE00 } from './delta_e.js';
 import { labToCss, deviceRgbToCss, deviceCmykToCss } from './color_convert.js';
 
-const { listen } = window.__TAURI__.event;
+const { listen, emit } = window.__TAURI__.event;
+const { invoke } = window.__TAURI__.core;
 
 let unlistenJsonRow = null;
 
+// Cached ΔE thresholds; refreshed from settings on load and when settings change.
+let deltaEThresholds = { goodMax: 2.0, warnMax: 5.0 };
+
 /**
- * Traffic-light classification for a CIEDE2000 value using default
- * tolerance bands. These defaults are overridden by user settings when
- * configured (see feat/184-configurable-delta-e).
+ * Load the ΔE traffic-light thresholds from persisted app settings.
+ * Falls back to 2.0 / 5.0 if settings are missing or malformed.
+ */
+async function refreshDeltaEThresholds() {
+  try {
+    const s = await invoke('load_settings');
+    deltaEThresholds = {
+      goodMax: s.delta_e_good_max ?? 2.0,
+      warnMax: s.delta_e_warning_max ?? 5.0,
+    };
+    // Enforce the invariant at runtime in case a user hand-edited settings.json.
+    if (deltaEThresholds.goodMax > deltaEThresholds.warnMax) {
+      console.warn('ΔE thresholds invalid (good > warning); resetting to defaults.');
+      deltaEThresholds = { goodMax: 2.0, warnMax: 5.0 };
+    }
+  } catch (err) {
+    console.warn('Could not load ΔE thresholds, using defaults:', err);
+    deltaEThresholds = { goodMax: 2.0, warnMax: 5.0 };
+  }
+}
+
+/**
+ * Classify a CIEDE2000 value using the current thresholds.
  * @param {number} deltaE
- * @returns {string} "Good" | "Warning" | "Bad"
+ * @returns {{ label: string, cssClass: string }}
  */
 function classifyDeltaE(deltaE) {
-  if (deltaE < 2) return "Good";
-  if (deltaE < 5) return "Warning";
-  return "Bad";
+  if (deltaE < deltaEThresholds.goodMax) {
+    return { label: "Good", cssClass: "de-good" };
+  } else if (deltaE < deltaEThresholds.warnMax) {
+    return { label: "Warning", cssClass: "de-warning" };
+  } else {
+    return { label: "Bad", cssClass: "de-bad" };
+  }
 }
+
+/**
+ * Re-classify all already-rendered swatches using the current thresholds.
+ * Call this after the user changes thresholds in Settings.
+ */
+function reclassifySwatches() {
+  document.querySelectorAll('.swatch-patch[data-delta-e]').forEach((patchEl) => {
+    const deltaE = parseFloat(patchEl.dataset.deltaE);
+    if (Number.isNaN(deltaE)) return;
+
+    patchEl.classList.remove('de-good', 'de-warning', 'de-bad');
+    const { cssClass, label } = classifyDeltaE(deltaE);
+    patchEl.classList.add(cssClass);
+
+    // Update the classification word in the title without re-parsing everything.
+    if (patchEl.title) {
+      patchEl.title = patchEl.title.replace(/\s*\([^)]*\)$/, '') + ` (${label})`;
+    }
+  });
+}
+
+// Listen for the custom event emitted by settings.js after a successful save.
+window.addEventListener('settings-saved', () => {
+  refreshDeltaEThresholds().then(reclassifySwatches);
+});
 
 /**
  * Start listening for row events from a chartread process.
@@ -28,6 +81,9 @@ export async function startSwatchListener(processId, onRowComplete) {
   const progressBar = document.getElementById("readProgress");
   const progressText = document.getElementById("readProgressText");
   const statsPanel = document.getElementById("readStats");
+
+  // Load thresholds at listener start
+  await refreshDeltaEThresholds();
 
   // Clear previous state
   grid.innerHTML = "";
@@ -64,8 +120,8 @@ export async function startSwatchListener(processId, onRowComplete) {
     if (progressText) progressText.textContent = `Strip ${data.row_id} — ${data.row_index + 1} / ${data.total_rows}`;
 
     // Create row container
-    // Row and patch order from chartread (A->Z, 1->N) matches the physical
-    // left-to-right / top-to-bottom layout produced by printtarg.
+    // Row and patch order from chartread (A->Z, 1->N) is rendered
+    // left-to-right / top-to-bottom to match the printtarg output.
     const rowEl = document.createElement("div");
     rowEl.className = "swatch-row";
 
@@ -127,23 +183,19 @@ export async function startSwatchListener(processId, onRowComplete) {
       // Compute and display ΔE₀₀ if both expected and measured Lab are present
       if (patch.expected && patch.expected.Lab && patch.measured && patch.measured.Lab) {
         const deltaE = computeDeltaE00(patch.expected.Lab, patch.measured.Lab);
-        const classification = classifyDeltaE(deltaE);
+        const { label, cssClass } = classifyDeltaE(deltaE);
+
+        // Persist the raw ΔE on the element so re-classification works after
+        // the user changes thresholds in Settings.
+        patchEl.dataset.deltaE = deltaE.toFixed(4);
 
         const deLabel = document.createElement("div");
         deLabel.className = "swatch-de";
         deLabel.textContent = deltaE.toFixed(1);
 
-        titleStr += `\nΔE₀₀: ${deltaE.toFixed(2)} (${classification})`;
+        titleStr += `\nΔE₀₀: ${deltaE.toFixed(2)} (${label})`;
 
-        // Traffic light classification
-        if (deltaE < 2) {
-          patchEl.classList.add("de-good");       // Green
-        } else if (deltaE < 5) {
-          patchEl.classList.add("de-warning");     // Amber
-        } else {
-          patchEl.classList.add("de-bad");          // Red
-        }
-
+        patchEl.classList.add(cssClass);
         patchEl.appendChild(deLabel);
 
         // Accumulate stats
