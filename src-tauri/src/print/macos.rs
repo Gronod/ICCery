@@ -51,7 +51,7 @@ unsafe fn set_session_color_matching_mode(pm_session: PMPrintSession) {
 
     // Verify session has a printer attached
     let mut current_printer: PMPrinter = std::ptr::null_mut();
-    let printer_status = PMSessionGetCurrentPrinter(pm_session, &mut current_printer);
+    let printer_status = PMSessionGetCurrentPrinter(pm_session, (&mut current_printer).into());
     if printer_status != 0 || current_printer.is_null() {
         log::warn!(
             "PMSessionGetCurrentPrinter failed ({}) or returned null printer; skipping SPI",
@@ -319,7 +319,7 @@ fn run_native_print_panel(
     // human-readable display names used by NSPrinter::printerWithName.
     let printer_id_cf = CFString::from_str(printer_name);
     let pm_printer: PMPrinter = unsafe { PMPrinterCreateFromPrinterID(&*printer_id_cf) };
-    let mut printer_from_id = !pm_printer.is_null();
+    let printer_from_id = !pm_printer.is_null();
 
     if pm_printer.is_null() {
         if let Some(dn) = display_name {
