@@ -204,7 +204,11 @@ function _line(from, to, material) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Parse .gam file text → { vertices: [[L,a,b],...], faces: [[v0,v1,v2],...] }
+/**
+ * Parse an Argyll `.gam` text file into vertex and face arrays.
+ * @param {string} text - Raw contents of the .gam file.
+ * @returns {{ vertices: number[][], faces: number[][] }}
+ */
 // ─────────────────────────────────────────────────────────────────────────────
 export function parseGamutFile(text) {
     const lines = text.split('\n');
@@ -383,7 +387,77 @@ function _renderProfileGamut(text, previousMesh) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Public: load bundled sRGB reference gamut
+// Camera & view controls
+// ─────────────────────────────────────────────────────────────────────────────
+/**
+ * Reset the camera to its default home position and orientation.
+ * Also resets orbit controls target to the centre of the CIELAB volume.
+ */
+export function resetCamera() {
+    if (!camera || !controls) return;
+    camera.position.set(180, 120, 180);
+    camera.lookAt(0, 50, 0);
+    controls.target.set(0, 50, 0);
+    controls.update();
+}
+
+/**
+ * Set the opacity of the rendered profile gamut surface (0–1).
+ * @param {number} opacity
+ */
+export function setProfileOpacity(opacity) {
+    if (currentProfileMesh && currentProfileMesh.material) {
+        currentProfileMesh.material.opacity = Math.max(0, Math.min(1, opacity));
+        currentProfileMesh.material.transparent = opacity < 1;
+        currentProfileMesh.material.needsUpdate = true;
+    }
+}
+
+/**
+ * Set the opacity of the sRGB reference wireframe and fill (0–1).
+ * @param {number} opacity
+ */
+export function setSrgbReferenceOpacity(opacity) {
+    if (sRgbGroup) {
+        sRgbGroup.traverse((child) => {
+            if (child.material) {
+                child.material.opacity = child.material.opacity >= 0.5
+                    ? Math.max(0.05, Math.min(1, opacity))
+                    : Math.max(0.02, Math.min(0.2, opacity * 0.2));
+            }
+        });
+    }
+}
+
+/**
+ * Set the opacity of the CIELAB axis scaffold (0–1).
+ * @param {number} opacity
+ */
+export function setAxisOpacity(opacity) {
+    if (axisScaffoldGroup) {
+        axisScaffoldGroup.traverse((child) => {
+            if (child.material) {
+                child.material.opacity = Math.max(0, Math.min(1, opacity));
+            }
+        });
+    }
+}
+
+/**
+ * Handle keyboard shortcuts for the gamut viewer.
+ * @param {KeyboardEvent} e
+ */
+function _onKeyDown(e) {
+    if (e.key === 'r' || e.key === 'R') {
+        resetCamera();
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+/**
+ * Load and render the bundled sRGB reference gamut.
+ * @returns {Promise<void>}
+ */
 // ─────────────────────────────────────────────────────────────────────────────
 export async function loadSrgbReferenceGamut() {
     try {
@@ -398,7 +472,11 @@ export async function loadSrgbReferenceGamut() {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Public: load and render a profile gamut from a .gam file path
+/**
+ * Load and render a profile gamut from a `.gam` file path.
+ * @param {string} gamFilePath - Absolute path to the gamut file.
+ * @returns {Promise<THREE.Mesh|null>}
+ */
 // ─────────────────────────────────────────────────────────────────────────────
 export async function loadGamutMesh(gamFilePath) {
     try {
@@ -428,7 +506,7 @@ export function toggleAxes(visible) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Wire legend toggle checkboxes to the toggle functions
+// Wire legend toggle checkboxes, opacity sliders, and reset button
 // ─────────────────────────────────────────────────────────────────────────────
 function _wireToggles() {
     const bindings = [
@@ -439,5 +517,33 @@ function _wireToggles() {
     for (const [id, fn] of bindings) {
         const el = document.getElementById(id);
         if (el) el.addEventListener('change', (e) => fn(e.target.checked));
+    }
+
+    const resetBtn = document.getElementById('btnGamutResetCamera');
+    if (resetBtn) resetBtn.addEventListener('click', resetCamera);
+
+    const profileOpacity = document.getElementById('rngProfileOpacity');
+    if (profileOpacity) {
+        profileOpacity.addEventListener('input', (e) => setProfileOpacity(parseFloat(e.target.value)));
+    }
+
+    const srgbOpacity = document.getElementById('rngSrgbOpacity');
+    if (srgbOpacity) {
+        srgbOpacity.addEventListener('input', (e) => setSrgbReferenceOpacity(parseFloat(e.target.value)));
+    }
+
+    const axisOpacity = document.getElementById('rngAxisOpacity');
+    if (axisOpacity) {
+        axisOpacity.addEventListener('input', (e) => setAxisOpacity(parseFloat(e.target.value)));
+    }
+
+    // Only listen for 'R' reset when the viewer tab is active.
+    const stage5 = document.getElementById('stage-5');
+    if (stage5) {
+        stage5.addEventListener('keydown', (e) => {
+            if ((e.key === 'r' || e.key === 'R') && !stage5.classList.contains('hidden')) {
+                resetCamera();
+            }
+        });
     }
 }

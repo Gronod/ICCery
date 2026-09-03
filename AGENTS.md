@@ -1,5 +1,12 @@
 # ICCery Agent Notes
 
+## 3D Gamut Viewer
+
+- The viewer renders the measured/derived `.gam` volume and an optional sRGB reference wireframe in CIELAB.
+- Layer controls (profile, sRGB, axes) each have visibility toggles and opacity sliders.
+- Click **Reset View** or press **R** to return the camera to its default position.
+- Full JSDoc is provided on the public API in `src/js/gamut_viewer.js`.
+
 ## Stage 4 colprof Options
 
 - `colprof` options are exposed in the Stage 4 UI with contextual tooltips:

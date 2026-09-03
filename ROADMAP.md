@@ -105,7 +105,7 @@ ICCery is a native, cross-platform desktop application built with:
 - [x] **Swatch Grid White Patch & Orientation Polish (#178)**: Finalise `is_pad` guard documentation, diagonally split swatch tooltips, and validate `printtarg` row/column ordering.
 - [x] **Configurable CIEDE2000 Thresholds (#184)**: User-configurable good/warning ΔE₀₀ upper bounds in Settings, persisted across sessions and applied to the Stage 3 swatch grid.
 - [x] **Stage 4 OBA/FWA Tooltips & Tests (#176)**: Contextual help for OBA/FWA, illuminant, observer, and viewing-condition controls; additional `colprof` arg builder tests.
-- [ ] **3D Gamut Viewer Controls (#185)**: Camera reset, opacity sliders, keyboard shortcut, and full public-API JSDoc.
+- [x] **3D Gamut Viewer Controls (#185)**: Camera reset, opacity sliders, keyboard shortcut, and full public-API JSDoc.
 - [ ] **Gamut / Profcheck Hardening (#179)**: Validate `.gam` vertex/face parsing, improved `profcheck` regex fallbacks for legacy text output, and user-visible parser warnings.
 
 ### Milestone 12 — Future Workflow & Advanced Analytics (Deferred)

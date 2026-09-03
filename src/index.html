@@ -827,6 +827,10 @@
                     <span class="gamut-toggle-slider"></span>
                   </label>
                 </div>
+                <div class="gamut-legend-item gamut-slider-item">
+                  <label for="rngProfileOpacity" class="gamut-slider-label">Opacity</label>
+                  <input type="range" id="rngProfileOpacity" min="0.1" max="1" step="0.05" value="0.88">
+                </div>
 
                 <div class="gamut-legend-item">
                   <span class="gamut-swatch gamut-swatch-srgb"></span>
@@ -836,6 +840,10 @@
                     <span class="gamut-toggle-slider"></span>
                   </label>
                 </div>
+                <div class="gamut-legend-item gamut-slider-item">
+                  <label for="rngSrgbOpacity" class="gamut-slider-label">Opacity</label>
+                  <input type="range" id="rngSrgbOpacity" min="0.1" max="1" step="0.05" value="0.55">
+                </div>
 
                 <div class="gamut-legend-item">
                   <span class="gamut-swatch gamut-swatch-axes"></span>
@@ -844,6 +852,15 @@
                     <input type="checkbox" id="chkLabAxes" checked>
                     <span class="gamut-toggle-slider"></span>
                   </label>
+                </div>
+                <div class="gamut-legend-item gamut-slider-item">
+                  <label for="rngAxisOpacity" class="gamut-slider-label">Opacity</label>
+                  <input type="range" id="rngAxisOpacity" min="0.1" max="1" step="0.05" value="0.8">
+                </div>
+
+                <div class="gamut-controls-actions">
+                  <button type="button" id="btnGamutResetCamera" class="btn-sm" title="Reset camera to default view (R)">⟲ Reset View</button>
+                  <span class="gamut-keyboard-hint">Press R to reset</span>
                 </div>
               </div>
             </div>

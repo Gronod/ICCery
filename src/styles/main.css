@@ -1530,6 +1530,43 @@ button.danger:hover {
   margin-bottom: 0;
 }
 
+.gamut-legend-item.gamut-slider-item {
+  margin: -2px 0 8px 27px;
+  gap: 6px;
+}
+
+.gamut-slider-label {
+  font-size: 0.7rem;
+  opacity: 0.65;
+  min-width: 46px;
+}
+
+.gamut-slider-item input[type="range"] {
+  flex: 1;
+  margin: 0;
+  height: 4px;
+  accent-color: var(--accent-color, #3b82f6);
+}
+
+.gamut-controls-actions {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.09);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.gamut-controls-actions button {
+  width: 100%;
+}
+
+.gamut-keyboard-hint {
+  font-size: 0.68rem;
+  opacity: 0.5;
+  text-align: center;
+}
+
 .gamut-legend-label {
   flex: 1;
   white-space: nowrap;
