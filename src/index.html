@@ -648,7 +648,7 @@
               </select>
             </div>
             
-            <div class="form-group">
+            <div class="form-group has-tooltip">
               <label>OBA / FWA Compensation</label>
               <select id="colprofFwa">
                 <option value="D50" selected>Calculated M1 — D50 FWA Compensation (Recommended)</option>
@@ -656,13 +656,23 @@
                 <option value="D65">D65 FWA Compensation</option>
                 <option value="custom">Custom Ambient Spectrum (.sp)...</option>
               </select>
+              <div class="tooltip-text">
+                Select how colprof handles Optical Brightening Agent (OBA) / Fluorescent Whitening Agent (FWA) compensation.<br>
+                • <strong>D50</strong>: Simulates ISO 3664 M1 viewing (D50, UV-cut) — recommended for modern OBA papers.<br>
+                • <strong>None</strong>: Native M0; no FWA compensation. Can look yellow under D50 if the paper contains OBA.<br>
+                • <strong>D65</strong>: Simulates outdoor D65 daylight; useful for outdoor display / packaging proofing.<br>
+                • <strong>Custom (.sp)</strong>: Provide an Argyll spectrum file describing the viewing booth illuminant.
+              </div>
             </div>
 
-            <div class="form-group hidden" id="colprofCustomSpRow">
+            <div class="form-group hidden has-tooltip" id="colprofCustomSpRow">
               <label>Custom Spectrum File (.sp)</label>
               <div class="input-row-sm">
                 <input type="text" id="colprofCustomSpPath" placeholder="Select .sp file..." readonly>
                 <button class="secondary btn-sm" id="btnBrowseCustomSp">Browse</button>
+              </div>
+              <div class="tooltip-text">
+                Path to an Argyll-format spectrum file (.sp) representing the ambient illuminant. This is passed to colprof via the -f option and overrides the built-in D50/D65 compensation.
               </div>
             </div>
 
@@ -673,7 +683,7 @@
               </summary>
               <div class="advanced-content">
                 <div class="advanced-grid-2col">
-                  <div class="form-group">
+                  <div class="form-group has-tooltip">
                     <label>Standard Illuminant</label>
                     <select id="colprofIlluminant">
                       <option value="" selected>Default (D50)</option>
@@ -685,8 +695,11 @@
                       <option value="F8">F8</option>
                       <option value="F10">F10</option>
                     </select>
+                    <div class="tooltip-text">
+                      Illuminant used for the CIE colourimetric calculations in colprof (option -i). Leave at Default (D50) for normal print profiling.
+                    </div>
                   </div>
-                  <div class="form-group">
+                  <div class="form-group has-tooltip">
                     <label>Standard Observer</label>
                     <select id="colprofObserver">
                       <option value="" selected>Default (1931 2°)</option>
@@ -694,8 +707,11 @@
                       <option value="2015_2">2015 2°</option>
                       <option value="2015_10">2015 10°</option>
                     </select>
+                    <div class="tooltip-text">
+                      CIE standard observer used for the colourimetric calculations (option -o). The 1931 2° observer is the default for graphic-arts profiling.
+                    </div>
                   </div>
-                  <div class="form-group">
+                  <div class="form-group has-tooltip">
                     <label>Input Viewing Condition</label>
                     <select id="colprofInputViewCond">
                       <option value="none" selected>None</option>
@@ -704,8 +720,11 @@
                       <option value="pe">Print evaluation (CIE 116-1995)</option>
                       <option value="pm">Print evaluation (partial mid-tone adaptation)</option>
                     </select>
+                    <div class="tooltip-text">
+                      Viewing condition under which the print target was measured (option -c). This affects the adapted white point used in the profile lookup table.
+                    </div>
                   </div>
-                  <div class="form-group">
+                  <div class="form-group has-tooltip">
                     <label>Output Viewing Condition</label>
                     <select id="colprofOutputViewCond">
                       <option value="none" selected>None</option>
@@ -716,6 +735,9 @@
                       <option value="jd">Projector in dark environment</option>
                       <option value="tv">Television/Film Studio</option>
                     </select>
+                    <div class="tooltip-text">
+                      Viewing condition under which the profile is intended to be used (option -d). Useful for creating display / output-referred profiles.
+                    </div>
                   </div>
                 </div>
               </div>

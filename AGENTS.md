@@ -1,5 +1,13 @@
 # ICCery Agent Notes
 
+## Stage 4 colprof Options
+
+- `colprof` options are exposed in the Stage 4 UI with contextual tooltips:
+  - **FWA / OBA Compensation** (`-f`): choose D50, None, D65, or a custom `.sp` spectrum file.
+  - **Standard Illuminant** (`-i`) and **Observer** (`-o`): override default D50 / 1931 2° for CIE colourimetric calculations.
+  - **Viewing Conditions** (`-c` input, `-d` output): set CIE viewing-condition transforms for the profile table and output intent.
+- The backend `build_colprof_args` in `commands.rs` maps these UI values to `colprof` CLI flags. Unit tests cover all combinations.
+
 ## Stage 3 Swatch Grid
 
 - Swatch patches render a 135° diagonal split: top-left is the intended/expected colour, bottom-right is the measured colour.
