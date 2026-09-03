@@ -6,6 +6,19 @@ const { listen } = window.__TAURI__.event;
 let unlistenJsonRow = null;
 
 /**
+ * Traffic-light classification for a CIEDE2000 value using default
+ * tolerance bands. These defaults are overridden by user settings when
+ * configured (see feat/184-configurable-delta-e).
+ * @param {number} deltaE
+ * @returns {string} "Good" | "Warning" | "Bad"
+ */
+function classifyDeltaE(deltaE) {
+  if (deltaE < 2) return "Good";
+  if (deltaE < 5) return "Warning";
+  return "Bad";
+}
+
+/**
  * Start listening for row events from a chartread process.
  * @param {string} processId - The process ID (e.g. "chartread_my_profile")
  * @param {Function} [onRowComplete] - Optional callback invoked on each completed row
@@ -51,6 +64,8 @@ export async function startSwatchListener(processId, onRowComplete) {
     if (progressText) progressText.textContent = `Strip ${data.row_id} — ${data.row_index + 1} / ${data.total_rows}`;
 
     // Create row container
+    // Row and patch order from chartread (A->Z, 1->N) matches the physical
+    // left-to-right / top-to-bottom layout produced by printtarg.
     const rowEl = document.createElement("div");
     rowEl.className = "swatch-row";
 
@@ -63,6 +78,10 @@ export async function startSwatchListener(processId, onRowComplete) {
     rowPatches.className = "swatch-row-patches";
 
     for (const patch of data.patches) {
+      // Argyll marks spacer/boundary patches with is_pad. Some printtarg
+      // layouts also flag white reference patches (-e white steps) as pads,
+      // but those carry valid expected or measured device data. Only skip
+      // pads that have no measurement and no non-zero device coordinates.
       if (patch.is_pad && !patch.measured && (!patch.device || patch.device.every(v => v === 0))) continue;
 
       const patchEl = document.createElement("div");
@@ -84,20 +103,21 @@ export async function startSwatchListener(processId, onRowComplete) {
 
       const swatch = document.createElement("div");
       swatch.className = "swatch-color";
-      
+
       if (measuredCss) {
         swatch.style.background = `linear-gradient(135deg, ${intendedCss} 50%, ${measuredCss} 50%)`;
       } else {
         swatch.style.backgroundColor = intendedCss;
       }
-      
+
       patchEl.appendChild(swatch);
 
+      // Build a structured tooltip for the patch
       let titleStr = `${patch.loc} (ID: ${patch.id})`;
       if (patch.expected && patch.expected.Lab) {
         titleStr += `\nIntended Lab: ${patch.expected.Lab.map(v => v.toFixed(1)).join(', ')}`;
       } else if (patch.device) {
-        titleStr += `\nDevice: ${patch.device.map(v => v.toFixed(1)).join(', ')}`;
+        titleStr += `\nIntended Device: ${patch.device.map(v => v.toFixed(1)).join(', ')}`;
       }
 
       if (patch.measured && patch.measured.Lab) {
@@ -107,12 +127,13 @@ export async function startSwatchListener(processId, onRowComplete) {
       // Compute and display ΔE₀₀ if both expected and measured Lab are present
       if (patch.expected && patch.expected.Lab && patch.measured && patch.measured.Lab) {
         const deltaE = computeDeltaE00(patch.expected.Lab, patch.measured.Lab);
+        const classification = classifyDeltaE(deltaE);
 
         const deLabel = document.createElement("div");
         deLabel.className = "swatch-de";
         deLabel.textContent = deltaE.toFixed(1);
-        
-        titleStr += `\nΔE₀₀: ${deltaE.toFixed(2)}`;
+
+        titleStr += `\nΔE₀₀: ${deltaE.toFixed(2)} (${classification})`;
 
         // Traffic light classification
         if (deltaE < 2) {

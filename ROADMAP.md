@@ -101,8 +101,8 @@ ICCery is a native, cross-platform desktop application built with:
 
 ### Milestone 13 — UI/UX & Workflow Polish
 
-- [ ] **Global Button Standardization (#177)**: Enforce `.btn-sm`/`.btn-md`/`.btn-lg`/`.btn-icon-sq` tiers across all stages, remove inline button styles, and add CSS custom properties for button metrics.
-- [ ] **Swatch Grid White Patch & Orientation Polish (#178)**: Finalise `is_pad` guard documentation, diagonally split swatch tooltips, and validate `printtarg` row/column ordering.
+- [x] **Global Button Standardization (#177)**: Enforce `.btn-sm`/`.btn-md`/`.btn-lg`/`.btn-icon-sq` tiers across all stages, remove inline button styles, and add CSS custom properties for button metrics.
+- [x] **Swatch Grid White Patch & Orientation Polish (#178)**: Finalise `is_pad` guard documentation, diagonally split swatch tooltips, and validate `printtarg` row/column ordering.
 - [ ] **Configurable CIEDE2000 Thresholds (#184)**: User-configurable good/warning ΔE₀₀ upper bounds in Settings, persisted across sessions and applied to the Stage 3 swatch grid.
 - [ ] **Stage 4 OBA/FWA Tooltips & Tests (#176)**: Contextual help for OBA/FWA, illuminant, observer, and viewing-condition controls; additional `colprof` arg builder tests.
 - [ ] **3D Gamut Viewer Controls (#185)**: Camera reset, opacity sliders, keyboard shortcut, and full public-API JSDoc.

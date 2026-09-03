@@ -1,5 +1,12 @@
 # ICCery Agent Notes
 
+## Stage 3 Swatch Grid
+
+- Swatch patches render a 135° diagonal split: top-left is the intended/expected colour, bottom-right is the measured colour.
+- Argyll `chartread` emits `is_pad` for boundary/spacer patches. White reference patches (e.g. `-e` white steps) may also carry `is_pad`, but they have valid `expected.Lab` or non-zero `device` data. The guard skips only pads with no measurement *and* all-zero device values.
+- Row/patch order from `chartread` (rows A→Z, patches 1→N within each row) is rendered left-to-right / top-to-bottom to match the `printtarg` output.
+- Tooltip shows intended Lab (or device %), measured Lab, and ΔE₀₀ with a Good/Warning/Bad classification.
+
 ## UI Button Conventions
 
 The frontend uses a tiered button sizing system defined in `src/styles/main.css`. Prefer these utility classes over inline `style` attributes.
