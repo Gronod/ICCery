@@ -62,6 +62,15 @@ jobs:
           test -x "src-tauri/argyll/${{ matrix.platform.binary_dir }}/instlist"
           test -x "src-tauri/argyll/${{ matrix.platform.binary_dir }}/targen"
 
+      - name: Run Rust tests
+        shell: bash
+        env:
+          CARGO_INCREMENTAL: "0"
+          CARGO_TARGET_DIR: "${{ runner.temp }}/cargo-target"
+        run: |
+          cd src-tauri
+          cargo test --target ${{ matrix.platform.target }}
+
       - name: Set Release Environment
         id: set_env
         shell: bash
