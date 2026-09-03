@@ -1,5 +1,23 @@
 # ICCery Agent Notes
 
+## UI Button Conventions
+
+The frontend uses a tiered button sizing system defined in `src/styles/main.css`. Prefer these utility classes over inline `style` attributes.
+
+| Class | Size | Use for |
+|-------|------|---------|
+| `.btn-sm` | 28px | Toolbar actions, header icons, minor toggles |
+| `.btn-md` (default for `button.secondary`/`button.danger`) | 36px | Standard dialog/form actions and browse buttons |
+| `.btn-lg` | 40px | Primary stage actions (Generate, Create Layout, Create Profile, Verify, etc.) |
+| `.btn-icon-sq` | 36×36px | Square icon-only buttons (refresh, settings, etc.) |
+| `.icon-btn` | 28×28px | Small header icon-only buttons (settings, about, save preset, manage presets) |
+| `.btn-properties` | 36px | Printer driver preferences button |
+
+- Primary action buttons use `button.primary` plus `.btn-lg` for major stage actions.
+- Danger actions use `button.danger` (36px).
+- All action rows use one of: `.stage-actions`, `.modal-actions`, `.chartread-actions`, `.print-actions-row`, `.btn-row`, `.btn-row-sm`, `.btn-row-end`, or `.input-row-sm`.
+- Avoid inline `style` on `<button>` elements or their immediate parent rows.
+
 ## Build Commands
 
 - **Rust backend**: `cd src-tauri && CARGO_INCREMENTAL=0 cargo check` (the project lives on a network filesystem that doesn't support file locking, so `CARGO_INCREMENTAL=0` is required)

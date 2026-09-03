@@ -35,9 +35,9 @@
 
         <!-- Profiling Preset Selector -->
         <div class="preset-selector-container" style="padding: 0 16px 12px; border-bottom: 1px solid var(--border-color, #2a2a30);">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-            <label for="presetSelect" style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; opacity: 0.7; font-weight: 600;">Profiling Preset</label>
-            <div style="display: flex; gap: 6px; align-items: center; justify-content: flex-end;">
+          <div class="form-group-header">
+            <label for="presetSelect" class="form-group-label-small">Profiling Preset</label>
+            <div class="btn-row-sm">
               <button type="button" id="btnSavePresetModal" class="icon-btn btn-sm" title="Save current settings as Preset">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
               </button>
@@ -131,10 +131,10 @@
             </div>
 
             <div class="form-group has-tooltip">
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                <label style="margin: 0;">Project Directory &amp; Filename</label>
-                <div style="display:flex; justify-content:flex-end;">
-                  <button type="button" id="btn-import-dataset" class="secondary btn-sm" style="margin-right: 4px;">Import Dataset...</button>
+              <div class="form-group-header">
+                <label>Project Directory &amp; Filename</label>
+                <div class="btn-row-sm">
+                  <button type="button" id="btn-import-dataset" class="secondary btn-sm">Import Dataset...</button>
                   <button type="button" id="btnOpenExisting" class="secondary btn-sm">Open Target (.ti2/.ti3)</button>
                 </div>
               </div>
@@ -407,8 +407,8 @@
 
             <!-- Target Label & Metadata (printtarg -d) -->
             <div class="form-group" style="margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--border-color, #333);">
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                <label style="margin: 0; font-weight: 600;">Target Label &amp; Metadata (Optional)</label>
+              <div class="form-group-header">
+                <label class="form-group-title">Target Label &amp; Metadata (Optional)</label>
                 <button type="button" class="secondary btn-sm" id="btnToggleLabelEdit">Edit Custom Field</button>
               </div>
               <p class="sub-label" style="margin-bottom: 10px;">Printed below test patches to identify hardware, ink, and media used for this profiling run.</p>
@@ -481,7 +481,7 @@
                   <select id="printerSelect">
                     <option value="" disabled selected>Detecting printers...</option>
                   </select>
-                  <button type="button" class="btn-icon" id="btnRefreshPrinters" title="Refresh printer list">↻</button>
+                  <button type="button" class="btn-icon-sq" id="btnRefreshPrinters" title="Refresh printer list">↻</button>
                   <button type="button" class="btn-properties" id="btnPrinterProperties" title="Open native printer driver preferences (disable colour management, set media type, etc.)">⚙️ Preferences</button>
                   <span id="printerStatusBadge" class="status-badge badge-idle hidden">Idle</span>
                 </div>
@@ -521,7 +521,7 @@
             </div>
 
             <div class="print-actions-row">
-              <button class="primary btn-print" id="btnPrintAll">
+              <button class="primary" id="btnPrintAll">
                 <span class="btn-text">🖨️ Print All Pages (Bypass CM)</span>
                 <span class="btn-spinner hidden"></span>
               </button>
@@ -550,8 +550,8 @@
           <div class="form-container" style="margin-bottom: 16px;">
             <div class="form-group">
               <label for="chartreadInstrumentSelect">Communication Port</label>
-              <div class="input-row" style="display: flex; gap: 8px; align-items: center;">
-                <select id="chartreadInstrumentSelect" style="flex: 1;">
+              <div class="input-row-sm">
+                <select id="chartreadInstrumentSelect">
                   <option value="">Auto (First available port)</option>
                 </select>
                 <button type="button" class="secondary" id="btnDetectInstruments" title="Detect connected instruments via instlist">↻ Detect</button>
@@ -593,13 +593,13 @@
 
           <!-- Multi-Pass Session & Averaging Controls -->
           <div class="averaging-panel hidden" id="chartreadAveragingPanel" style="margin-top: 16px; padding: 14px; border: 1px solid var(--border-color, #333); border-radius: 8px; background: rgba(255, 255, 255, 0.03);">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-              <h3 style="margin: 0; font-size: 1rem;">Multi-Pass Target Averaging</h3>
+            <div class="form-group-header">
+              <h3 class="form-group-title">Multi-Pass Target Averaging</h3>
               <span id="passCounterBadge" class="status-badge badge-idle">Pass 1 Complete</span>
             </div>
             <p class="sub-label" style="margin-bottom: 12px;">Each successful sheet is saved as a separate _passN.ti3 file. Stage 4 stays locked until you finish. Measure extra copies to reduce noise, then finish to write the canonical .ti3.</p>
             <div id="passesList" class="passes-list" style="display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px;"></div>
-            <div style="display: flex; gap: 8px;">
+            <div class="btn-row">
               <button type="button" class="secondary" id="btnMeasureAnotherSheet">➕ Measure Another Sheet</button>
               <button type="button" class="primary" id="btnFinishAndAverage" title="Complete measurement (Finish) before profiling">✓ Average Passes &amp; Proceed →</button>
             </div>
@@ -660,8 +660,8 @@
 
             <div class="form-group hidden" id="colprofCustomSpRow">
               <label>Custom Spectrum File (.sp)</label>
-              <div style="display: flex; gap: 8px;">
-                <input type="text" id="colprofCustomSpPath" placeholder="Select .sp file..." readonly style="flex:1;">
+              <div class="input-row-sm">
+                <input type="text" id="colprofCustomSpPath" placeholder="Select .sp file..." readonly>
                 <button class="secondary btn-sm" id="btnBrowseCustomSp">Browse</button>
               </div>
             </div>
@@ -723,7 +723,7 @@
           </div>
 
           <div class="stage-actions">
-            <button class="primary" id="btnCreateProfile">Calculate Profile (.icc)</button>
+            <button class="primary btn-lg" id="btnCreateProfile">Calculate Profile (.icc)</button>
           </div>
 
           <!-- Spinner and Progress Stage -->
@@ -736,7 +736,7 @@
           <div class="success-card hidden" id="colprofSuccessCard">
             <h3>🎉 Profile Calculation Complete</h3>
             <p id="colprofSuccessInfo"></p>
-            <button class="primary" id="btnGoToVerify">Proceed to Verification →</button>
+            <button class="primary btn-lg" id="btnGoToVerify">Proceed to Verification →</button>
           </div>
 
           <!-- Process Log -->
@@ -752,7 +752,7 @@
           <p>Check the numerical accuracy of your profile against the original measurement data.</p>
 
           <div class="stage-actions">
-            <button class="primary" id="btnVerify">Verify Profile Accuracy</button>
+            <button class="primary btn-lg" id="btnVerify">Verify Profile Accuracy</button>
           </div>
 
           <!-- Report Card -->
@@ -862,7 +862,7 @@
               </select>
               <small class="help-hint" style="display:block; font-size:0.75rem; color:var(--text-muted, #888); margin-top:3px;">Applies immediately on Save</small>
             </div>
-            <div style="display: flex; align-items: flex-end; gap: 8px; flex-wrap: wrap;">
+            <div class="btn-row wrap">
               <button type="button" id="btnOpenLogFolder" class="secondary" title="Open log folder in file explorer">📂 Open Log Folder</button>
               <button type="button" id="btnCopyLogPath" class="secondary" title="Copy full log file path to clipboard">📋 Copy Path</button>
               <button type="button" id="btnCopyLogExcerpt" class="secondary" title="Copy recent log entries (last 200 lines) to clipboard">📋 Copy Recent Logs</button>

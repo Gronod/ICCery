@@ -23,6 +23,7 @@
 - 🐧 **glibc Compatibility**: Pre-built Linux packages compiled with Ubuntu 22.04 LTS compatibility for Debian/Ubuntu environments.
 - 🛡️ **Disk Artefact Gating**: Stepper navigation strictly verifies generated artefacts on disk (`.ti1`, `.ti2`, `.ti3`, `.icc`/`.icm`), preventing out-of-order execution while preserving backward navigation.
 - 🌐 **Platform-Aware**: Automatic handling of platform profile conventions (`.icm` on Windows, `.icc` on Linux/macOS) and native OS printer subsystems.
+- 🎛️ **Consistent UI Controls**: Tiered button sizing (`btn-sm`/`btn-md`/`btn-lg`/`btn-icon-sq`) and standardised action row classes provide a uniform, polished interface across all wizard stages and dialogs.
 - ⚖️ **Clean AGPL Boundary**: Complete isolation of AGPLv3 binaries via asynchronous tokio IPC process pipelines.
 
 ---
