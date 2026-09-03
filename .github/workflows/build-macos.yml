@@ -16,7 +16,7 @@ jobs:
       matrix:
         platform:
           - name: Intel
-            os: macos-latest
+            os: macos-26-intel
             target: x86_64-apple-darwin
             binary_dir: macos-x86_64
             arch: x86_64
@@ -74,7 +74,22 @@ jobs:
           echo "SHORT_SHA=${SHORT_SHA}" >> $GITHUB_ENV
           echo "PREFIX=ICCery_${TAG}-${SHORT_SHA}-macos-${{ matrix.platform.arch }}" >> $GITHUB_ENV
 
+      - name: Warm up macOS GUI for DMG layout
+        if: runner.os == 'macOS'
+        run: |
+          # Tauri's DMG bundler runs an AppleScript that asks Finder to set the
+          # background picture and icon positions. On CI runners, Finder or the
+          # Aqua session may be idle, which can cause AppleEvent timeouts. Try to
+          # start/awaken Finder and System Events before the real build.
+          open -g -a Finder || true
+          open -g -a "System Events" || true
+          # Send a harmless probe to force Finder to initialise a scripting session.
+          osascript -e 'tell application "Finder" to get name' || true
+          sleep 10
+
       - name: Build Tauri App
+        env:
+          TAURI_BUNDLER_DMG_IGNORE_CI: "true"
         run: npm run tauri build -- --target ${{ matrix.platform.target }}
 
       - name: Prepare Release Assets
