@@ -26,13 +26,14 @@ The "Preferences" button opens the native macOS `NSPrintPanel` (not CUPS web UI 
 - The CUPS destination ID is bound to the panel via Core Printing `PMPrinterCreateFromPrinterID` and `PMSessionSetCurrentPMPrinter`
 - A `Printer.display_name` (from CUPS `printer-info`) is cached at enumeration as a fallback for `NSPrinter::printerWithName`
 - Pre-configured with both `AP_ColorMatchingMode=AP_ApplicationColorMatching` and `AP.ColorMatchingMode=AP_ApplicationColorMatching` (dot-notation) as a locked PMPrintSettings value and in the `NSPrintInfo` job ticket
-- Uses the private Core Printing `PMSessionSetColorMatchingMode` / `PMSessionSetColorMatchingModeLock` SPI (resolved at runtime via `dlsym`) to gray out and lock the Color Matching controls; falls back to the public setting if the SPI is absent
+- Uses the private Core Printing `PMSessionSetColorMatchingMode` / `PMSessionSetColorMatchingModeLock` / `PMSessionSetColorMatchingModeNoLock` SPI (resolved at runtime via `dlsym`) to gray out and lock the Color Matching controls; all three symbols use the 2-argument `(PMPrintSession, *const CFString)` signature; `PMSessionSetColorMatchingModeLock` sets and locks in one call; `NoLock` sets the mode without locking; falls back to the public `PMPrintSettingsSetValue` setting if the SPI is absent
 - Pre-selects the driver-specific "no color adjustment" PPD option (Canon `CNIJIntent2=4`, Epson `EPIJ_CMat=3`, etc.) in the native panel and on the `lp` command line
 - Captures user's media type / quality selections as a CUPS options string with `PMPrintSettingsToOptions`
 - Returns a `PrintPropertiesResult` with the effective `selected_printer` and captured `PrintOptions`
 - Cancellation is returned as `None`, not an error
 - Captured options are stored in frontend `capturedCupsOptions` map and passed via `PrintOptions.cups_options`
 - `build_lp_args` in `macos.rs` always adds both `-o AP_ColorMatchingMode=AP_ApplicationColorMatching` and `-o AP.ColorMatchingMode=AP_ApplicationColorMatching`, and forwards captured options
+- Only `AP_ApplicationColorMatching` and `ApplicationColorMatching` are passed to the private SPI; `AP_ColorSyncMatching` and `AP_VendorColorMatching` are intentionally avoided because they would enable color management on profiling targets
 
 ## Key Dependencies (macOS only)
 
