@@ -16,13 +16,14 @@
 - 🪄 **Linear 5-Stage Wizard Workflow**:
   1. **Stage 1 — Patch Generation (`targen`)**: Configure RGB (driver-managed) or CMYK (RIP-managed) patch sets with custom counts, profiling presets, and neutral/grey axis boosting.
   2. **Stage 2 — Target Creation & Raw Printing (`printtarg`)**: Format patch targets for spectrophotometers (i1Pro, i1Pro2, ColorMunki, SpyderPrint). View high-resolution downscaled TIFF previews and print directly using native OS raw unmanaged pathways (Windows GDI uncorrected / Linux CUPS `raw`).
-  3. **Stage 3 — Interactive Measurement (`chartread`) & Averaging (`average`)**: Instrument auto-detection (`instlist`), real-time calibration prompts, interactive strip reading state machine, live swatch grid with CIEDE2000 ($\Delta E_{00}$) quality indicators, and multi-pass sheet averaging for measurement noise reduction.
-  4. **Stage 4 — Profile Calculation (`colprof`)**: Generate high-precision cLUT mathematical ICC/ICM profiles with configurable algorithm quality, descriptions, and copyright tagging.
-  5. **Stage 5 — Verification & 3D Gamut (`profcheck` + `iccgamut`)**: Comprehensive mathematical validation report (Peak, Average, RMS $\Delta E$) paired with an interactive 3D CIELAB convex hull color volume viewer, touch controls, and bundled sRGB reference wireframe comparison.
+  3. **Stage 3 — Interactive Measurement (`chartread`) & Averaging (`average`)**: Instrument auto-detection (`instlist`), real-time calibration prompts, interactive strip reading state machine, live swatch grid with CIEDE2000 ($\Delta E_{00}$) quality indicators and user-configurable traffic-light thresholds, diagonally split intended-vs-measured colour swatches, white reference patch preservation, and multi-pass sheet averaging for measurement noise reduction.
+  4. **Stage 4 — Profile Calculation (`colprof`)**: Generate high-precision cLUT mathematical ICC/ICM profiles with configurable algorithm quality, OBA/FWA compensation, illuminant/observer selection, viewing-condition transforms, custom ambient spectrum support, descriptions, and copyright tagging.
+  5. **Stage 5 — Verification & 3D Gamut (`profcheck` + `iccgamut`)**: Comprehensive mathematical validation report (Peak, Average, RMS $\Delta E$) paired with an interactive 3D CIELAB convex hull color volume viewer, per-vertex true-colour rendering, layer opacity controls, camera reset, keyboard shortcut, touch controls, bundled sRGB reference wireframe comparison, and robust parsing of both JSON and legacy profcheck output formats.
 - 📋 **Profiling Presets**: One-click configuration presets (Standard RGB Photo, High-Gamut CMYK Proofing, Fast RGB Draft) with custom preset export/import and security validation.
 - 🐧 **glibc Compatibility**: Pre-built Linux packages compiled with Ubuntu 22.04 LTS compatibility for Debian/Ubuntu environments.
 - 🛡️ **Disk Artefact Gating**: Stepper navigation strictly verifies generated artefacts on disk (`.ti1`, `.ti2`, `.ti3`, `.icc`/`.icm`), preventing out-of-order execution while preserving backward navigation.
 - 🌐 **Platform-Aware**: Automatic handling of platform profile conventions (`.icm` on Windows, `.icc` on Linux/macOS) and native OS printer subsystems.
+- 🎛️ **Consistent UI Controls**: Tiered button sizing (`btn-sm`/`btn-md`/`btn-lg`/`btn-icon-sq`) and standardised action row classes provide a uniform, polished interface across all wizard stages and dialogs.
 - ⚖️ **Clean AGPL Boundary**: Complete isolation of AGPLv3 binaries via asynchronous tokio IPC process pipelines.
 
 ---

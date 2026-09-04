@@ -204,30 +204,80 @@ function _line(from, to, material) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Parse .gam file text → { vertices: [[L,a,b],...], faces: [[v0,v1,v2],...] }
+/**
+ * Parse an Argyll `.gam` text file into vertex and face arrays.
+ *
+ * Argyll `.gam` files contain a header followed by one or more `BEGIN_DATA`
+ * ... `END_DATA` blocks. The first data block is a vertex list
+ * (index L a b); subsequent blocks contain triangle face indices (v0 v1 v2).
+ * Blank lines and hash `#` comments outside data blocks are ignored.
+ *
+ * @param {string} text - Raw contents of the .gam file.
+ * @returns {{ vertices: number[][], faces: number[][], warnings: string[] }}
+ */
 // ─────────────────────────────────────────────────────────────────────────────
 export function parseGamutFile(text) {
     const lines = text.split('\n');
     const vertices = [];
     const faces    = [];
+    const warnings = [];
     let dataStarted = false;
-    let dataBlock   = 0;   // 1 = vertices section, 2 = faces section
+    let dataBlock   = 0;   // 1 = vertices section, 2+ = faces sections
 
-    for (const line of lines) {
-        const trimmed = line.trim();
-        if (trimmed === 'BEGIN_DATA') { dataBlock++;  dataStarted = true;  continue; }
-        if (trimmed === 'END_DATA')   {               dataStarted = false; continue; }
+    for (let lineIdx = 0; lineIdx < lines.length; lineIdx++) {
+        const raw = lines[lineIdx];
+        const trimmed = raw.replace(/#.*$/, '').trim();  // strip inline comments
+        if (trimmed === '') continue;
+
+        if (trimmed.toUpperCase() === 'BEGIN_DATA') {
+            dataBlock++;
+            dataStarted = true;
+            continue;
+        }
+        if (trimmed.toUpperCase() === 'END_DATA') {
+            dataStarted = false;
+            continue;
+        }
         if (!dataStarted) continue;
 
         const parts = trimmed.split(/\s+/).map(Number);
-        if (dataBlock === 1 && parts.length >= 4) {
-            vertices.push([parts[1], parts[2], parts[3]]);   // [L, a, b]
-        } else if (dataBlock === 2 && parts.length >= 3) {
-            faces.push([parts[0], parts[1], parts[2]]);
+        const allNumeric = parts.every(n => !Number.isNaN(n));
+        if (!allNumeric) {
+            warnings.push(`Skipping non-numeric data at line ${lineIdx + 1}`);
+            continue;
+        }
+
+        if (dataBlock === 1) {
+            if (parts.length >= 4) {
+                // Vertex format: index L a b (index is usually ignored)
+                const [_, L, a, b] = parts;
+                if (L < 0 || L > 100 || Math.abs(a) > 128 || Math.abs(b) > 128) {
+                    warnings.push(`Vertex at line ${lineIdx + 1} is outside plausible CIELAB bounds: L=${L}, a=${a}, b=${b}`);
+                }
+                vertices.push([L, a, b]);
+            } else {
+                warnings.push(`Vertex data at line ${lineIdx + 1} has only ${parts.length} values`);
+            }
+        } else {
+            // Face data can appear in multiple blocks (some .gam files use a
+            // separate DATA block per surface type or per convex-hull section).
+            if (parts.length >= 3) {
+                faces.push([parts[0], parts[1], parts[2]]);
+            } else {
+                warnings.push(`Face data at line ${lineIdx + 1} has only ${parts.length} values`);
+            }
         }
     }
 
-    return { vertices, faces };
+    if (vertices.length > 0 && faces.length === 0) {
+        warnings.push(`Parsed ${vertices.length} vertices but no faces; will compute convex hull on the fly.`);
+    }
+
+    if (dataBlock === 0) {
+        warnings.push('No BEGIN_DATA blocks found; file may be empty or not a valid Argyll .gam file.');
+    }
+
+    return { vertices, faces, warnings };
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -304,7 +354,10 @@ function _renderSrgbReference(text, previousGroup) {
         });
     }
 
-    const { vertices, faces } = parseGamutFile(text);
+    const { vertices, faces, warnings } = parseGamutFile(text);
+    if (warnings.length > 0) {
+        console.warn('Gamut parser warnings:', warnings.join('\n'));
+    }
     const built = _buildGeometry(vertices, faces);
     if (!built) return null;
 
@@ -348,7 +401,10 @@ function _renderProfileGamut(text, previousMesh) {
         if (previousMesh.material) previousMesh.material.dispose();
     }
 
-    const { vertices, faces } = parseGamutFile(text);
+    const { vertices, faces, warnings } = parseGamutFile(text);
+    if (warnings.length > 0) {
+        console.warn('Gamut parser warnings:', warnings.join('\n'));
+    }
     const built = _buildGeometry(vertices, faces);
     if (!built) return null;
 
@@ -383,7 +439,77 @@ function _renderProfileGamut(text, previousMesh) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Public: load bundled sRGB reference gamut
+// Camera & view controls
+// ─────────────────────────────────────────────────────────────────────────────
+/**
+ * Reset the camera to its default home position and orientation.
+ * Also resets orbit controls target to the centre of the CIELAB volume.
+ */
+export function resetCamera() {
+    if (!camera || !controls) return;
+    camera.position.set(180, 120, 180);
+    camera.lookAt(0, 50, 0);
+    controls.target.set(0, 50, 0);
+    controls.update();
+}
+
+/**
+ * Set the opacity of the rendered profile gamut surface (0–1).
+ * @param {number} opacity
+ */
+export function setProfileOpacity(opacity) {
+    if (currentProfileMesh && currentProfileMesh.material) {
+        currentProfileMesh.material.opacity = Math.max(0, Math.min(1, opacity));
+        currentProfileMesh.material.transparent = opacity < 1;
+        currentProfileMesh.material.needsUpdate = true;
+    }
+}
+
+/**
+ * Set the opacity of the sRGB reference wireframe and fill (0–1).
+ * @param {number} opacity
+ */
+export function setSrgbReferenceOpacity(opacity) {
+    if (sRgbGroup) {
+        sRgbGroup.traverse((child) => {
+            if (child.material) {
+                child.material.opacity = child.material.opacity >= 0.5
+                    ? Math.max(0.05, Math.min(1, opacity))
+                    : Math.max(0.02, Math.min(0.2, opacity * 0.2));
+            }
+        });
+    }
+}
+
+/**
+ * Set the opacity of the CIELAB axis scaffold (0–1).
+ * @param {number} opacity
+ */
+export function setAxisOpacity(opacity) {
+    if (axisScaffoldGroup) {
+        axisScaffoldGroup.traverse((child) => {
+            if (child.material) {
+                child.material.opacity = Math.max(0, Math.min(1, opacity));
+            }
+        });
+    }
+}
+
+/**
+ * Handle keyboard shortcuts for the gamut viewer.
+ * @param {KeyboardEvent} e
+ */
+function _onKeyDown(e) {
+    if (e.key === 'r' || e.key === 'R') {
+        resetCamera();
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+/**
+ * Load and render the bundled sRGB reference gamut.
+ * @returns {Promise<void>}
+ */
 // ─────────────────────────────────────────────────────────────────────────────
 export async function loadSrgbReferenceGamut() {
     try {
@@ -398,7 +524,11 @@ export async function loadSrgbReferenceGamut() {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Public: load and render a profile gamut from a .gam file path
+/**
+ * Load and render a profile gamut from a `.gam` file path.
+ * @param {string} gamFilePath - Absolute path to the gamut file.
+ * @returns {Promise<THREE.Mesh|null>}
+ */
 // ─────────────────────────────────────────────────────────────────────────────
 export async function loadGamutMesh(gamFilePath) {
     try {
@@ -428,7 +558,7 @@ export function toggleAxes(visible) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Wire legend toggle checkboxes to the toggle functions
+// Wire legend toggle checkboxes, opacity sliders, and reset button
 // ─────────────────────────────────────────────────────────────────────────────
 function _wireToggles() {
     const bindings = [
@@ -439,5 +569,33 @@ function _wireToggles() {
     for (const [id, fn] of bindings) {
         const el = document.getElementById(id);
         if (el) el.addEventListener('change', (e) => fn(e.target.checked));
+    }
+
+    const resetBtn = document.getElementById('btnGamutResetCamera');
+    if (resetBtn) resetBtn.addEventListener('click', resetCamera);
+
+    const profileOpacity = document.getElementById('rngProfileOpacity');
+    if (profileOpacity) {
+        profileOpacity.addEventListener('input', (e) => setProfileOpacity(parseFloat(e.target.value)));
+    }
+
+    const srgbOpacity = document.getElementById('rngSrgbOpacity');
+    if (srgbOpacity) {
+        srgbOpacity.addEventListener('input', (e) => setSrgbReferenceOpacity(parseFloat(e.target.value)));
+    }
+
+    const axisOpacity = document.getElementById('rngAxisOpacity');
+    if (axisOpacity) {
+        axisOpacity.addEventListener('input', (e) => setAxisOpacity(parseFloat(e.target.value)));
+    }
+
+    // Only listen for 'R' reset when the viewer tab is active.
+    const stage5 = document.getElementById('stage-5');
+    if (stage5) {
+        stage5.addEventListener('keydown', (e) => {
+            if ((e.key === 'r' || e.key === 'R') && !stage5.classList.contains('hidden')) {
+                resetCamera();
+            }
+        });
     }
 }

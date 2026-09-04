@@ -1784,6 +1784,33 @@ mod tests {
     }
 
     #[test]
+    fn test_build_colprof_args_combined_fwa_illuminant_observer_viewing() {
+        let config = ColprofConfig {
+            algorithm: "x".to_string(),
+            quality: "u".to_string(),
+            intent: Some("a".to_string()),
+            copyright: Some("C".to_string()),
+            description: Some("D".to_string()),
+            basename: "profile".to_string(),
+            cwd: "".to_string(),
+            fwa: Some("D65".to_string()),
+            illuminant: Some("D65".to_string()),
+            observer: Some("2015_2".to_string()),
+            input_viewing_cond: Some("pc".to_string()),
+            output_viewing_cond: Some("md".to_string()),
+        };
+        let args = build_colprof_args(&config);
+        assert_eq!(
+            args,
+            vec![
+                "-v", "-a", "x", "-q", "u", "-t", "a",
+                "-f", "D65", "-i", "D65", "-o", "2015_2",
+                "-c", "pc", "-d", "md", "-D", "D", "-C", "C", "profile"
+            ]
+        );
+    }
+
+    #[test]
     fn test_build_profcheck_args() {
         let config = ProfcheckConfig {
             ti3_path: "my_profile.ti3".to_string(),

@@ -1,5 +1,58 @@
 # ICCery Agent Notes
 
+## Stage 5 Verification / Profcheck
+
+- `profcheck` output is parsed from both JSON summaries (preferred) and legacy plain-text report formats.
+- If no delta-E values can be detected, the report cards show 0.00 and a warning is appended to the process log.
+- The `.gam` file for the 3D viewer is parsed using `parseGamutFile`, which supports multiple `BEGIN_DATA` blocks (some Argyll files use a separate block per surface section), inline `#` comments, and out-of-bounds vertex warnings.
+- Manual parser tests live in `src/js/gamut_viewer.test.js`.
+
+## 3D Gamut Viewer
+
+- The viewer renders the measured/derived `.gam` volume and an optional sRGB reference wireframe in CIELAB.
+- Layer controls (profile, sRGB, axes) each have visibility toggles and opacity sliders.
+- Click **Reset View** or press **R** to return the camera to its default position.
+- Full JSDoc is provided on the public API in `src/js/gamut_viewer.js`.
+
+## Stage 4 colprof Options
+
+- `colprof` options are exposed in the Stage 4 UI with contextual tooltips:
+  - **FWA / OBA Compensation** (`-f`): choose D50, None, D65, or a custom `.sp` spectrum file.
+  - **Standard Illuminant** (`-i`) and **Observer** (`-o`): override default D50 / 1931 2° for CIE colourimetric calculations.
+  - **Viewing Conditions** (`-c` input, `-d` output): set CIE viewing-condition transforms for the profile table and output intent.
+- The backend `build_colprof_args` in `commands.rs` maps these UI values to `colprof` CLI flags. Unit tests cover all combinations.
+
+## Stage 3 Swatch Grid
+
+- Swatch patches render a 135° diagonal split: top-left is the intended/expected colour, bottom-right is the measured colour.
+- Argyll `chartread` emits `is_pad` for boundary/spacer patches. White reference patches (e.g. `-e` white steps) may also carry `is_pad`, but they have valid `expected.Lab` or non-zero `device` data. The guard skips only pads with no measurement *and* all-zero device values.
+- Row/patch order from `chartread` (rows A→Z, patches 1→N within each row) is rendered left-to-right / top-to-bottom to match the `printtarg` output.
+- Tooltip shows intended Lab (or device %), measured Lab, and ΔE₀₀ with a Good/Warning/Bad classification.
+
+## UI Button Conventions
+
+The frontend uses a tiered button sizing system defined in `src/styles/main.css`. Prefer these utility classes over inline `style` attributes.
+
+| Class | Size | Use for |
+|-------|------|---------|
+| `.btn-sm` | 28px | Toolbar actions, header icons, minor toggles |
+| `.btn-md` (default for `button.secondary`/`button.danger`) | 36px | Standard dialog/form actions and browse buttons |
+| `.btn-lg` | 40px | Primary stage actions (Generate, Create Layout, Create Profile, Verify, etc.) |
+| `.btn-icon-sq` | 36×36px | Square icon-only buttons (refresh, settings, etc.) |
+| `.icon-btn` | 28×28px | Small header icon-only buttons (settings, about, save preset, manage presets) |
+| `.btn-properties` | 36px | Printer driver preferences button |
+
+- Primary action buttons use `button.primary` plus `.btn-lg` for major stage actions.
+- Danger actions use `button.danger` (36px).
+- All action rows use one of: `.stage-actions`, `.modal-actions`, `.chartread-actions`, `.print-actions-row`, `.btn-row`, `.btn-row-sm`, `.btn-row-end`, or `.input-row-sm`.
+- Avoid inline `style` on `<button>` elements or their immediate parent rows.
+
+## Settings & Preferences
+
+- Settings are persisted to `settings.json` in the app data directory and include the Stage 3 ΔE₀₀ traffic-light thresholds.
+- Valid threshold values must be non-negative and `delta_e_good_max < delta_e_warning_max`; both the frontend and backend enforce this.
+- Saving settings dispatches a `settings-saved` custom event so live components (e.g. the swatch grid) can re-classify on the fly.
+
 ## Build Commands
 
 - **Rust backend**: `cd src-tauri && CARGO_INCREMENTAL=0 cargo check` (the project lives on a network filesystem that doesn't support file locking, so `CARGO_INCREMENTAL=0` is required)
