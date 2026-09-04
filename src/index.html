@@ -35,9 +35,9 @@
 
         <!-- Profiling Preset Selector -->
         <div class="preset-selector-container" style="padding: 0 16px 12px; border-bottom: 1px solid var(--border-color, #2a2a30);">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-            <label for="presetSelect" style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; opacity: 0.7; font-weight: 600;">Profiling Preset</label>
-            <div style="display: flex; gap: 6px; align-items: center; justify-content: flex-end;">
+          <div class="form-group-header">
+            <label for="presetSelect" class="form-group-label-small">Profiling Preset</label>
+            <div class="btn-row-sm">
               <button type="button" id="btnSavePresetModal" class="icon-btn btn-sm" title="Save current settings as Preset">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
               </button>
@@ -131,10 +131,10 @@
             </div>
 
             <div class="form-group has-tooltip">
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                <label style="margin: 0;">Project Directory &amp; Filename</label>
-                <div style="display:flex; justify-content:flex-end;">
-                  <button type="button" id="btn-import-dataset" class="secondary btn-sm" style="margin-right: 4px;">Import Dataset...</button>
+              <div class="form-group-header">
+                <label>Project Directory &amp; Filename</label>
+                <div class="btn-row-sm">
+                  <button type="button" id="btn-import-dataset" class="secondary btn-sm">Import Dataset...</button>
                   <button type="button" id="btnOpenExisting" class="secondary btn-sm">Open Target (.ti2/.ti3)</button>
                 </div>
               </div>
@@ -407,8 +407,8 @@
 
             <!-- Target Label & Metadata (printtarg -d) -->
             <div class="form-group" style="margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--border-color, #333);">
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                <label style="margin: 0; font-weight: 600;">Target Label &amp; Metadata (Optional)</label>
+              <div class="form-group-header">
+                <label class="form-group-title">Target Label &amp; Metadata (Optional)</label>
                 <button type="button" class="secondary btn-sm" id="btnToggleLabelEdit">Edit Custom Field</button>
               </div>
               <p class="sub-label" style="margin-bottom: 10px;">Printed below test patches to identify hardware, ink, and media used for this profiling run.</p>
@@ -481,7 +481,7 @@
                   <select id="printerSelect">
                     <option value="" disabled selected>Detecting printers...</option>
                   </select>
-                  <button type="button" class="btn-icon" id="btnRefreshPrinters" title="Refresh printer list">↻</button>
+                  <button type="button" class="btn-icon-sq" id="btnRefreshPrinters" title="Refresh printer list">↻</button>
                   <button type="button" class="btn-properties" id="btnPrinterProperties" title="Open native printer driver preferences (disable colour management, set media type, etc.)">⚙️ Preferences</button>
                   <span id="printerStatusBadge" class="status-badge badge-idle hidden">Idle</span>
                 </div>
@@ -521,7 +521,7 @@
             </div>
 
             <div class="print-actions-row">
-              <button class="primary btn-print" id="btnPrintAll">
+              <button class="primary" id="btnPrintAll">
                 <span class="btn-text">🖨️ Print All Pages (Bypass CM)</span>
                 <span class="btn-spinner hidden"></span>
               </button>
@@ -550,8 +550,8 @@
           <div class="form-container" style="margin-bottom: 16px;">
             <div class="form-group">
               <label for="chartreadInstrumentSelect">Communication Port</label>
-              <div class="input-row" style="display: flex; gap: 8px; align-items: center;">
-                <select id="chartreadInstrumentSelect" style="flex: 1;">
+              <div class="input-row-sm">
+                <select id="chartreadInstrumentSelect">
                   <option value="">Auto (First available port)</option>
                 </select>
                 <button type="button" class="secondary" id="btnDetectInstruments" title="Detect connected instruments via instlist">↻ Detect</button>
@@ -593,13 +593,13 @@
 
           <!-- Multi-Pass Session & Averaging Controls -->
           <div class="averaging-panel hidden" id="chartreadAveragingPanel" style="margin-top: 16px; padding: 14px; border: 1px solid var(--border-color, #333); border-radius: 8px; background: rgba(255, 255, 255, 0.03);">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-              <h3 style="margin: 0; font-size: 1rem;">Multi-Pass Target Averaging</h3>
+            <div class="form-group-header">
+              <h3 class="form-group-title">Multi-Pass Target Averaging</h3>
               <span id="passCounterBadge" class="status-badge badge-idle">Pass 1 Complete</span>
             </div>
             <p class="sub-label" style="margin-bottom: 12px;">Each successful sheet is saved as a separate _passN.ti3 file. Stage 4 stays locked until you finish. Measure extra copies to reduce noise, then finish to write the canonical .ti3.</p>
             <div id="passesList" class="passes-list" style="display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px;"></div>
-            <div style="display: flex; gap: 8px;">
+            <div class="btn-row">
               <button type="button" class="secondary" id="btnMeasureAnotherSheet">➕ Measure Another Sheet</button>
               <button type="button" class="primary" id="btnFinishAndAverage" title="Complete measurement (Finish) before profiling">✓ Average Passes &amp; Proceed →</button>
             </div>
@@ -648,7 +648,7 @@
               </select>
             </div>
             
-            <div class="form-group">
+            <div class="form-group has-tooltip">
               <label>OBA / FWA Compensation</label>
               <select id="colprofFwa">
                 <option value="D50" selected>Calculated M1 — D50 FWA Compensation (Recommended)</option>
@@ -656,13 +656,23 @@
                 <option value="D65">D65 FWA Compensation</option>
                 <option value="custom">Custom Ambient Spectrum (.sp)...</option>
               </select>
+              <div class="tooltip-text">
+                Select how colprof handles Optical Brightening Agent (OBA) / Fluorescent Whitening Agent (FWA) compensation.<br>
+                • <strong>D50</strong>: Simulates ISO 3664 M1 viewing (D50, UV-cut) — recommended for modern OBA papers.<br>
+                • <strong>None</strong>: Native M0; no FWA compensation. Can look yellow under D50 if the paper contains OBA.<br>
+                • <strong>D65</strong>: Simulates outdoor D65 daylight; useful for outdoor display / packaging proofing.<br>
+                • <strong>Custom (.sp)</strong>: Provide an Argyll spectrum file describing the viewing booth illuminant.
+              </div>
             </div>
 
-            <div class="form-group hidden" id="colprofCustomSpRow">
+            <div class="form-group hidden has-tooltip" id="colprofCustomSpRow">
               <label>Custom Spectrum File (.sp)</label>
-              <div style="display: flex; gap: 8px;">
-                <input type="text" id="colprofCustomSpPath" placeholder="Select .sp file..." readonly style="flex:1;">
+              <div class="input-row-sm">
+                <input type="text" id="colprofCustomSpPath" placeholder="Select .sp file..." readonly>
                 <button class="secondary btn-sm" id="btnBrowseCustomSp">Browse</button>
+              </div>
+              <div class="tooltip-text">
+                Path to an Argyll-format spectrum file (.sp) representing the ambient illuminant. This is passed to colprof via the -f option and overrides the built-in D50/D65 compensation.
               </div>
             </div>
 
@@ -673,7 +683,7 @@
               </summary>
               <div class="advanced-content">
                 <div class="advanced-grid-2col">
-                  <div class="form-group">
+                  <div class="form-group has-tooltip">
                     <label>Standard Illuminant</label>
                     <select id="colprofIlluminant">
                       <option value="" selected>Default (D50)</option>
@@ -685,8 +695,11 @@
                       <option value="F8">F8</option>
                       <option value="F10">F10</option>
                     </select>
+                    <div class="tooltip-text">
+                      Illuminant used for the CIE colourimetric calculations in colprof (option -i). Leave at Default (D50) for normal print profiling.
+                    </div>
                   </div>
-                  <div class="form-group">
+                  <div class="form-group has-tooltip">
                     <label>Standard Observer</label>
                     <select id="colprofObserver">
                       <option value="" selected>Default (1931 2°)</option>
@@ -694,8 +707,11 @@
                       <option value="2015_2">2015 2°</option>
                       <option value="2015_10">2015 10°</option>
                     </select>
+                    <div class="tooltip-text">
+                      CIE standard observer used for the colourimetric calculations (option -o). The 1931 2° observer is the default for graphic-arts profiling.
+                    </div>
                   </div>
-                  <div class="form-group">
+                  <div class="form-group has-tooltip">
                     <label>Input Viewing Condition</label>
                     <select id="colprofInputViewCond">
                       <option value="none" selected>None</option>
@@ -704,8 +720,11 @@
                       <option value="pe">Print evaluation (CIE 116-1995)</option>
                       <option value="pm">Print evaluation (partial mid-tone adaptation)</option>
                     </select>
+                    <div class="tooltip-text">
+                      Viewing condition under which the print target was measured (option -c). This affects the adapted white point used in the profile lookup table.
+                    </div>
                   </div>
-                  <div class="form-group">
+                  <div class="form-group has-tooltip">
                     <label>Output Viewing Condition</label>
                     <select id="colprofOutputViewCond">
                       <option value="none" selected>None</option>
@@ -716,6 +735,9 @@
                       <option value="jd">Projector in dark environment</option>
                       <option value="tv">Television/Film Studio</option>
                     </select>
+                    <div class="tooltip-text">
+                      Viewing condition under which the profile is intended to be used (option -d). Useful for creating display / output-referred profiles.
+                    </div>
                   </div>
                 </div>
               </div>
@@ -723,7 +745,7 @@
           </div>
 
           <div class="stage-actions">
-            <button class="primary" id="btnCreateProfile">Calculate Profile (.icc)</button>
+            <button class="primary btn-lg" id="btnCreateProfile">Calculate Profile (.icc)</button>
           </div>
 
           <!-- Spinner and Progress Stage -->
@@ -736,7 +758,7 @@
           <div class="success-card hidden" id="colprofSuccessCard">
             <h3>🎉 Profile Calculation Complete</h3>
             <p id="colprofSuccessInfo"></p>
-            <button class="primary" id="btnGoToVerify">Proceed to Verification →</button>
+            <button class="primary btn-lg" id="btnGoToVerify">Proceed to Verification →</button>
           </div>
 
           <!-- Process Log -->
@@ -752,7 +774,7 @@
           <p>Check the numerical accuracy of your profile against the original measurement data.</p>
 
           <div class="stage-actions">
-            <button class="primary" id="btnVerify">Verify Profile Accuracy</button>
+            <button class="primary btn-lg" id="btnVerify">Verify Profile Accuracy</button>
           </div>
 
           <!-- Report Card -->
@@ -805,6 +827,10 @@
                     <span class="gamut-toggle-slider"></span>
                   </label>
                 </div>
+                <div class="gamut-legend-item gamut-slider-item">
+                  <label for="rngProfileOpacity" class="gamut-slider-label">Opacity</label>
+                  <input type="range" id="rngProfileOpacity" min="0.1" max="1" step="0.05" value="0.88">
+                </div>
 
                 <div class="gamut-legend-item">
                   <span class="gamut-swatch gamut-swatch-srgb"></span>
@@ -814,6 +840,10 @@
                     <span class="gamut-toggle-slider"></span>
                   </label>
                 </div>
+                <div class="gamut-legend-item gamut-slider-item">
+                  <label for="rngSrgbOpacity" class="gamut-slider-label">Opacity</label>
+                  <input type="range" id="rngSrgbOpacity" min="0.1" max="1" step="0.05" value="0.55">
+                </div>
 
                 <div class="gamut-legend-item">
                   <span class="gamut-swatch gamut-swatch-axes"></span>
@@ -822,6 +852,15 @@
                     <input type="checkbox" id="chkLabAxes" checked>
                     <span class="gamut-toggle-slider"></span>
                   </label>
+                </div>
+                <div class="gamut-legend-item gamut-slider-item">
+                  <label for="rngAxisOpacity" class="gamut-slider-label">Opacity</label>
+                  <input type="range" id="rngAxisOpacity" min="0.1" max="1" step="0.05" value="0.8">
+                </div>
+
+                <div class="gamut-controls-actions">
+                  <button type="button" id="btnGamutResetCamera" class="btn-sm" title="Reset camera to default view (R)">⟲ Reset View</button>
+                  <span class="gamut-keyboard-hint">Press R to reset</span>
                 </div>
               </div>
             </div>
@@ -849,6 +888,23 @@
           <input type="text" id="default_instrument" placeholder="e.g. i1">
         </div>
         <div class="form-group" style="margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--border-color, #333);">
+          <label style="font-weight: 600;">Stage 3 ΔE₀₀ Traffic-Light Thresholds</label>
+          <div class="input-row" style="margin-top: 8px; align-items: flex-start;">
+            <div>
+              <label for="deltaEGoodMax" class="sub-label">Good / Warning boundary</label>
+              <input type="number" id="deltaEGoodMax" min="0" step="0.1" value="2.0">
+              <small class="help-hint" style="display:block; font-size:0.75rem; color:var(--text-muted, #888); margin-top:3px;">ΔE below this value is shown as green (Good).</small>
+            </div>
+            <div>
+              <label for="deltaEWarningMax" class="sub-label">Warning / Bad boundary</label>
+              <input type="number" id="deltaEWarningMax" min="0" step="0.1" value="5.0">
+              <small class="help-hint" style="display:block; font-size:0.75rem; color:var(--text-muted, #888); margin-top:3px;">ΔE above this value is shown as red (Bad).</small>
+            </div>
+          </div>
+          <small id="deltaEThresholdError" class="help-hint" style="display:none; color: var(--error-color, #ff5f5f); margin-top: 6px;">Good threshold must be less than warning threshold.</small>
+        </div>
+
+        <div class="form-group" style="margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--border-color, #333);">
           <label style="font-weight: 600;">Diagnostics &amp; Logging</label>
           <div class="input-row" style="margin-top: 8px;">
             <div>
@@ -862,7 +918,7 @@
               </select>
               <small class="help-hint" style="display:block; font-size:0.75rem; color:var(--text-muted, #888); margin-top:3px;">Applies immediately on Save</small>
             </div>
-            <div style="display: flex; align-items: flex-end; gap: 8px; flex-wrap: wrap;">
+            <div class="btn-row wrap">
               <button type="button" id="btnOpenLogFolder" class="secondary" title="Open log folder in file explorer">📂 Open Log Folder</button>
               <button type="button" id="btnCopyLogPath" class="secondary" title="Copy full log file path to clipboard">📋 Copy Path</button>
               <button type="button" id="btnCopyLogExcerpt" class="secondary" title="Copy recent log entries (last 200 lines) to clipboard">📋 Copy Recent Logs</button>

@@ -60,13 +60,46 @@ pub struct ProfilingPreset {
     pub no_randomize: Option<bool>,
 }
 
-#[derive(Debug, Deserialize, Serialize, Default, Clone)]
+fn default_delta_e_good_max() -> f64 { 2.0 }
+fn default_delta_e_warning_max() -> f64 { 5.0 }
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct AppSettings {
     pub argyll_binary_dir: Option<String>,
     pub default_instrument: Option<String>,
     pub log_level: Option<String>,
+    #[serde(default = "default_delta_e_good_max")]
+    pub delta_e_good_max: f64,
+    #[serde(default = "default_delta_e_warning_max")]
+    pub delta_e_warning_max: f64,
     #[serde(default)]
     pub custom_presets: Vec<ProfilingPreset>,
+}
+
+impl Default for AppSettings {
+    fn default() -> Self {
+        Self {
+            argyll_binary_dir: None,
+            default_instrument: None,
+            log_level: None,
+            delta_e_good_max: default_delta_e_good_max(),
+            delta_e_warning_max: default_delta_e_warning_max(),
+            custom_presets: Vec::new(),
+        }
+    }
+}
+
+impl AppSettings {
+    /// Validate thresholds and other cross-field invariants.
+    pub fn validate(&self) -> Result<(), String> {
+        if self.delta_e_good_max < 0.0 || self.delta_e_warning_max < 0.0 {
+            return Err("ΔE thresholds cannot be negative.".to_string());
+        }
+        if self.delta_e_good_max >= self.delta_e_warning_max {
+            return Err("Good ΔE threshold must be strictly less than the warning threshold.".to_string());
+        }
+        Ok(())
+    }
 }
 
 pub fn get_default_presets() -> Vec<ProfilingPreset> {
@@ -239,6 +272,7 @@ pub fn load_settings(app: AppHandle) -> Result<AppSettings, String> {
 
 #[tauri::command]
 pub fn save_settings(app: AppHandle, settings: AppSettings) -> Result<(), String> {
+    settings.validate()?;
     let path = app.path().app_data_dir().unwrap();
     fs::create_dir_all(&path).map_err(|e| e.to_string())?;
     let json = serde_json::to_string_pretty(&settings).unwrap();
@@ -378,6 +412,39 @@ mod tests {
         let json = export_preset_json(preset.clone()).expect("Export failed");
         let imported = import_preset_json(json).expect("Import failed");
         assert_eq!(preset, imported);
+    }
+
+    #[test]
+    fn test_default_delta_e_thresholds() {
+        let settings = AppSettings::default();
+        assert_eq!(settings.delta_e_good_max, 2.0);
+        assert_eq!(settings.delta_e_warning_max, 5.0);
+        assert!(settings.delta_e_good_max < settings.delta_e_warning_max);
+        assert!(settings.validate().is_ok());
+    }
+
+    #[test]
+    fn test_delta_e_threshold_serialization_defaults() {
+        let json = "{}";
+        let settings: AppSettings = serde_json::from_str(json).unwrap();
+        assert_eq!(settings.delta_e_good_max, 2.0);
+        assert_eq!(settings.delta_e_warning_max, 5.0);
+    }
+
+    #[test]
+    fn test_delta_e_threshold_validation() {
+        let mut settings = AppSettings::default();
+        settings.delta_e_good_max = 5.0;
+        settings.delta_e_warning_max = 2.0;
+        assert!(settings.validate().is_err());
+
+        settings.delta_e_good_max = -1.0;
+        settings.delta_e_warning_max = 2.0;
+        assert!(settings.validate().is_err());
+
+        settings.delta_e_good_max = 1.0;
+        settings.delta_e_warning_max = 3.0;
+        assert!(settings.validate().is_ok());
     }
 
     #[test]

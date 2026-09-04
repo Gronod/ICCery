@@ -99,6 +99,15 @@ ICCery is a native, cross-platform desktop application built with:
 - [ ] **macOS Raw Spooling**: Native CoreGraphics/CUPS raw print dialog bypass.
 - [ ] **SpectroScan & Automated Table Support (#93)**: Support XY automated scanning tables (i1iO / SpectroScan) in `chartread` (deferred).
 
+### Milestone 13 — UI/UX & Workflow Polish
+
+- [x] **Global Button Standardization (#177)**: Enforce `.btn-sm`/`.btn-md`/`.btn-lg`/`.btn-icon-sq` tiers across all stages, remove inline button styles, and add CSS custom properties for button metrics.
+- [x] **Swatch Grid White Patch & Orientation Polish (#178)**: Finalise `is_pad` guard documentation, diagonally split swatch tooltips, and validate `printtarg` row/column ordering.
+- [x] **Configurable CIEDE2000 Thresholds (#184)**: User-configurable good/warning ΔE₀₀ upper bounds in Settings, persisted across sessions and applied to the Stage 3 swatch grid.
+- [x] **Stage 4 OBA/FWA Tooltips & Tests (#176)**: Contextual help for OBA/FWA, illuminant, observer, and viewing-condition controls; additional `colprof` arg builder tests.
+- [x] **3D Gamut Viewer Controls (#185)**: Camera reset, opacity sliders, keyboard shortcut, and full public-API JSDoc.
+- [x] **Gamut / Profcheck Hardening (#179)**: Validate `.gam` vertex/face parsing, improved `profcheck` regex fallbacks for legacy text output, and user-visible parser warnings.
+
 ### Milestone 12 — Future Workflow & Advanced Analytics (Deferred)
 - [ ] **Batch Verification & Drift Tracking (#95)**: Track printer drift over time by comparing periodic verification measurements against a baseline profile.
 - [ ] **Multi-Language Localization (#96)**: Full UI internationalization (English, German, French, Japanese).

@@ -5,6 +5,11 @@
   --text-color: #d4d4d4;
   --accent-color: #007acc;
   --border-color: #333333;
+  --btn-height-sm: 28px;
+  --btn-height-md: 36px;
+  --btn-height-lg: 40px;
+  --btn-radius-sm: 4px;
+  --btn-radius-md: 6px;
 }
 
 body {
@@ -127,25 +132,27 @@ button.primary {
   background: linear-gradient(135deg, var(--accent-color), #2d73a8);
   color: #fff;
   border: none;
-  border-radius: 6px;
+  border-radius: var(--btn-radius-md);
   padding: 0 18px;
-  height: 36px;
+  height: var(--btn-height-md);
   font-size: 0.95rem;
   font-weight: 600;
   cursor: pointer;
   transition: opacity 0.2s, transform 0.1s;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+  box-sizing: border-box;
 }
 
 button.primary:hover {
   opacity: 0.9;
 }
 
-/* Button sizing system */
-.btn-sm { height: 28px; padding: 0 10px; font-size: 0.78rem; border-radius: 4px; }
-.btn-md { height: 36px; padding: 0 16px; font-size: 0.875rem; border-radius: 6px; }
-.btn-lg { height: 40px; padding: 0 20px; font-size: 0.95rem; font-weight: 600; border-radius: 6px; }
-.btn-icon-sq { width: 36px; height: 36px; min-width: 36px; padding: 0; display: inline-flex; align-items: center; justify-content: center; }
+/* Button sizing system — use CSS variables for consistency across the UI */
+.btn-sm { height: var(--btn-height-sm); padding: 0 10px; font-size: 0.78rem; border-radius: var(--btn-radius-sm); box-sizing: border-box; }
+.btn-md { height: var(--btn-height-md); padding: 0 16px; font-size: 0.875rem; border-radius: var(--btn-radius-md); box-sizing: border-box; }
+.btn-lg { height: var(--btn-height-lg); padding: 0 20px; font-size: 0.95rem; font-weight: 600; border-radius: var(--btn-radius-md); box-sizing: border-box; }
+button.primary.btn-lg { height: var(--btn-height-lg); }
+.btn-icon-sq { width: var(--btn-height-md); height: var(--btn-height-md); min-width: var(--btn-height-md); padding: 0; display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box; }
 
 /* Action containers */
 .stage-actions {
@@ -163,8 +170,61 @@ button.primary:hover {
   justify-content: flex-end;
 }
 
+/* Utility for a horizontal row of buttons (replaces inline style="display:flex;..." on parent divs) */
+.btn-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-row-end {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.btn-row-sm {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.btn-row.wrap,
+.btn-row-sm.wrap {
+  flex-wrap: wrap;
+}
+
 .form-group {
   margin: 14px 0;
+}
+
+.form-group-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.form-group-header label {
+  margin: 0;
+}
+
+.form-group-label-small {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  opacity: 0.7;
+  font-weight: 600;
+}
+
+.form-group-title {
+  font-weight: 600;
+}
+
+.form-group-header h3 {
+  margin: 0;
+  font-size: 1rem;
 }
 
 .form-group:first-child {
@@ -254,6 +314,17 @@ select option:checked {
   align-items: stretch;
 }
 
+.input-row-sm {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.input-row-sm > input,
+.input-row-sm > select {
+  flex: 1;
+}
+
 .input-row input {
   flex: 1;
 }
@@ -284,9 +355,10 @@ button.secondary {
   color: white;
   border: 1px solid var(--border-color);
   padding: 0 16px;
-  height: 36px;
-  border-radius: 4px;
+  height: var(--btn-height-md);
+  border-radius: var(--btn-radius-sm);
   cursor: pointer;
+  box-sizing: border-box;
 }
 
 button.secondary:hover {
@@ -489,6 +561,7 @@ button:disabled {
 .chartread-actions {
   display: flex;
   gap: 10px;
+  align-items: center;
   margin-bottom: 16px;
   flex-wrap: wrap;
 }
@@ -497,9 +570,10 @@ button.danger {
   background-color: #c62828;
   color: white;
   border: none;
-  padding: 10px 20px;
-  font-size: 1rem;
-  border-radius: 4px;
+  padding: 0 16px;
+  height: var(--btn-height-md);
+  font-size: 0.875rem;
+  border-radius: var(--btn-radius-sm);
   cursor: pointer;
 }
 
@@ -779,12 +853,12 @@ button.danger:hover {
   font-size: 1.2rem;
   cursor: pointer;
   padding: 0;
-  border-radius: 4px;
+  border-radius: var(--btn-radius-sm);
   color: #d1d5db;
   transition: color 0.15s ease, background-color 0.15s ease;
-  width: 28px;
-  height: 28px;
-  min-width: 28px;
+  width: var(--btn-height-sm);
+  height: var(--btn-height-sm);
+  min-width: var(--btn-height-sm);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -973,8 +1047,9 @@ button.danger:hover {
   background: rgba(255, 255, 255, 0.06);
   border: 1px solid var(--border-color);
   color: var(--text-color);
-  padding: 6px 12px;
-  border-radius: 4px;
+  padding: 0 12px;
+  height: var(--btn-height-md);
+  border-radius: var(--btn-radius-sm);
   font-size: 0.82rem;
   font-weight: 500;
   cursor: pointer;
@@ -984,6 +1059,7 @@ button.danger:hover {
   gap: 6px;
   transition: all 0.2s ease;
   flex-shrink: 0;
+  box-sizing: border-box;
 }
 
 .btn-properties:hover {
@@ -1042,20 +1118,24 @@ button.danger:hover {
   font-weight: 600;
 }
 
+/* Legacy alias: .btn-icon should not be used for new buttons; prefer .btn-icon-sq */
 .btn-icon {
+  width: var(--btn-height-md);
+  height: var(--btn-height-md);
+  min-width: var(--btn-height-md);
+  padding: 0;
   background: var(--bg-color);
   border: 1px solid var(--border-color);
   color: var(--text-color);
-  width: 34px;
-  height: 34px;
-  border-radius: 4px;
-  display: flex;
+  border-radius: var(--btn-radius-sm);
+  display: inline-flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   font-size: 1rem;
   transition: all 0.2s;
   flex-shrink: 0;
+  box-sizing: border-box;
 }
 
 .btn-icon:hover {
@@ -1448,6 +1528,43 @@ button.danger:hover {
 
 .gamut-legend-item:last-child {
   margin-bottom: 0;
+}
+
+.gamut-legend-item.gamut-slider-item {
+  margin: -2px 0 8px 27px;
+  gap: 6px;
+}
+
+.gamut-slider-label {
+  font-size: 0.7rem;
+  opacity: 0.65;
+  min-width: 46px;
+}
+
+.gamut-slider-item input[type="range"] {
+  flex: 1;
+  margin: 0;
+  height: 4px;
+  accent-color: var(--accent-color, #3b82f6);
+}
+
+.gamut-controls-actions {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.09);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.gamut-controls-actions button {
+  width: 100%;
+}
+
+.gamut-keyboard-hint {
+  font-size: 0.68rem;
+  opacity: 0.5;
+  text-align: center;
 }
 
 .gamut-legend-label {
