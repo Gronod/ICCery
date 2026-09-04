@@ -98,7 +98,14 @@ export function initProfcheck() {
 
             // Ensure gamut mesh is loaded into 3D viewer
             const gamFilePath = cwd ? `${cwd}${sep}${basename}.gam` : `${basename}.gam`;
-            loadGamutMesh(gamFilePath, 0x3b82f6);
+            try {
+              const result = await loadGamutMesh(gamFilePath);
+              if (!result) {
+                logPre.textContent += `\n[WARN] Could not render 3D gamut mesh from ${gamFilePath}.\n`;
+              }
+            } catch (gamErr) {
+              logPre.textContent += `\n[WARN] 3D gamut render failed: ${gamErr}\n`;
+            }
           } else {
             logPre.textContent += `\n[ERROR] profcheck exited with code ${event.payload.code}.\n`;
           }
@@ -113,33 +120,89 @@ export function initProfcheck() {
     }
   });
 
+  /**
+   * Parse profcheck output for Average, Peak, and RMS delta-E values.
+   * Supports both Argyll's JSON-style summary and plain-text legacy output.
+   * @param {string} stdout - Full profcheck stdout.
+   */
   function parseAndRenderReport(stdout) {
     reportCard.classList.remove("hidden");
 
     let avgDe = 0.0;
     let maxDe = 0.0;
     let rmsDe = 0.0;
+    let parserWarnings = [];
 
-    // Check if JSON output is present
-    const jsonMatch = stdout.match(/\{[\s\S]*"avg_de"[\s\S]*\}/);
-    if (jsonMatch) {
+    // Argyll's JSON output can appear either as a compact object on a single
+    // line or embedded inside larger text. Try to find and parse the LAST valid
+    // JSON object in the output, which is most likely the summary.
+    const jsonObjects = [];
+    const re = /\{[\s\S]*?\}/g;
+    let m;
+    while ((m = re.exec(stdout)) !== null) {
       try {
-        const json = JSON.parse(jsonMatch[0]);
-        avgDe = json.avg_de || 0;
-        maxDe = json.max_de || json.peak_de || 0;
-        rmsDe = json.rms_de || 0;
+        const parsed = JSON.parse(m[0]);
+        if (typeof parsed === 'object' && parsed !== null && ('avg_de' in parsed || 'peak_de' in parsed || 'rms_de' in parsed)) {
+          jsonObjects.push(parsed);
+        }
       } catch (e) {
-        console.error("JSON parse error:", e);
+        // Not a valid JSON object, ignore.
       }
+    }
+
+    if (jsonObjects.length > 0) {
+      const json = jsonObjects[jsonObjects.length - 1];
+      avgDe = typeof json.avg_de === 'number' ? json.avg_de : 0;
+      maxDe = typeof json.max_de === 'number' ? json.max_de : (typeof json.peak_de === 'number' ? json.peak_de : 0);
+      rmsDe = typeof json.rms_de === 'number' ? json.rms_de : 0;
     } else {
-      // Regex fallbacks for standard profcheck output
-      const avgMatch = stdout.match(/avg\.\s*(?:dE\s*)?=\s*([\d\.]+)/i) || stdout.match(/average\s*(?:dE\s*)?[:=]\s*([\d\.]+)/i);
-      const maxMatch = stdout.match(/max\.\s*(?:dE\s*)?=\s*([\d\.]+)/i) || stdout.match(/peak\s*(?:dE\s*)?[:=]\s*([\d\.]+)/i);
-      const rmsMatch = stdout.match(/RMS\s*(?:dE\s*)?=\s*([\d\.]+)/i) || stdout.match(/rms\s*(?:dE\s*)?[:=]\s*([\d\.]+)/i);
+      // Regex fallbacks for standard profcheck text output
+      const avgPatterns = [
+        /avg(?:\.?|erage)\s*(?:dE\s*)?[:=]\s*([\d\.]+)/i,
+        /average\s+(?:dE\s*)?([\d\.]+)/i,
+        /mean\s+(?:dE\s*)?([\d\.]+)/i,
+        /dE\s+average[^\d]*([\d\.]+)/i,
+      ];
+      const maxPatterns = [
+        /max(?:\.?|imum)\s*(?:dE\s*)?[:=]\s*([\d\.]+)/i,
+        /peak\s*(?:dE\s*)?[:=]\s*([\d\.]+)/i,
+        /worst\s*(?:dE\s*)?([\d\.]+)/i,
+        /dE\s+max[^\d]*([\d\.]+)/i,
+      ];
+      const rmsPatterns = [
+        /RMS\s*(?:dE\s*)?[:=]\s*([\d\.]+)/i,
+        /rms\s*(?:dE\s*)?([\d\.]+)/i,
+        /root\s+mean\s+sq(?:uare)?\s*(?:dE\s*)?([\d\.]+)/i,
+      ];
+
+      const find = (patterns) => {
+        for (const p of patterns) {
+          const match = stdout.match(p);
+          if (match) return match;
+        }
+        return null;
+      };
+
+      const avgMatch = find(avgPatterns);
+      const maxMatch = find(maxPatterns);
+      const rmsMatch = find(rmsPatterns);
 
       if (avgMatch) avgDe = parseFloat(avgMatch[1]);
+      else parserWarnings.push('Could not detect Average ΔE in profcheck output.');
+
       if (maxMatch) maxDe = parseFloat(maxMatch[1]);
+      else parserWarnings.push('Could not detect Peak ΔE in profcheck output.');
+
       if (rmsMatch) rmsDe = parseFloat(rmsMatch[1]);
+      else parserWarnings.push('Could not detect RMS ΔE in profcheck output.');
+
+      if (!avgMatch && !maxMatch && !rmsMatch) {
+        parserWarnings.push('No delta-E values were found in profcheck output.');
+      }
+    }
+
+    if (parserWarnings.length > 0) {
+      logPre.textContent += `\n[WARN] ${parserWarnings.join(' ')}\n`;
     }
 
     avgDeEl.textContent = avgDe.toFixed(2);

@@ -206,32 +206,78 @@ function _line(from, to, material) {
 // ─────────────────────────────────────────────────────────────────────────────
 /**
  * Parse an Argyll `.gam` text file into vertex and face arrays.
+ *
+ * Argyll `.gam` files contain a header followed by one or more `BEGIN_DATA`
+ * ... `END_DATA` blocks. The first data block is a vertex list
+ * (index L a b); subsequent blocks contain triangle face indices (v0 v1 v2).
+ * Blank lines and hash `#` comments outside data blocks are ignored.
+ *
  * @param {string} text - Raw contents of the .gam file.
- * @returns {{ vertices: number[][], faces: number[][] }}
+ * @returns {{ vertices: number[][], faces: number[][], warnings: string[] }}
  */
 // ─────────────────────────────────────────────────────────────────────────────
 export function parseGamutFile(text) {
     const lines = text.split('\n');
     const vertices = [];
     const faces    = [];
+    const warnings = [];
     let dataStarted = false;
-    let dataBlock   = 0;   // 1 = vertices section, 2 = faces section
+    let dataBlock   = 0;   // 1 = vertices section, 2+ = faces sections
 
-    for (const line of lines) {
-        const trimmed = line.trim();
-        if (trimmed === 'BEGIN_DATA') { dataBlock++;  dataStarted = true;  continue; }
-        if (trimmed === 'END_DATA')   {               dataStarted = false; continue; }
+    for (let lineIdx = 0; lineIdx < lines.length; lineIdx++) {
+        const raw = lines[lineIdx];
+        const trimmed = raw.replace(/#.*$/, '').trim();  // strip inline comments
+        if (trimmed === '') continue;
+
+        if (trimmed.toUpperCase() === 'BEGIN_DATA') {
+            dataBlock++;
+            dataStarted = true;
+            continue;
+        }
+        if (trimmed.toUpperCase() === 'END_DATA') {
+            dataStarted = false;
+            continue;
+        }
         if (!dataStarted) continue;
 
         const parts = trimmed.split(/\s+/).map(Number);
-        if (dataBlock === 1 && parts.length >= 4) {
-            vertices.push([parts[1], parts[2], parts[3]]);   // [L, a, b]
-        } else if (dataBlock === 2 && parts.length >= 3) {
-            faces.push([parts[0], parts[1], parts[2]]);
+        const allNumeric = parts.every(n => !Number.isNaN(n));
+        if (!allNumeric) {
+            warnings.push(`Skipping non-numeric data at line ${lineIdx + 1}`);
+            continue;
+        }
+
+        if (dataBlock === 1) {
+            if (parts.length >= 4) {
+                // Vertex format: index L a b (index is usually ignored)
+                const [_, L, a, b] = parts;
+                if (L < 0 || L > 100 || Math.abs(a) > 128 || Math.abs(b) > 128) {
+                    warnings.push(`Vertex at line ${lineIdx + 1} is outside plausible CIELAB bounds: L=${L}, a=${a}, b=${b}`);
+                }
+                vertices.push([L, a, b]);
+            } else {
+                warnings.push(`Vertex data at line ${lineIdx + 1} has only ${parts.length} values`);
+            }
+        } else {
+            // Face data can appear in multiple blocks (some .gam files use a
+            // separate DATA block per surface type or per convex-hull section).
+            if (parts.length >= 3) {
+                faces.push([parts[0], parts[1], parts[2]]);
+            } else {
+                warnings.push(`Face data at line ${lineIdx + 1} has only ${parts.length} values`);
+            }
         }
     }
 
-    return { vertices, faces };
+    if (vertices.length > 0 && faces.length === 0) {
+        warnings.push(`Parsed ${vertices.length} vertices but no faces; will compute convex hull on the fly.`);
+    }
+
+    if (dataBlock === 0) {
+        warnings.push('No BEGIN_DATA blocks found; file may be empty or not a valid Argyll .gam file.');
+    }
+
+    return { vertices, faces, warnings };
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -308,7 +354,10 @@ function _renderSrgbReference(text, previousGroup) {
         });
     }
 
-    const { vertices, faces } = parseGamutFile(text);
+    const { vertices, faces, warnings } = parseGamutFile(text);
+    if (warnings.length > 0) {
+        console.warn('Gamut parser warnings:', warnings.join('\n'));
+    }
     const built = _buildGeometry(vertices, faces);
     if (!built) return null;
 
@@ -352,7 +401,10 @@ function _renderProfileGamut(text, previousMesh) {
         if (previousMesh.material) previousMesh.material.dispose();
     }
 
-    const { vertices, faces } = parseGamutFile(text);
+    const { vertices, faces, warnings } = parseGamutFile(text);
+    if (warnings.length > 0) {
+        console.warn('Gamut parser warnings:', warnings.join('\n'));
+    }
     const built = _buildGeometry(vertices, faces);
     if (!built) return null;
 

@@ -106,7 +106,7 @@ ICCery is a native, cross-platform desktop application built with:
 - [x] **Configurable CIEDE2000 Thresholds (#184)**: User-configurable good/warning ΔE₀₀ upper bounds in Settings, persisted across sessions and applied to the Stage 3 swatch grid.
 - [x] **Stage 4 OBA/FWA Tooltips & Tests (#176)**: Contextual help for OBA/FWA, illuminant, observer, and viewing-condition controls; additional `colprof` arg builder tests.
 - [x] **3D Gamut Viewer Controls (#185)**: Camera reset, opacity sliders, keyboard shortcut, and full public-API JSDoc.
-- [ ] **Gamut / Profcheck Hardening (#179)**: Validate `.gam` vertex/face parsing, improved `profcheck` regex fallbacks for legacy text output, and user-visible parser warnings.
+- [x] **Gamut / Profcheck Hardening (#179)**: Validate `.gam` vertex/face parsing, improved `profcheck` regex fallbacks for legacy text output, and user-visible parser warnings.
 
 ### Milestone 12 — Future Workflow & Advanced Analytics (Deferred)
 - [ ] **Batch Verification & Drift Tracking (#95)**: Track printer drift over time by comparing periodic verification measurements against a baseline profile.

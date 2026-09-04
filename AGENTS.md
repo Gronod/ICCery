@@ -1,5 +1,12 @@
 # ICCery Agent Notes
 
+## Stage 5 Verification / Profcheck
+
+- `profcheck` output is parsed from both JSON summaries (preferred) and legacy plain-text report formats.
+- If no delta-E values can be detected, the report cards show 0.00 and a warning is appended to the process log.
+- The `.gam` file for the 3D viewer is parsed using `parseGamutFile`, which supports multiple `BEGIN_DATA` blocks (some Argyll files use a separate block per surface section), inline `#` comments, and out-of-bounds vertex warnings.
+- Manual parser tests live in `src/js/gamut_viewer.test.js`.
+
 ## 3D Gamut Viewer
 
 - The viewer renders the measured/derived `.gam` volume and an optional sRGB reference wireframe in CIELAB.
