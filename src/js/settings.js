@@ -21,6 +21,7 @@ export async function initSettings() {
     const deltaEGoodMax = document.getElementById('deltaEGoodMax');
     const deltaEWarningMax = document.getElementById('deltaEWarningMax');
     const deltaEThresholdError = document.getElementById('deltaEThresholdError');
+    const enableI1Pro2Leds = document.getElementById('enable_i1pro2_leds');
 
     if (!dialog || !openBtn) return;
 
@@ -57,6 +58,9 @@ export async function initSettings() {
             const settings = await invoke('load_settings');
             document.getElementById('argyll_binary_dir').value = settings.argyll_binary_dir || '';
             document.getElementById('default_instrument').value = settings.default_instrument || '';
+            if (enableI1Pro2Leds) {
+                enableI1Pro2Leds.checked = Boolean(settings.enable_i1pro2_leds);
+            }
             if (logLevelSelect && settings.log_level) {
                 logLevelSelect.value = settings.log_level;
             }
@@ -145,6 +149,7 @@ export async function initSettings() {
                     log_level: logLevelSelect ? logLevelSelect.value : (currentSettings.log_level || 'info'),
                     delta_e_good_max: getInputValueAsFloat('deltaEGoodMax', 2.0),
                     delta_e_warning_max: getInputValueAsFloat('deltaEWarningMax', 5.0),
+                    enable_i1pro2_leds: enableI1Pro2Leds ? enableI1Pro2Leds.checked : false,
                 };
                 await invoke('save_settings', { settings });
                 logger.info(`Settings saved. Log level set to: ${settings.log_level}`, 'Settings');

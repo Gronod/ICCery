@@ -74,6 +74,8 @@ pub struct AppSettings {
     pub delta_e_warning_max: f64,
     #[serde(default)]
     pub custom_presets: Vec<ProfilingPreset>,
+    #[serde(default)]
+    pub enable_i1pro2_leds: bool,
 }
 
 impl Default for AppSettings {
@@ -85,6 +87,7 @@ impl Default for AppSettings {
             delta_e_good_max: default_delta_e_good_max(),
             delta_e_warning_max: default_delta_e_warning_max(),
             custom_presets: Vec::new(),
+            enable_i1pro2_leds: false,
         }
     }
 }
@@ -465,5 +468,29 @@ mod tests {
             assert_eq!(parse_log_level_filter(None), log::LevelFilter::Info);
             assert_eq!(parse_log_level_filter(Some("unknown")), log::LevelFilter::Info);
         }
+    }
+
+    #[test]
+    fn test_default_enable_i1pro2_leds() {
+        let settings = AppSettings::default();
+        assert_eq!(settings.enable_i1pro2_leds, false);
+    }
+
+    #[test]
+    fn test_enable_i1pro2_leds_serialization() {
+        // Missing field defaults to false
+        let json_empty = "{}";
+        let settings_empty: AppSettings = serde_json::from_str(json_empty).unwrap();
+        assert_eq!(settings_empty.enable_i1pro2_leds, false);
+
+        // Explicit true
+        let json_true = r#"{"enable_i1pro2_leds": true}"#;
+        let settings_true: AppSettings = serde_json::from_str(json_true).unwrap();
+        assert_eq!(settings_true.enable_i1pro2_leds, true);
+
+        // Explicit false
+        let json_false = r#"{"enable_i1pro2_leds": false}"#;
+        let settings_false: AppSettings = serde_json::from_str(json_false).unwrap();
+        assert_eq!(settings_false.enable_i1pro2_leds, false);
     }
 }

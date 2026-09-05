@@ -829,11 +829,13 @@ pub async fn read_tiff_preview_png(path: String) -> Result<String, String> {
     Ok(base64::engine::general_purpose::STANDARD.encode(png_bytes.into_inner()))
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct ChartreadConfig {
     pub basename: String,
     pub cwd: String,
     pub port: Option<String>,
+    #[serde(default)]
+    pub enable_i1pro2_leds: Option<bool>,
 }
 
 pub fn build_chartread_args(config: &ChartreadConfig) -> Vec<String> {
@@ -849,6 +851,11 @@ pub fn build_chartread_args(config: &ChartreadConfig) -> Vec<String> {
         }
     }
 
+    if config.enable_i1pro2_leds.unwrap_or(false) {
+        args.push("-Y".to_string());
+        args.push("l".to_string());
+    }
+
     args.push(config.basename.clone());
     args
 }
@@ -857,8 +864,12 @@ pub fn build_chartread_args(config: &ChartreadConfig) -> Vec<String> {
 pub async fn run_chartread(
     app: AppHandle,
     state: State<'_, ProcessManager>,
-    config: ChartreadConfig,
+    mut config: ChartreadConfig,
 ) -> Result<(), String> {
+    if config.enable_i1pro2_leds.is_none() {
+        let settings = crate::settings::load_settings(app.clone()).unwrap_or_default();
+        config.enable_i1pro2_leds = Some(settings.enable_i1pro2_leds);
+    }
     let binary = resolve_binary(app.clone(), "chartread".to_string()).await?;
     let args = build_chartread_args(&config);
     let id = format!("chartread_{}", config.basename);
@@ -1558,6 +1569,7 @@ mod tests {
             basename: "my_profile".to_string(),
             cwd: "/home/user".to_string(),
             port: None,
+            enable_i1pro2_leds: None,
         };
         let args = build_chartread_args(&config);
         assert_eq!(args, vec!["-v", "-u", "my_profile"]);
@@ -1569,6 +1581,7 @@ mod tests {
             basename: "my_profile".to_string(),
             cwd: "/home/user".to_string(),
             port: Some("".to_string()),
+            enable_i1pro2_leds: None,
         };
         let args = build_chartread_args(&config);
         assert_eq!(args, vec!["-v", "-u", "my_profile"]);
@@ -1580,9 +1593,46 @@ mod tests {
             basename: "my_profile".to_string(),
             cwd: "/home/user".to_string(),
             port: Some("1".to_string()),
+            enable_i1pro2_leds: None,
         };
         let args = build_chartread_args(&config);
         assert_eq!(args, vec!["-v", "-u", "-c", "1", "my_profile"]);
+    }
+
+    #[test]
+    fn test_build_chartread_args_leds_enabled() {
+        let config = ChartreadConfig {
+            basename: "my_profile".to_string(),
+            cwd: "/home/user".to_string(),
+            port: None,
+            enable_i1pro2_leds: Some(true),
+        };
+        let args = build_chartread_args(&config);
+        assert_eq!(args, vec!["-v", "-u", "-Y", "l", "my_profile"]);
+    }
+
+    #[test]
+    fn test_build_chartread_args_with_port_and_leds() {
+        let config = ChartreadConfig {
+            basename: "my_profile".to_string(),
+            cwd: "/home/user".to_string(),
+            port: Some("1".to_string()),
+            enable_i1pro2_leds: Some(true),
+        };
+        let args = build_chartread_args(&config);
+        assert_eq!(args, vec!["-v", "-u", "-c", "1", "-Y", "l", "my_profile"]);
+    }
+
+    #[test]
+    fn test_build_chartread_args_leds_disabled() {
+        let config = ChartreadConfig {
+            basename: "my_profile".to_string(),
+            cwd: "/home/user".to_string(),
+            port: None,
+            enable_i1pro2_leds: Some(false),
+        };
+        let args = build_chartread_args(&config);
+        assert_eq!(args, vec!["-v", "-u", "my_profile"]);
     }
 
     #[test]
