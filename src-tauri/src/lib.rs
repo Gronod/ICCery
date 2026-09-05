@@ -5,6 +5,7 @@ mod commands;
 mod events;
 mod print;
 mod process_manager;
+mod quality_store;
 mod settings;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -74,6 +75,11 @@ pub fn run() {
             commands::get_printer_capabilities,
             commands::show_printer_properties,
             commands::print_target_native,
+            commands::select_csv_save_path,
+            quality_store::save_verification_record,
+            quality_store::get_verification_history,
+            quality_store::clear_verification_history,
+            quality_store::export_verification_history_csv,
             settings::load_settings,
             settings::save_settings,
             settings::get_all_presets,

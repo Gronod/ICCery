@@ -574,6 +574,7 @@ export function initPrinttarg() {
       showNotification("error", "Please select a destination printer first.");
       return;
     }
+    wizardState.printerName = printerName;
 
     const options = getSelectedPrintOptions();
     const origBtnContent = triggeringButton ? triggeringButton.innerHTML : "";
@@ -619,6 +620,7 @@ export function initPrinttarg() {
         showNotification("error", "Please select a destination printer first.");
         return;
       }
+      wizardState.printerName = printerName;
 
       const options = getSelectedPrintOptions();
       const cwd = stage1Cwd;

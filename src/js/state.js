@@ -4,6 +4,7 @@ export const wizardState = {
   currentStage: 1,
   basename: "",
   cwd: "",
+  printerName: "",
   noticeTimer: null,
   
   setTarget(basename, cwd) {
@@ -75,6 +76,8 @@ export const wizardState = {
         s.classList.add('hidden');
       }
     });
+
+    window.dispatchEvent(new CustomEvent('stage-changed', { detail: { stage: stageNumber } }));
   },
 
   async navigateToStage(stageNumber) {

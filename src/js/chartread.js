@@ -45,7 +45,7 @@ export function populateStage3TargetContext(metadata) {
 }
 
 // State machine states
-const STATE = {
+export const STATE = {
   IDLE: "IDLE",
   CALIBRATING: "CALIBRATING",
   AWAITING_STRIP: "AWAITING_STRIP",
@@ -53,13 +53,242 @@ const STATE = {
   ALL_STRIPS_READ: "ALL_STRIPS_READ",
   WARNING: "WARNING",
   PROMPT_CONTINUE: "PROMPT_CONTINUE",
+  TABLE_PLACE_SHEET: "TABLE_PLACE_SHEET",
+  TABLE_ALIGN: "TABLE_ALIGN",
   ERROR: "ERROR",
   FINISHED: "FINISHED",
 };
 
+/**
+ * Classifies a line of stdout from chartread into a state transition, prompt, and metadata.
+ * Pure function with no side-effects or DOM interaction.
+ *
+ * @param {string} line - Raw stdout line
+ * @param {string} currentState - The current STATE value
+ * @returns {{ state: string, prompt: string, matched: boolean, meta?: object }}
+ */
+export function classifyChartreadLine(line, currentState = STATE.IDLE) {
+  if (typeof line !== "string") {
+    return { state: currentState, prompt: "", matched: false };
+  }
+
+  const lineTrim = line.trim();
+  const lineLower = lineTrim.toLowerCase();
+
+  if (!lineTrim) {
+    return { state: currentState, prompt: "", matched: false };
+  }
+
+  // 1. Info-only: Remove last sheet notice (emitted by Argyll before writing .ti3 and exiting)
+  if (lineLower.includes("remove last sheet from table") || lineLower.includes("remove last sheet")) {
+    return {
+      state: currentState,
+      prompt: lineTrim,
+      matched: true,
+      meta: { isRemoveSheetNotice: true },
+    };
+  }
+
+  // 2. Info-only: Sheet read OK
+  const sheetOkMatch = lineTrim.match(/sheet\s+(\d+)\s+of\s+(\d+)\s+read\s+ok/i);
+  if (sheetOkMatch) {
+    return {
+      state: currentState,
+      prompt: lineTrim,
+      matched: true,
+      meta: {
+        sheetOk: true,
+        sheet: parseInt(sheetOkMatch[1], 10),
+        totalSheets: parseInt(sheetOkMatch[2], 10),
+      },
+    };
+  }
+
+  // 3. Fiducial alignment prompt (XY table)
+  // e.g. "locate patch A1 with the sight," or "locate patch 1 with the sight"
+  const alignMatch = lineTrim.match(/locate\s+patch\s+([A-Za-z0-9_]+)\s+with\s+(?:the\s+)?sight/i);
+  if (alignMatch) {
+    return {
+      state: STATE.TABLE_ALIGN,
+      prompt: lineTrim,
+      matched: true,
+      meta: { patch: alignMatch[1] },
+    };
+  }
+  if (lineLower.includes("locate patch") && lineLower.includes("sight")) {
+    const fallbackMatch = lineTrim.match(/locate\s+patch\s+([^\s,]+)/i);
+    return {
+      state: STATE.TABLE_ALIGN,
+      prompt: lineTrim,
+      matched: true,
+      meta: { patch: fallbackMatch ? fallbackMatch[1] : "" },
+    };
+  }
+
+  // 4. Sheet placement prompt (XY table)
+  // e.g. "Please place sheet 1 of 1 on the table" or "Please remove previous sheet and place sheet 2 of 2 on the table"
+  const placeMatch = lineTrim.match(/place\s+sheet\s+(\d+)\s+of\s+(\d+)/i);
+  if (placeMatch) {
+    return {
+      state: STATE.TABLE_PLACE_SHEET,
+      prompt: lineTrim,
+      matched: true,
+      meta: {
+        sheet: parseInt(placeMatch[1], 10),
+        totalSheets: parseInt(placeMatch[2], 10),
+      },
+    };
+  }
+  if (lineLower.includes("place sheet") || lineLower.includes("remove previous sheet")) {
+    return {
+      state: STATE.TABLE_PLACE_SHEET,
+      prompt: lineTrim,
+      matched: true,
+      meta: {},
+    };
+  }
+
+  // 5. Continuation lines ("hit return to continue...", etc.)
+  // Real Argyll XY prompts are two lines:
+  // Line 1: "locate patch A1 with the sight,"
+  // Line 2: "then hit return to continue"
+  // When line 2 arrives, if we are in TABLE_PLACE_SHEET or TABLE_ALIGN, we MUST remain sticky in that table state!
+  const isContinuePrompt =
+    (lineLower.includes("hit return to continue") ||
+     lineLower.includes("then hit return to continue") ||
+     lineLower.includes("hit return to continue, esc or 'q' to give up")) &&
+    !lineLower.includes("use it anyway");
+
+  if (isContinuePrompt) {
+    if (currentState === STATE.TABLE_PLACE_SHEET) {
+      return {
+        state: STATE.TABLE_PLACE_SHEET,
+        prompt: lineTrim,
+        matched: true,
+        meta: { isContinuation: true },
+      };
+    }
+    if (currentState === STATE.TABLE_ALIGN) {
+      return {
+        state: STATE.TABLE_ALIGN,
+        prompt: lineTrim,
+        matched: true,
+        meta: { isContinuation: true },
+      };
+    }
+    return {
+      state: STATE.PROMPT_CONTINUE,
+      prompt: lineTrim,
+      matched: true,
+    };
+  }
+
+  // 6. Strip / measurement completed signals
+  if (
+    lineLower.includes("'d' if done") ||
+    lineLower.includes("'d' when done") ||
+    lineLower.includes("d if done") ||
+    lineLower.includes("d when done") ||
+    lineLower.includes("d to finish") ||
+    lineLower.includes("d to save") ||
+    lineLower.includes("all strips read") ||
+    lineLower.includes("all patches read") ||
+    lineLower.includes("done reading")
+  ) {
+    return {
+      state: STATE.ALL_STRIPS_READ,
+      prompt: lineTrim,
+      matched: true,
+    };
+  }
+
+  // 7. Warning prompts (e.g. unexpected response, use it anyway)
+  if (
+    lineLower.includes("(warning)") ||
+    lineLower.includes("use it anyway") ||
+    lineLower.includes("seem to have read strip pass") ||
+    lineLower.includes("unexpected response")
+  ) {
+    return {
+      state: STATE.WARNING,
+      prompt: lineTrim,
+      matched: true,
+    };
+  }
+
+  // 8. Calibration prompts
+  if (
+    ((lineLower.includes("place") &&
+      (lineLower.includes("reference") ||
+       lineLower.includes("white") ||
+       lineLower.includes("calibrat") ||
+       lineLower.includes("standard"))) ||
+     lineLower.includes("hit any key to continue") ||
+     lineLower.includes("calibration")) &&
+    !lineLower.includes("place sheet") &&
+    !lineLower.includes("locate patch")
+  ) {
+    return {
+      state: STATE.CALIBRATING,
+      prompt: lineTrim,
+      matched: true,
+    };
+  }
+
+  // 9. Ready to read / Strip trigger (handheld / strip readers)
+  if (
+    ((lineLower.includes("hit") && lineLower.includes("read") && lineLower.includes("strip")) ||
+     lineLower.includes("ready to read") ||
+     (lineLower.includes("read") && lineLower.includes("strip") && lineLower.includes("key"))) &&
+    !lineLower.includes("all strips read")
+  ) {
+    return {
+      state: STATE.AWAITING_STRIP,
+      prompt: lineTrim,
+      matched: true,
+    };
+  }
+
+  // 10. Reading / Scanning
+  if (
+    lineLower.includes("reading strip") ||
+    lineLower.includes("processing") ||
+    lineLower.includes("scanning") ||
+    lineLower.includes("reading sheet")
+  ) {
+    return {
+      state: STATE.READING,
+      prompt: lineTrim,
+      matched: true,
+    };
+  }
+
+  // 11. Errors
+  if (
+    lineLower.includes("error") ||
+    lineLower.includes("too fast") ||
+    lineLower.includes("too slow") ||
+    lineLower.includes("misread") ||
+    lineLower.includes("failed to read")
+  ) {
+    return {
+      state: STATE.ERROR,
+      prompt: lineTrim,
+      matched: true,
+    };
+  }
+
+  return {
+    state: currentState,
+    prompt: lineTrim,
+    matched: false,
+  };
+}
+
 let currentState = STATE.IDLE;
 let currentProcessId = "";
 let measurementInProgress = false;
+let xyTableDetected = false;
 let currentPassIndex = 0;
 const recordedPasses = [];
 
@@ -83,6 +312,82 @@ export function initChartread() {
   const passCounterBadge = document.getElementById("passCounterBadge");
   const btnMeasureAnotherSheet = document.getElementById("btnMeasureAnotherSheet");
   const btnFinishAndAverage = document.getElementById("btnFinishAndAverage");
+  const xyTableHint = document.getElementById("xyTableHint");
+  const xyTablePanel = document.getElementById("xyTablePanel");
+  const xyTableActiveStepBadge = document.getElementById("xyTableActiveStepBadge");
+  const xyStepPlace = document.getElementById("xyStepPlace");
+  const xyStepAlign = document.getElementById("xyStepAlign");
+  const xyStepScan = document.getElementById("xyStepScan");
+  const xyStepRemove = document.getElementById("xyStepRemove");
+
+  function setXyTableVisible(visible) {
+    if (xyTableHint) {
+      if (visible) xyTableHint.classList.remove("hidden");
+      else xyTableHint.classList.add("hidden");
+    }
+    if (xyTablePanel) {
+      if (visible) xyTablePanel.classList.remove("hidden");
+      else xyTablePanel.classList.add("hidden");
+    }
+  }
+
+  function updateXyTableSequence(phase) {
+    if (!xyTablePanel) return;
+
+    const steps = [
+      { el: xyStepPlace, name: "place" },
+      { el: xyStepAlign, name: "align" },
+      { el: xyStepScan, name: "scan" },
+      { el: xyStepRemove, name: "remove" },
+    ];
+
+    const phaseOrder = ["place", "align", "scan", "remove", "done"];
+    const targetIndex = phaseOrder.indexOf(phase);
+
+    steps.forEach((step, idx) => {
+      if (!step.el) return;
+      step.el.classList.remove("active", "completed");
+      if (targetIndex >= 0) {
+        if (idx < targetIndex) {
+          step.el.classList.add("completed");
+        } else if (idx === targetIndex && phase !== "done") {
+          step.el.classList.add("active");
+        } else if (phase === "done") {
+          step.el.classList.add("completed");
+        }
+      }
+    });
+
+    if (xyTableActiveStepBadge) {
+      xyTableActiveStepBadge.className = "status-badge";
+      switch (phase) {
+        case "place":
+          xyTableActiveStepBadge.textContent = "Step 1: Place Sheet";
+          xyTableActiveStepBadge.classList.add("badge-primary");
+          break;
+        case "align":
+          xyTableActiveStepBadge.textContent = "Step 2: Align Patches";
+          xyTableActiveStepBadge.classList.add("badge-primary");
+          break;
+        case "scan":
+          xyTableActiveStepBadge.textContent = "Step 3: Scanning";
+          xyTableActiveStepBadge.classList.add("badge-primary");
+          break;
+        case "remove":
+          xyTableActiveStepBadge.textContent = "Step 4: Remove Sheet";
+          xyTableActiveStepBadge.classList.add("badge-primary");
+          break;
+        case "done":
+          xyTableActiveStepBadge.textContent = "Complete";
+          xyTableActiveStepBadge.classList.add("badge-good");
+          break;
+        default:
+          xyTableActiveStepBadge.textContent = "Standby";
+          xyTableActiveStepBadge.classList.add("badge-idle");
+          break;
+      }
+    }
+  }
 
   function setMeasurementBusy(busy) {
     measurementInProgress = busy;
@@ -182,7 +487,13 @@ export function initChartread() {
               const opt = document.createElement("option");
               // Port value for -c switch. If port is 1 or auto, empty string leaves -c omitted for default port
               opt.value = inst.port && inst.port !== "1" ? inst.port : "";
-              opt.textContent = `${inst.type || inst.name}${inst.port ? ` (Port ${inst.port})` : ""}`;
+              const isXy = /spectro\s?scan|i1io/i.test(inst.name) || /spectro\s?scan|i1io/i.test(inst.type);
+              if (isXy) {
+                opt.dataset.xy = "1";
+                opt.textContent = `${inst.type || inst.name}${inst.port ? ` (Port ${inst.port})` : ""} · XY Table`;
+              } else {
+                opt.textContent = `${inst.type || inst.name}${inst.port ? ` (Port ${inst.port})` : ""}`;
+              }
               instrumentSelect.appendChild(opt);
             });
             instrumentSelect.value = "";
@@ -198,6 +509,21 @@ export function initChartread() {
         btnDetectInstruments.disabled = false;
         btnDetectInstruments.textContent = "↻ Detect";
         setPrompt(`Instrument detection error: ${err}`);
+      }
+    });
+  }
+
+  if (instrumentSelect) {
+    instrumentSelect.addEventListener("change", () => {
+      const selectedOpt = instrumentSelect.selectedOptions && instrumentSelect.selectedOptions[0];
+      const isXy = Boolean(selectedOpt && selectedOpt.dataset && selectedOpt.dataset.xy === "1");
+      if (isXy) {
+        xyTableDetected = true;
+        setXyTableVisible(true);
+        updateXyTableSequence("standby");
+      } else if (!measurementInProgress) {
+        xyTableDetected = false;
+        setXyTableVisible(false);
       }
     });
   }
@@ -287,6 +613,22 @@ export function initChartread() {
         }
         if (btnCancel) btnCancel.classList.remove("hidden");
         break;
+      case STATE.TABLE_PLACE_SHEET:
+        if (btnAccept) {
+          btnAccept.disabled = false;
+          btnAccept.textContent = "✓ Sheet Placed — Continue";
+          btnAccept.classList.remove("hidden");
+        }
+        if (btnCancel) btnCancel.classList.remove("hidden");
+        break;
+      case STATE.TABLE_ALIGN:
+        if (btnAccept) {
+          btnAccept.disabled = false;
+          btnAccept.textContent = "✓ Aligned — Continue";
+          btnAccept.classList.remove("hidden");
+        }
+        if (btnCancel) btnCancel.classList.remove("hidden");
+        break;
       case STATE.ERROR:
         if (btnRetry) {
           btnRetry.disabled = false;
@@ -339,6 +681,15 @@ export function initChartread() {
       setState(STATE.CALIBRATING);
       setPrompt("Starting chartread... waiting for instrument calibration prompt.");
 
+      const selectedOpt = instrumentSelect && instrumentSelect.selectedOptions && instrumentSelect.selectedOptions[0];
+      if (selectedOpt && selectedOpt.dataset && selectedOpt.dataset.xy === "1") {
+        xyTableDetected = true;
+        setXyTableVisible(true);
+        updateXyTableSequence("standby");
+      } else {
+        xyTableDetected = false;
+      }
+
       const selectedPort = instrumentSelect && instrumentSelect.value ? instrumentSelect.value : null;
 
       const config = {
@@ -365,64 +716,66 @@ export function initChartread() {
           logPre.textContent += line + "\n";
           logPre.scrollTop = logPre.scrollHeight;
 
-          // Parse prompts for state transitions
-          const lineLower = line.toLowerCase();
+          const classified = classifyChartreadLine(line, currentState);
 
-          if (
-            lineLower.includes("'d' if done") ||
-            lineLower.includes("'d' when done") ||
-            lineLower.includes("d if done") ||
-            lineLower.includes("d when done") ||
-            lineLower.includes("d to finish") ||
-            lineLower.includes("d to save") ||
-            lineLower.includes("all strips read") ||
-            lineLower.includes("all patches read") ||
-            lineLower.includes("done reading")
-          ) {
-            setState(STATE.ALL_STRIPS_READ);
-            setPrompt(`🎉 ${line.trim()} — Click 'Done & Save .ti3' to save.`);
-          } else if (
-            lineLower.includes("(warning)") ||
-            lineLower.includes("use it anyway") ||
-            lineLower.includes("seem to have read strip pass") ||
-            lineLower.includes("unexpected response") ||
-            lineLower.includes("hit return to use it anyway")
-          ) {
-            const previousPrompt = promptText ? promptText.textContent.trim() : "";
-            const isContinuationPrompt = lineLower.includes("hit return to use it anyway") || lineLower.includes("use it anyway");
-            setState(STATE.WARNING);
-            if (currentState === STATE.WARNING && isContinuationPrompt && previousPrompt && !previousPrompt.includes(line.trim())) {
-              setPrompt(`${previousPrompt}\n${line.trim()}`);
-            } else {
-              setPrompt(line.trim());
+          if (classified.matched) {
+            if (
+              classified.state === STATE.TABLE_PLACE_SHEET ||
+              classified.state === STATE.TABLE_ALIGN ||
+              (classified.meta && (classified.meta.isRemoveSheetNotice || classified.meta.sheetOk))
+            ) {
+              if (!xyTableDetected) {
+                xyTableDetected = true;
+                setXyTableVisible(true);
+              }
             }
-          } else if (
-            lineLower.includes("place sheet") ||
-            lineLower.includes("remove previous sheet") ||
-            (lineLower.includes("hit return to continue") && !lineLower.includes("use it anyway"))
-          ) {
-            setState(STATE.PROMPT_CONTINUE);
-            setPrompt(line.trim());
-          } else if (
-            (lineLower.includes("place") && (lineLower.includes("reference") || lineLower.includes("white") || lineLower.includes("calibrat") || lineLower.includes("standard"))) ||
-            lineLower.includes("hit any key to continue") ||
-            lineLower.includes("calibration")
-          ) {
-            setState(STATE.CALIBRATING);
-            setPrompt(line.trim());
-          } else if (
-            (lineLower.includes("hit") && lineLower.includes("read") && lineLower.includes("strip")) ||
-            lineLower.includes("ready to read") ||
-            (lineLower.includes("read") && lineLower.includes("strip") && lineLower.includes("key"))
-          ) {
-            setState(STATE.AWAITING_STRIP);
-            setPrompt(line.trim());
-          } else if (lineLower.includes("reading strip") || lineLower.includes("processing")) {
-            setState(STATE.READING);
-            setPrompt(line.trim());
-          } else if (lineLower.includes("error") || lineLower.includes("too fast") || lineLower.includes("too slow") || lineLower.includes("misread") || lineLower.includes("failed to read")) {
-            setState(STATE.ERROR);
-            setPrompt("⚠️ " + line.trim());
+
+            if (xyTableDetected) {
+              if (classified.state === STATE.TABLE_PLACE_SHEET) {
+                updateXyTableSequence("place");
+              } else if (classified.state === STATE.TABLE_ALIGN) {
+                updateXyTableSequence("align");
+              } else if (classified.state === STATE.READING) {
+                updateXyTableSequence("scan");
+              } else if (classified.meta && classified.meta.isRemoveSheetNotice) {
+                updateXyTableSequence("remove");
+              }
+            }
+
+            if (classified.state !== currentState) {
+              setState(classified.state);
+            }
+
+            if (classified.state === STATE.TABLE_PLACE_SHEET) {
+              const sheetInfo = (classified.meta && classified.meta.sheet && classified.meta.totalSheets)
+                ? ` (Sheet ${classified.meta.sheet} of ${classified.meta.totalSheets})`
+                : "";
+              setPrompt(`📋 ${classified.prompt}${sheetInfo}`);
+            } else if (classified.state === STATE.TABLE_ALIGN) {
+              const patchInfo = (classified.meta && classified.meta.patch)
+                ? ` [Patch ${classified.meta.patch}]`
+                : "";
+              setPrompt(`🎯 ${classified.prompt}${patchInfo}`);
+            } else if (classified.meta && classified.meta.isRemoveSheetNotice) {
+              setPrompt(`ℹ️ ${classified.prompt}`);
+            } else if (classified.meta && classified.meta.sheetOk) {
+              setPrompt(`✅ ${classified.prompt}`);
+            } else if (classified.state === STATE.ALL_STRIPS_READ) {
+              setPrompt(`🎉 ${classified.prompt} — Click 'Done & Save .ti3' to save.`);
+            } else if (classified.state === STATE.WARNING) {
+              const previousPrompt = promptText ? promptText.textContent.trim() : "";
+              const lineLower = line.toLowerCase();
+              const isContinuationPrompt = lineLower.includes("hit return to use it anyway") || lineLower.includes("use it anyway");
+              if (currentState === STATE.WARNING && isContinuationPrompt && previousPrompt && !previousPrompt.includes(line.trim())) {
+                setPrompt(`${previousPrompt}\n${line.trim()}`);
+              } else {
+                setPrompt(classified.prompt);
+              }
+            } else if (classified.state === STATE.ERROR) {
+              setPrompt("⚠️ " + classified.prompt);
+            } else {
+              setPrompt(classified.prompt);
+            }
           }
         });
 
@@ -444,6 +797,9 @@ export function initChartread() {
           stopSwatchListener();
 
           if (event.payload.code === 0) {
+            if (xyTableDetected) {
+              updateXyTableSequence("done");
+            }
             try {
               const passIndex = currentPassIndex + 1;
               const filename = await invoke("snapshot_ti3", {
@@ -615,8 +971,12 @@ export function initChartread() {
       try {
         btnAccept.disabled = true;
         await invoke("send_stdin", { id: currentProcessId, input: "\n" });
-        setState(STATE.READING);
-        setPrompt("Accepted. Processing...");
+        if (currentState === STATE.TABLE_PLACE_SHEET || currentState === STATE.TABLE_ALIGN) {
+          setPrompt("Continuing XY table sequence...");
+        } else {
+          setState(STATE.READING);
+          setPrompt("Accepted. Processing...");
+        }
       } catch (e) {
         console.error("send_stdin error:", e);
         btnAccept.disabled = false;
@@ -682,14 +1042,27 @@ export function initChartread() {
   if (btnCancel) {
     btnCancel.addEventListener("click", async () => {
       try {
+        btnCancel.disabled = true;
+        if (currentState === STATE.TABLE_PLACE_SHEET || currentState === STATE.TABLE_ALIGN || xyTableDetected) {
+          // For XY table states, send 'q\n' first to allow the table to park its measurement head gracefully
+          try {
+            await invoke("send_stdin", { id: currentProcessId, input: "q\n" });
+          } catch (_) {}
+          // Brief pause before kill to allow graceful parking
+          await new Promise((resolve) => setTimeout(resolve, 500));
+        }
         await invoke("kill_process", { id: currentProcessId });
         stopSwatchListener();
         setState(recordedPasses.length > 0 ? STATE.FINISHED : STATE.IDLE);
         setPrompt("Measurement cancelled.");
+        if (xyTableDetected) {
+          updateXyTableSequence("standby");
+        }
       } catch (e) {
         console.error("kill_process error:", e);
         setPrompt(`Cancel failed: ${e}`);
       } finally {
+        btnCancel.disabled = false;
         setMeasurementBusy(false);
         stopSwatchListener();
       }

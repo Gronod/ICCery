@@ -102,3 +102,46 @@ The "Preferences" button opens the native macOS `NSPrintPanel` (not CUPS web UI 
 - Epson color bypass: `EPIJ_CMat=3` (Off / No Color Adjustment)
 - Canon color bypass: `CNIJIntent2=4` or `CNIJIntent=4`
 - Gutenprint: `StpColorCorrection=Uncorrected`
+
+## Verification History & Printer Drift Tracking (#95)
+
+- Historical verification runs are stored in `verification_history.json` in the app data directory.
+- Record schema (`VerificationRecord` in `src-tauri/src/quality_store.rs`):
+  - `id`: unique record identifier in the format `vr-<epoch_millis>-<seq>`.
+  - `profile_name`: target profile filename.
+  - `printer`: device name captured at print spooling (`wizardState.printerName`), or "Unknown".
+  - `avg_de`, `max_de`, `rms_de`: CIEDE2000 metrics from `profcheck` (using `-u` JSON summary).
+  - `patch_count`: number of test patches evaluated.
+  - `status`: classified status using **ICCery verification bands (issue #95)**:
+    - `< 1.0`: "Excellent" (`badge-excellent`)
+    - `< 2.0`: "Good" (`badge-good`)
+    - `< 3.5`: "Acceptable" (`badge-acceptable`)
+    - `>= 3.5`: "Warning" (`badge-poor`)
+  - `timestamp`: ISO-8601 UTC string.
+- Max capacity is 500 records; oldest records evicted on overflow.
+- Atomic file writes (`.tmp` write followed by `rename`) prevent data corruption.
+- Tauri IPC command casing:
+  - Nested struct fields (`VerificationRecord`) serialize with `snake_case`.
+  - Top-level Tauri command arguments use `camelCase` (e.g. `savePath`, `record`, `profileName`).
+- Drift history UI in Stage 5 features an interactive SVG trend chart with ICCery verification reference bands, consecutive-breach alert card (requires $\ge 2$ consecutive runs $\ge 3.5$ on distinct calendar days or $\ge 1$ hour apart), and RFC-4180 compliant CSV export.
+
+## Stage 3 XY Automated Scanning Tables (#93)
+
+- Supports automated XY scanning tables (GretagMacbeth SpectroScan, X-Rite i1iO) in Stage 3 `chartread`.
+- Hardware detection in `instlist` flags devices matching `/spectro\s?scan|i1io/i` with `data-xy="1"` and `· XY Table` label suffix.
+- Runtime auto-detection activates when any XY-specific prompt is classified from `chartread` stdout (supporting i1iO units reporting as i1Pro).
+- XY State Machine additions:
+  - `STATE.TABLE_PLACE_SHEET`: Prompts user to place sheet on table; button displays "✓ Sheet Placed — Continue".
+  - `STATE.TABLE_ALIGN`: Prompts user to align measurement head with target fiducial patches (`locate patch <ID> with sight`); button displays "✓ Aligned — Continue".
+- Two-line prompt handling & sticky state:
+  - Argyll `chartread.c` splits XY prompts across two lines (prompt line followed by `hit return to continue...`).
+  - While in `TABLE_PLACE_SHEET` or `TABLE_ALIGN`, subsequent continuation lines remain sticky in that table state, preserving the custom button label and preventing regression to generic `PROMPT_CONTINUE`.
+- Button behaviors:
+  - `btnAccept`: in `TABLE_*` states, sends `\n` without forcing `STATE.READING`; the state machine advances naturally when Argyll emits the next prompt.
+  - `btnCancel`: in `TABLE_*` states or when an XY table is active, sends `q\n` first to allow the hardware to park its measurement head gracefully before terminating the process.
+- Multi-sheet and final sheet notice:
+  - Multi-sheet targets are measured within a single `chartread` process lifecycle; sheet changes transition through `TABLE_PLACE_SHEET` without opening the Stage 3 multi-pass averaging panel.
+  - `Please remove last sheet from table` is emitted by Argyll right before writing `.ti3` and exiting; it is classified as an info-only notice (`isRemoveSheetNotice: true`) and does not prompt for user input.
+- Testing:
+  - Pure line classification unit tests live in `src/js/chartread.test.js` (executable directly in Node or browser console).
+  - Unix/macOS mock script `src-tauri/argyll/mocks/chartread.mock` supports `--xy` flag (or `MOCK_XY_TABLE=1`) with blocking `read` calls simulating calibration, sheet placement, fiducial alignment, and scanning.

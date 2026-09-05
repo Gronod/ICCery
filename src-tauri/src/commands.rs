@@ -426,6 +426,34 @@ pub async fn select_target_file(
 }
 
 #[tauri::command]
+pub async fn select_csv_save_path(
+    app: AppHandle,
+    default_name: Option<String>,
+) -> Result<Option<String>, String> {
+    use tauri_plugin_dialog::DialogExt;
+
+    let mut builder = app.dialog().file().add_filter("CSV", &["csv"]);
+    if let Some(ref name) = default_name {
+        if !name.trim().is_empty() {
+            let filename = if name.to_lowercase().ends_with(".csv") {
+                name.to_string()
+            } else {
+                format!("{}.csv", name)
+            };
+            builder = builder.set_file_name(filename);
+        }
+    }
+
+    let (tx, rx) = tokio::sync::oneshot::channel();
+    builder.save_file(move |file_path| {
+        let res = file_path.map(|p| p.to_string());
+        let _ = tx.send(res);
+    });
+
+    rx.await.map_err(|e| format!("Dialog channel error: {}", e))
+}
+
+#[tauri::command]
 pub async fn select_directory(
     app: AppHandle,
     default_dir: Option<String>,
@@ -1084,6 +1112,7 @@ pub fn build_profcheck_args(config: &ProfcheckConfig) -> Vec<String> {
         "-v".to_string(),
         "-k".to_string(),
         "-s".to_string(),
+        "-u".to_string(),
         config.ti3_path.clone(),
         config.icc_path.clone(),
     ]
@@ -1868,7 +1897,7 @@ mod tests {
             cwd: "/home/user".to_string(),
         };
         let args = build_profcheck_args(&config);
-        assert_eq!(args, vec!["-v", "-k", "-s", "my_profile.ti3", "my_profile.icc"]);
+        assert_eq!(args, vec!["-v", "-k", "-s", "-u", "my_profile.ti3", "my_profile.icc"]);
     }
 
     #[test]
