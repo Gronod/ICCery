@@ -883,9 +883,19 @@
           <label for="argyll_binary_dir">ArgyllCMS Binary Directory Override</label>
           <input type="text" id="argyll_binary_dir" placeholder="Leave empty for bundled sidecars (e.g. /usr/bin)">
         </div>
-        <div class="form-group">
-          <label for="default_instrument">Default Instrument Override</label>
-          <input type="text" id="default_instrument" placeholder="e.g. i1">
+        <div class="form-group" style="margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--border-color, #333);">
+          <label style="font-weight: 600;">Instrument &amp; Measurement Preferences</label>
+          <div style="margin-top: 8px;">
+            <label for="default_instrument" class="sub-label">Default Instrument Override</label>
+            <input type="text" id="default_instrument" placeholder="e.g. i1">
+          </div>
+          <div style="margin-top: 12px;">
+            <label class="checkbox-label" for="enable_i1pro2_leds" style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+              <input type="checkbox" id="enable_i1pro2_leds">
+              <span>Enable i1Pro 2 status LEDs (<code>-Y l</code>)</span>
+            </label>
+            <small class="help-hint" style="display:block; font-size:0.75rem; color:var(--text-muted, #888); margin-top:3px;">Provides visual status feedback via the instrument ring LEDs during patch reading. Requires patched ArgyllCMS build.</small>
+          </div>
         </div>
         <div class="form-group" style="margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--border-color, #333);">
           <label style="font-weight: 600;">Stage 3 ΔE₀₀ Traffic-Light Thresholds</label>

@@ -426,8 +426,11 @@ export function initChartread() {
           }
         });
 
+        let lastStderrLine = "";
+
         const unlistenStderr = await listen("process:stderr", (event) => {
           if (event.payload.id === currentProcessId && event.payload.line) {
+            lastStderrLine = event.payload.line;
             logPre.textContent += "ERR: " + event.payload.line + "\n";
             logPre.scrollTop = logPre.scrollHeight;
           }
@@ -471,8 +474,10 @@ export function initChartread() {
             }
           } else {
             setState(STATE.FINISHED);
-            setPrompt(`❌ chartread exited with code ${event.payload.code}.`);
-            logPre.textContent += `\n[ERROR] chartread exited with code ${event.payload.code}.\n`;
+            if (logContainer) logContainer.open = true;
+            const errDetail = lastStderrLine ? ` (${lastStderrLine})` : "";
+            setPrompt(`❌ chartread exited with code ${event.payload.code}.${errDetail}`);
+            logPre.textContent += `\n[ERROR] chartread exited with code ${event.payload.code}.${errDetail}\n`;
           }
 
           setMeasurementBusy(false);
