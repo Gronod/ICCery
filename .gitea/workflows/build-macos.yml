@@ -17,16 +17,16 @@ jobs:
             target: x86_64-apple-darwin
             binary_dir: macos-x86_64
             arch: x86_64
-          - name: Apple Silicon
-            os: macos
-            target: aarch64-apple-darwin
-            binary_dir: macos-aarch64
-            arch: arm64
-          - name: Universal (Intel + Apple Silicon)
-            os: macos
-            target: universal-apple-darwin
-            binary_dir: macos-universal
-            arch: universal
+#          - name: Apple Silicon
+#            os: macos
+#            target: aarch64-apple-darwin
+#            binary_dir: macos-aarch64
+#            arch: arm64
+#          - name: Universal (Intel + Apple Silicon)
+#            os: macos
+#            target: universal-apple-darwin
+#            binary_dir: macos-universal
+#            arch: universal
     
     steps:
       - name: Checkout repository
@@ -35,7 +35,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24
           cache: 'npm'
 
       - name: Install Rust stable
