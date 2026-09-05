@@ -804,6 +804,44 @@
             </div>
           </div>
 
+          <!-- Verification History & Drift Tracking -->
+          <details class="log-container drift-history" id="driftHistorySection">
+            <summary>Verification History &amp; Drift Tracking</summary>
+            <div class="notification-banner warning hidden" id="driftAlertCard">
+              <span id="driftAlertIcon">⚠️</span><span id="driftAlertText"></span>
+            </div>
+            <div class="drift-filter-row hidden" id="driftFilterRow">
+              <label for="driftPrinterFilter">Filter by Printer:</label>
+              <select id="driftPrinterFilter">
+                <option value="">All Printers</option>
+              </select>
+            </div>
+            <div id="driftChartWrap" class="drift-chart-wrap">
+              <svg id="driftTrendChart" role="img" aria-label="Printer Drift Verification History"></svg>
+            </div>
+            <p id="driftEmptyState" class="help-hint">No verification history yet for this profile.</p>
+            <div class="drift-table-wrap">
+              <table id="verificationHistoryTable" class="drift-table">
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Printer</th>
+                    <th>Avg ΔE₀₀</th>
+                    <th>Peak ΔE₀₀</th>
+                    <th>RMS ΔE₀₀</th>
+                    <th>Patches</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody id="verificationHistoryTbody"></tbody>
+              </table>
+            </div>
+            <div class="btn-row">
+              <button type="button" class="secondary" id="btnExportHistoryCsv" disabled>Export CSV…</button>
+              <button type="button" class="danger" id="btnClearHistory" disabled>Clear History</button>
+            </div>
+          </details>
+
           <!-- 3D Gamut Viewer -->
           <div class="gamut-viewer-section">
             <div class="gamut-viewer-header">

@@ -1671,5 +1671,148 @@ button.danger:hover {
   opacity: 0.55;
 }
 
+/* ═══════════════════════════════════════════════════════════════════════════
+   Longitudinal Printer Drift Tracking & Verification History — Stage 5
+   ═══════════════════════════════════════════════════════════════════════════ */
 
+.drift-history {
+  margin-top: 16px;
+  margin-bottom: 20px;
+}
 
+.drift-filter-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+  font-size: 0.85rem;
+}
+
+.drift-filter-row select {
+  max-width: 240px;
+  padding: 4px 8px;
+  height: 30px;
+  font-size: 0.85rem;
+}
+
+.drift-chart-wrap {
+  width: 100%;
+  height: 240px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--border-color, #333);
+  border-radius: 6px;
+  margin-bottom: 14px;
+  overflow: hidden;
+  position: relative;
+}
+
+#driftTrendChart {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.drift-chart-grid line {
+  stroke: rgba(255, 255, 255, 0.08);
+  stroke-width: 1;
+}
+
+.drift-chart-axis line,
+.drift-chart-axis path {
+  stroke: rgba(255, 255, 255, 0.2);
+  stroke-width: 1;
+}
+
+.drift-chart-text {
+  fill: #888;
+  font-size: 10px;
+  font-family: monospace;
+}
+
+.drift-band-label {
+  fill: rgba(255, 255, 255, 0.45);
+  font-size: 9px;
+  text-anchor: end;
+}
+
+.drift-line-avg {
+  fill: none;
+  stroke: #3b82f6;
+  stroke-width: 2.5;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.drift-line-max {
+  fill: none;
+  stroke: #f59e0b;
+  stroke-width: 1.5;
+  stroke-dasharray: 4, 3;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.drift-dot-avg {
+  fill: #3b82f6;
+  stroke: #1e293b;
+  stroke-width: 2;
+  cursor: pointer;
+  transition: r 0.15s ease, fill 0.15s ease;
+}
+
+.drift-dot-avg:hover {
+  r: 6;
+  fill: #60a5fa;
+}
+
+.drift-dot-max {
+  fill: #f59e0b;
+  stroke: #1e293b;
+  stroke-width: 1.5;
+  cursor: pointer;
+  transition: r 0.15s ease, fill 0.15s ease;
+}
+
+.drift-dot-max:hover {
+  r: 5;
+  fill: #fbbf24;
+}
+
+.drift-table-wrap {
+  max-height: 220px;
+  overflow-y: auto;
+  border: 1px solid var(--border-color, #333);
+  border-radius: 6px;
+  margin-bottom: 14px;
+}
+
+.drift-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+  text-align: left;
+}
+
+.drift-table th {
+  position: sticky;
+  top: 0;
+  background: var(--bg-surface, #1e1e1e);
+  color: var(--text-muted, #aaa);
+  font-weight: 600;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border-color, #333);
+  z-index: 1;
+}
+
+.drift-table td {
+  padding: 7px 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.drift-table tbody tr:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.drift-table tbody tr:last-child td {
+  border-bottom: none;
+}
