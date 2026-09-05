@@ -12,16 +12,16 @@ jobs:
     strategy:
       matrix:
         platform:
-#          - name: Intel
-#            os: macos
-#            target: x86_64-apple-darwin
-#            binary_dir: macos-x86_64
-#            arch: x86_64
-#          - name: Apple Silicon
-#            os: macos
-#            target: aarch64-apple-darwin
-#            binary_dir: macos-aarch64
-#            arch: arm64
+          - name: Intel
+            os: macos
+            target: x86_64-apple-darwin
+            binary_dir: macos-x86_64
+            arch: x86_64
+          - name: Apple Silicon
+            os: macos
+            target: aarch64-apple-darwin
+            binary_dir: macos-aarch64
+            arch: arm64
           - name: Universal (Intel + Apple Silicon)
             os: macos
             target: universal-apple-darwin
