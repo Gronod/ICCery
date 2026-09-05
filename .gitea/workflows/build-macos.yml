@@ -66,7 +66,13 @@ jobs:
           CARGO_TARGET_DIR: "${{ runner.temp }}/cargo-target"
         run: |
           cd src-tauri
-          cargo test
+          if [ "${{ matrix.platform.target }}" = "universal-apple-darwin" ]; then
+            cargo test
+          elif [ "${{ matrix.platform.target }}" = "aarch64-apple-darwin" ] && [ "$(uname -m)" != "arm64" ]; then
+            cargo test --no-run --target ${{ matrix.platform.target }}
+          else
+            cargo test --target ${{ matrix.platform.target }}
+          fi
 
       - name: Set Release Environment
         id: set_env
