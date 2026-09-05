@@ -276,7 +276,7 @@ mod tests {
         let pm = ProcessManager::new();
         // Test helper using dummy/mock or direct map operations
         {
-            let mut stdins = pm.stdins.lock().await;
+            let stdins = pm.stdins.lock().await;
             assert!(!stdins.contains_key("test_proc"));
         }
     }

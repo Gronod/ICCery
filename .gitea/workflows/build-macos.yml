@@ -44,9 +44,6 @@ jobs:
           toolchain: stable
           targets: ${{ matrix.platform.target == 'universal-apple-darwin' && 'x86_64-apple-darwin, aarch64-apple-darwin' || matrix.platform.target }}
 
-      - name: Rust Cache
-        uses: Swatinem/rust-cache@v2
-
       - name: Install Node dependencies
         run: npm ci
 
@@ -69,11 +66,7 @@ jobs:
           CARGO_TARGET_DIR: "${{ runner.temp }}/cargo-target"
         run: |
           cd src-tauri
-          if [ "${{ matrix.platform.target }}" = "universal-apple-darwin" ]; then
-            cargo test
-          else
-            cargo test --target ${{ matrix.platform.target }}
-          fi
+          cargo test
 
       - name: Set Release Environment
         id: set_env
