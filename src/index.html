@@ -559,6 +559,25 @@
             </div>
           </div>
 
+          <!-- XY Scanning Table Panel -->
+          <div id="xyTableHint" class="notification-banner info hidden">
+            <span>ℹ️</span>
+            <span>SpectroScan → use the SS layout in Stage 2; i1iO → use i1/i1Pro2 layout — the table is auto-detected when chartread starts.</span>
+          </div>
+
+          <div id="xyTablePanel" class="xy-table-panel hidden">
+            <div class="xy-table-header">
+              <h4>XY Automated Scanning Table Sequence</h4>
+              <span id="xyTableActiveStepBadge" class="status-badge badge-idle">Standby</span>
+            </div>
+            <ol class="xy-steps-list">
+              <li id="xyStepPlace" class="xy-step">Place sheet on table</li>
+              <li id="xyStepAlign" class="xy-step">Align reference patches with sight</li>
+              <li id="xyStepScan" class="xy-step">Automated scan in progress</li>
+              <li id="xyStepRemove" class="xy-step">Remove sheet from table</li>
+            </ol>
+          </div>
+
           <!-- State & Prompt Area -->
           <div class="chartread-status">
             <div class="status-label">State: <span id="chartreadState">IDLE</span></div>

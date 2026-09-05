@@ -2,6 +2,51 @@
 # Mock script for chartread -u
 # This script simulates the behaviour of chartread for testing purposes.
 
+# Check for --xy argument or MOCK_XY_TABLE environment variable
+IS_XY=0
+for arg in "$@"; do
+    if [ "$arg" = "--xy" ]; then
+        IS_XY=1
+        break
+    fi
+done
+
+if [ "$IS_XY" = "1" ] || [ "${MOCK_XY_TABLE}" = "1" ]; then
+    echo "Place instrument on calibration tile and hit [Space] to calibrate."
+    read -r _calib
+    echo "Calibration successful."
+
+    echo "Please place sheet 1 of 1 on the table"
+    echo "hit return to continue, Esc or 'q' to give up"
+    read -r _sheet1
+
+    echo "locate patch A1 with the sight,"
+    echo "then hit return to continue"
+    read -r _fid1
+
+    echo "locate patch B24 with the sight,"
+    echo "then hit return to continue"
+    read -r _fid2
+
+    echo "Reading sheet 1..."
+    sleep 0.5
+
+    # Emit mock JSON for strip A
+    cat << 'EOF'
+ROW_COLORS_JSON: {"event": "row_complete", "row_id": "A", "row_index": 0, "total_rows": 2, "patch_count": 3, "patches": [{"id": "1", "loc": "A1", "is_pad": false, "device": [0.0, 50.0, 100.0], "expected": {"XYZ": [18.4210, 20.1234, 15.6789], "Lab": [51.98, -8.45, 12.32]}, "measured": {"XYZ": [18.5120, 20.0451, 15.7100], "Lab": [51.89, -8.31, 12.15]}}, {"id": "2", "loc": "A2", "is_pad": false, "device": [10.0, 60.0, 90.0], "expected": {"Lab": [60.0, 10.0, -20.0]}, "measured": {"Lab": [60.1, 10.5, -19.5]}}, {"id": "3", "loc": "A3", "is_pad": true, "device": [100.0, 100.0, 100.0]}]}
+EOF
+
+    # Emit mock JSON for strip B
+    cat << 'EOF'
+ROW_COLORS_JSON: {"event": "row_complete", "row_id": "B", "row_index": 1, "total_rows": 2, "patch_count": 2, "patches": [{"id": "4", "loc": "B1", "is_pad": false, "device": [100.0, 0.0, 0.0], "expected": {"Lab": [40.0, 40.0, 40.0]}, "measured": {"Lab": [38.0, 41.0, 39.0]}}, {"id": "5", "loc": "B2", "is_pad": false, "device": [0.0, 100.0, 0.0], "expected": {"Lab": [80.0, -50.0, 50.0]}, "measured": {"Lab": [79.0, -49.0, 51.0]}}]}
+EOF
+
+    echo "Sheet 1 of 1 read OK"
+    echo "Please remove last sheet from table"
+    exit 0
+fi
+
+# Handheld / strip reader simulation
 echo "Place instrument on calibration tile and hit [Space] to calibrate."
 
 # We don't really wait for input, just wait 1 second

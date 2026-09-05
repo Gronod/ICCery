@@ -97,7 +97,6 @@ ICCery is a native, cross-platform desktop application built with:
 ### Milestone 9 — macOS Native Support & Enhanced Print Spooling (`v0.4.0`)
 - [ ] **macOS Platform Bundle**: Build and sign universal macOS `.dmg` bundles with notarization.
 - [ ] **macOS Raw Spooling**: Native CoreGraphics/CUPS raw print dialog bypass.
-- [ ] **SpectroScan & Automated Table Support (#93)**: Support XY automated scanning tables (i1iO / SpectroScan) in `chartread` (deferred).
 
 ### Milestone 13 — UI/UX & Workflow Polish
 
@@ -108,6 +107,7 @@ ICCery is a native, cross-platform desktop application built with:
 - [x] **3D Gamut Viewer Controls (#185)**: Camera reset, opacity sliders, keyboard shortcut, and full public-API JSDoc.
 - [x] **Gamut / Profcheck Hardening (#179)**: Validate `.gam` vertex/face parsing, improved `profcheck` regex fallbacks for legacy text output, and user-visible parser warnings.
 
-### Milestone 12 — Future Workflow & Advanced Analytics (Deferred)
-- [ ] **Batch Verification & Drift Tracking (#95)**: Track printer drift over time by comparing periodic verification measurements against a baseline profile.
-- [ ] **Multi-Language Localization (#96)**: Full UI internationalization (English, German, French, Japanese).
+### Milestone 12 — Future Workflow & Advanced Analytics
+- [x] **Printer Drift Tracking & Verification Analytics (#95)**: Track longitudinal printer drift in Stage 5 over time with CIEDE2000 trend charts, breach alert banners, RFC-4180 CSV export, and history storage.
+- [x] **XY Automated Scanning Tables (#93)**: Full Stage 3 support for automated XY scanning tables (SpectroScan, i1iO) with multi-line prompt classification, fiducial alignment, and sheet placement checklist.
+- [ ] ~~**Multi-Language Localization (#96)**~~: *Closed — Won't Fix* (English UI retained as standard color-management terminology).
