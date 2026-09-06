@@ -115,7 +115,7 @@ The "Preferences" button opens the native macOS `NSPrintPanel` (not CUPS web UI 
 - Record schema (`VerificationRecord` in `src-tauri/src/quality_store.rs`):
   - `id`: unique record identifier in the format `vr-<epoch_millis>-<seq>`.
   - `profile_name`: target profile filename.
-  - `printer`: device name captured at print spooling (`wizardState.printerName`), or "Unknown".
+  - `printer_name`: device name captured at print spooling (`wizardState.printerName`), or "Unknown".
   - `avg_de`, `max_de`, `rms_de`: CIEDE2000 metrics from `profcheck` (using `-u` JSON summary).
   - `patch_count`: number of test patches evaluated.
   - `status`: classified status using **ICCery verification bands (issue #95)**:
@@ -124,7 +124,7 @@ The "Preferences" button opens the native macOS `NSPrintPanel` (not CUPS web UI 
     - `< 3.5`: "Acceptable" (`badge-acceptable`)
     - `>= 3.5`: "Warning" (`badge-poor`)
   - `timestamp`: ISO-8601 UTC string.
-- Max capacity is 500 records; oldest records evicted on overflow.
+- Max capacity is 1,000 records; oldest records evicted on overflow.
 - Atomic file writes (`.tmp` write followed by `rename`) prevent data corruption.
 - Tauri IPC command casing:
   - Nested struct fields (`VerificationRecord`) serialize with `snake_case`.
