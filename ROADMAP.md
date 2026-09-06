@@ -14,7 +14,7 @@ ICCery is a native, cross-platform desktop application built with:
 - **Frontend**: Vanilla JS (ES Modules) + HTML5/CSS3 with a modern dark theme and responsive layout.
 - **Visualization**: Three.js WebGL engine for 3D CIELAB color gamut volumes and sRGB reference comparisons.
 - **Engine**: ArgyllCMS command-line utilities orchestrated over isolated standard stream IPC (`stdin`, `stdout`, `stderr`).
-- **Current Version**: `v0.8.3` (Production release).
+- **Current Version**: `v0.8.4` (Production release).
 
 ---
 
@@ -112,6 +112,10 @@ ICCery is a native, cross-platform desktop application built with:
 - [x] **Gamut Viewer Node Test Runner Support (#212)**: Guarded `window` and `window.__TAURI__` globals in `gamut_viewer.js` and added polyfill mock harness to `gamut_viewer.test.js` to enable automated headless test execution via `node src/js/gamut_viewer.test.js`.
 - [x] **Custom Spectrum File Picker Dialog (#210)**: Implemented native `select_spectrum_file` command wrapping Tauri file dialog with `.sp` filter for custom FWA/OBA spectrum selection in Stage 4 profile generation.
 - [x] **CGATS Dataset Import File Picker & State Synchronization (#211)**: Implemented native `select_dataset_file` command with `.ti3`, `.txt`, `.cgats`, and `.csv` filter, synchronized wizard target directory and basename upon import, and guarded against empty target states.
+
+### Maintenance & Reliability Release (`v0.8.4`)
+- [x] **Atomic Verification History Persistence (#213)**: Hardened `quality_store.rs` with atomic temporary file writes (`.tmp`), explicit flush/sync, and atomic rename to prevent historical drift data loss or corruption upon unexpected system crashes.
+- [x] **Frontend Unit Testing & CI Integration (#215)**: Added standard `npm test` script executing the 3 frontend test suites (`profcheck`, `chartread`, and `gamut_viewer`) and integrated automated frontend test validation into macOS, Linux, and Windows CI workflows.
 
 ---
 

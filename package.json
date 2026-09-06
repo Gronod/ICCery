@@ -1,11 +1,12 @@
 {
   "name": "iccery",
   "private": true,
-  "version": "0.8.3",
+  "version": "0.8.4",
   "type": "module",
   "scripts": {
     "fetch-argyll": "node scripts/fetch-argyll.mjs",
-    "tauri": "tauri"
+    "tauri": "tauri",
+    "test": "node src/js/profcheck.test.js && node src/js/chartread.test.js && node src/js/gamut_viewer.test.js"
   },
   "devDependencies": {
     "@tauri-apps/cli": "^2"

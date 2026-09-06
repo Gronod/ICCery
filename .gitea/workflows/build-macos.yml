@@ -59,6 +59,9 @@ jobs:
       - name: Install Node dependencies
         run: npm ci
 
+      - name: Run frontend tests
+        run: npm test
+
       - name: Fetch ArgyllCMS binaries
         env:
           ARGYLL_SERVER_URL: ${{ github.server_url }}
@@ -81,23 +84,9 @@ jobs:
           echo "SHORT_SHA=${SHORT_SHA}" >> $GITHUB_ENV
           echo "PREFIX=ICCery_${TAG}-${SHORT_SHA}-macos-${{ matrix.platform.arch }}" >> $GITHUB_ENV
 
-      - name: Warm up macOS GUI for DMG layout
-        shell: bash
-        run: |
-          # Tauri's DMG bundler runs Finder AppleScript to set the background
-          # picture and icon positions. On CI Macs, Finder/Aqua may be idle,
-          # which causes AppleEvent timeouts (-1712). Wake them before build.
-          echo "WindowServer: $(pgrep -l WindowServer || echo 'NOT RUNNING')"
-          echo "console user: $(stat -f '%Su' /dev/console 2>/dev/null || echo unknown)"
-          echo "whoami: $(whoami)"
-          open -g -a Finder || true
-          open -g -a "System Events" || true
-          osascript -e 'tell application "Finder" to get name' || true
-          sleep 10
-
       - name: Build Tauri App
         env:
-          TAURI_BUNDLER_DMG_IGNORE_CI: "true"
+          CI: "true"
         run: npm run tauri build -- --target ${{ matrix.platform.target }}
 
       - name: Prepare Release Assets
