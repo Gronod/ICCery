@@ -35,6 +35,16 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Ensure workspace and git permissions
+        run: |
+          mkdir -p "${{ runner.temp }}/.config/git"
+          touch "${{ runner.temp }}/.config/git/ignore"
+          mkdir -p .git/info
+          touch .git/info/exclude
+          chmod -R u+rwX .git || true
+          chmod 644 .git/info/exclude || true
+          git config --local core.excludesFile "${{ runner.temp }}/.config/git/ignore" || true
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
