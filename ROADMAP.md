@@ -104,7 +104,7 @@ ICCery is a native, cross-platform desktop application built with:
 - [x] **macOS CI Cross-Compilation Testing**: Hardened `.gitea/workflows/build-macos.yml` by compiling Apple Silicon tests with `--no-run` on Intel runner hosts to avoid architecture execution mismatch.
 
 ### Milestone 12 — Future Workflow & Advanced Analytics (`v0.8.2`)
-- [x] **Printer Drift Tracking & Verification Analytics (#95)**: Track longitudinal printer drift in Stage 5 over time with historical run logging in `verification_history.json` (500 records), interactive dual-series SVG trend chart with ICCery verification reference bands, consecutive-breach alert recommendation card, and RFC-4180 CSV export.
+- [x] **Printer Drift Tracking & Verification Analytics (#95)**: Track longitudinal printer drift in Stage 5 over time with historical run logging in `verification_history.json` (1,000 records), interactive dual-series SVG trend chart with ICCery verification reference bands, consecutive-breach alert recommendation card, and RFC-4180 CSV export.
 - [x] **XY Automated Scanning Tables (#93)**: Full Stage 3 support for automated XY scanning tables (GretagMacbeth SpectroScan, X-Rite i1iO) with pure multi-line prompt classification, fiducial alignment prompts, 4-step sequence checklist, and graceful head parking on cancel.
 - [ ] ~~**Multi-Language Localization (#96)**~~: *Closed — Won't Fix* (English UI retained as standard color-management terminology).
 
