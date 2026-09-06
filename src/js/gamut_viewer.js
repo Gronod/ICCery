@@ -1,8 +1,7 @@
-﻿import { computeQuickHull } from "./vendor/quickhull.js";
+import { computeQuickHull } from "./vendor/quickhull.js";
 import { labToSrgb } from "./color_convert.js";
 
-const { invoke } = window.__TAURI__.core;
-const { listen } = window.__TAURI__.event;
+const invoke = typeof window !== 'undefined' && window.__TAURI__?.core?.invoke ? window.__TAURI__.core.invoke : null;
 
 let scene, camera, renderer, labelRenderer, controls;
 let currentProfileMesh = null;

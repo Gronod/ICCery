@@ -1,20 +1,50 @@
-// Manual / browser-console tests for gamut_viewer.js and profcheck.js parsing.
-// Run in a browser/devtools console after the app has loaded:
+// Unit & console tests for gamut_viewer.js parsing.
+// Can be run in browser devtools console:
 //   import('./gamut_viewer.test.js').then(m => m.runAll())
+// Or in Node:
+//   node src/js/gamut_viewer.test.js
 
-import { parseGamutFile } from './gamut_viewer.js';
+// Node environment polyfill for browser globals
+if (typeof window === 'undefined') {
+  globalThis.window = {
+    __TAURI__: {
+      core: { invoke: () => Promise.resolve() },
+      event: { listen: () => Promise.resolve(() => {}) }
+    },
+    addEventListener: () => {},
+    dispatchEvent: () => {}
+  };
+  globalThis.document = {
+    getElementById: () => null,
+    querySelectorAll: () => []
+  };
+}
+
+const { parseGamutFile } = await import('./gamut_viewer.js');
+
+let passed = 0;
+let total = 0;
 
 export function runAll() {
-  console.group('gamut/profcheck parser tests');
+  console.group('Gamut Viewer Parser Tests');
+  passed = 0;
+  total = 0;
   testParseGamutBasic();
   testParseGamutDualTable();
   testParseGamutWithComments();
+  console.log(`\nResults: ${passed} / ${total} tests passed.`);
   console.groupEnd();
+
+  if (passed !== total) {
+    throw new Error(`Gamut viewer parser tests failed: ${total - passed} failure(s)`);
+  }
 }
 
 function assertEqual(actual, expected, message) {
+  total++;
   const ok = JSON.stringify(actual) === JSON.stringify(expected);
   if (ok) {
+    passed++;
     console.log('PASS:', message);
   } else {
     console.error('FAIL:', message, 'expected', expected, 'got', actual);
@@ -77,4 +107,9 @@ END_DATA`;
   const { vertices, faces, warnings } = parseGamutFile(text);
   assertEqual(vertices.length, 4, 'commented gamut vertex count');
   assertEqual(faces.length, 2, 'commented gamut face count');
+}
+
+// Auto-run if executed in Node.js
+if (typeof process !== 'undefined' && process.argv && process.argv[1]?.endsWith('gamut_viewer.test.js')) {
+  runAll();
 }
