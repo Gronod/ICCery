@@ -163,9 +163,9 @@ The "Preferences" button opens the native macOS `NSPrintPanel` (not CUPS web UI 
 - Defaults to `false` ensuring 100% out-of-the-box compatibility with stock upstream ArgyllCMS binaries.
 - Subprocess error diagnostics in `chartread.js` capture `lastStderrLine` from `process:stderr`, auto-expanding the Process Output `<details>` panel with the stderr explanation if an unpatched binary rejects `-Y l`.
 
-## CI & Cross-Compilation Testing
+## CI & Cross-Compilation
 
-- macOS CI workflow lives in `.gitea/workflows/build-macos.yml`.
-- On Intel runner hosts, cross-compiling for Apple Silicon (`aarch64-apple-darwin`) must use `cargo test --no-run --target aarch64-apple-darwin`. This validates sidecar packaging, compilation, and link correctness without attempting to execute ARM64 binaries on an Intel CPU (`Bad CPU type in executable (os error 86)`).
-- Universal and native Intel matrix jobs run and execute full tests natively.
+- Release packaging workflows live under `.gitea/workflows/` (`build-macos.yml`, `build-linux.yml`, `build-windows.yml`).
+- Tag release builds focus exclusively on packaging via `npm run tauri build` without redundant debug-profile test compilations.
+- Local/CI cross-compilation test execution for Apple Silicon (`aarch64-apple-darwin`) on Intel hosts must use `cargo test --no-run --target aarch64-apple-darwin` to avoid executing ARM64 binaries on an x86_64 CPU (`Bad CPU type in executable (os error 86)`).
 
