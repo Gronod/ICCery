@@ -114,13 +114,6 @@ jobs:
             cp "$DMG_FILE" "release-assets/${PREFIX}.dmg"
           fi
 
-          # Stage ZIP archive of .app bundle
-          APP_DIR=$(find src-tauri/target -type d -path "*/release/bundle/macos/*.app" | head -n 1)
-          if [ -n "$APP_DIR" ] && [ -d "$APP_DIR" ]; then
-            APP_PARENT=$(dirname "$APP_DIR")
-            APP_NAME=$(basename "$APP_DIR")
-            (cd "$APP_PARENT" && zip -r "${GITHUB_WORKSPACE}/release-assets/${PREFIX}.zip" "$APP_NAME")
-          fi
 
       - name: Upload Artifacts
         uses: actions/upload-artifact@v3
