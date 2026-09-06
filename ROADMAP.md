@@ -10,10 +10,11 @@ This document outlines the architectural roadmap, completed milestones, and upco
 ## 1. Architecture Summary
 
 ICCery is a native, cross-platform desktop application built with:
-- **Backend**: Rust + Tauri v2, managing asynchronous process pipes, native printer devmode configurations (Windows GDI & Linux CUPS), and filesystem operations.
+- **Backend**: Rust + Tauri v2, managing asynchronous process pipes, native printer configurations (macOS Core Printing / `NSPrintPanel`, Windows GDI & DEVMODE, Linux CUPS), and filesystem operations.
 - **Frontend**: Vanilla JS (ES Modules) + HTML5/CSS3 with a modern dark theme and responsive layout.
 - **Visualization**: Three.js WebGL engine for 3D CIELAB color gamut volumes and sRGB reference comparisons.
 - **Engine**: ArgyllCMS command-line utilities orchestrated over isolated standard stream IPC (`stdin`, `stdout`, `stderr`).
+- **Current Version**: `v0.8.2` (Production release).
 
 ---
 
@@ -90,16 +91,7 @@ ICCery is a native, cross-platform desktop application built with:
 - [x] **Windows Authenticode Code Signing in Gitea CI** (`v0.6.4` – `v0.6.6`): Integrated Tauri bundle signing hooks via `sign.cmd` batch wrapper with PATH resolution, Gitea Actions secret-based PFX materialization, and ephemeral signing pipeline.
 - [x] **Stage 3 Chartread Completion & Snapshot IPC Fix (#175)** (`v0.6.7` – `v0.6.8`): Added dedicated `Done & Save .ti3` action (`d\n`), `Undo Strip` action (`u\n`), automated completion state detection, and corrected Tauri IPC deserialization parameter (`passIndex`) in `snapshot_ti3`.
 
----
-
-## 3. Future Roadmap
-
-### Milestone 9 — macOS Native Support & Enhanced Print Spooling (`v0.4.0`)
-- [ ] **macOS Platform Bundle**: Build and sign universal macOS `.dmg` bundles with notarization.
-- [ ] **macOS Raw Spooling**: Native CoreGraphics/CUPS raw print dialog bypass.
-
-### Milestone 13 — UI/UX & Workflow Polish
-
+### Milestone 13 — UI/UX & Workflow Polish (`v0.7.0` – `v0.7.4`, `v0.8.0`)
 - [x] **Global Button Standardization (#177)**: Enforce `.btn-sm`/`.btn-md`/`.btn-lg`/`.btn-icon-sq` tiers across all stages, remove inline button styles, and add CSS custom properties for button metrics.
 - [x] **Swatch Grid White Patch & Orientation Polish (#178)**: Finalise `is_pad` guard documentation, diagonally split swatch tooltips, and validate `printtarg` row/column ordering.
 - [x] **Configurable CIEDE2000 Thresholds (#184)**: User-configurable good/warning ΔE₀₀ upper bounds in Settings, persisted across sessions and applied to the Stage 3 swatch grid.
@@ -107,7 +99,24 @@ ICCery is a native, cross-platform desktop application built with:
 - [x] **3D Gamut Viewer Controls (#185)**: Camera reset, opacity sliders, keyboard shortcut, and full public-API JSDoc.
 - [x] **Gamut / Profcheck Hardening (#179)**: Validate `.gam` vertex/face parsing, improved `profcheck` regex fallbacks for legacy text output, and user-visible parser warnings.
 
-### Milestone 12 — Future Workflow & Advanced Analytics
-- [x] **Printer Drift Tracking & Verification Analytics (#95)**: Track longitudinal printer drift in Stage 5 over time with CIEDE2000 trend charts, breach alert banners, RFC-4180 CSV export, and history storage.
-- [x] **XY Automated Scanning Tables (#93)**: Full Stage 3 support for automated XY scanning tables (SpectroScan, i1iO) with multi-line prompt classification, fiducial alignment, and sheet placement checklist.
+### Hardware Status Feedback Release (`v0.8.1`)
+- [x] **i1Pro 2 LED Status Feedback (#204)**: Added optional `-Y l` switch support to `chartread` driving the dual RGB ring LEDs of the X-Rite i1Pro 2 for visual status feedback (calibration, swipe ready, misread, capture success).
+- [x] **macOS CI Cross-Compilation Testing**: Hardened `.gitea/workflows/build-macos.yml` by compiling Apple Silicon tests with `--no-run` on Intel runner hosts to avoid architecture execution mismatch.
+
+### Milestone 12 — Future Workflow & Advanced Analytics (`v0.8.2`)
+- [x] **Printer Drift Tracking & Verification Analytics (#95)**: Track longitudinal printer drift in Stage 5 over time with historical run logging in `verification_history.json` (500 records), interactive dual-series SVG trend chart with ICCery verification reference bands, consecutive-breach alert recommendation card, and RFC-4180 CSV export.
+- [x] **XY Automated Scanning Tables (#93)**: Full Stage 3 support for automated XY scanning tables (GretagMacbeth SpectroScan, X-Rite i1iO) with pure multi-line prompt classification, fiducial alignment prompts, 4-step sequence checklist, and graceful head parking on cancel.
 - [ ] ~~**Multi-Language Localization (#96)**~~: *Closed — Won't Fix* (English UI retained as standard color-management terminology).
+
+---
+
+## 3. Future Roadmap
+
+### Milestone 9 — macOS Native Support & Enhanced Print Spooling (`v0.4.0` / Post-v0.8)
+- [ ] **macOS Platform Bundle**: Build and sign universal macOS `.dmg` bundles with Apple Developer ID notarization and stapling.
+- [ ] **macOS Raw Spooling**: Native CoreGraphics/CUPS raw print dialog bypass.
+
+### Future Architecture Strategy (Post-v0.8.2)
+- **Multi-Device Drift Overlays**: Overlay drift curves from multiple printers/media types on a shared timeline in Stage 5.
+- **Direct Remote Target Dispatch**: Send `.ti2` target jobs to network print spoolers or remote print labs with automated token callbacks.
+- **Embedded ICC Profile Inspector**: Direct inspection of cLUT tags, chromatic adaptation matrices, tone reproduction curves (TRC), and profile metadata from saved `.icc`/`.icm` files.

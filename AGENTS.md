@@ -53,11 +53,17 @@ The frontend uses a tiered button sizing system defined in `src/styles/main.css`
 - Valid threshold values must be non-negative and `delta_e_good_max < delta_e_warning_max`; both the frontend and backend enforce this.
 - Saving settings dispatches a `settings-saved` custom event so live components (e.g. the swatch grid) can re-classify on the fly.
 
-## Build Commands
+## Build & Test Commands
 
-- **Rust backend**: `cd src-tauri && CARGO_INCREMENTAL=0 cargo check` (the project lives on a network filesystem that doesn't support file locking, so `CARGO_INCREMENTAL=0` is required)
-- **Rust tests**: `cd src-tauri && CARGO_INCREMENTAL=0 cargo test`
-- **Frontend**: `cd src-tauri && npm run build` (or `npm run dev` for development)
+- **Rust backend check**: `cd src-tauri && CARGO_INCREMENTAL=0 cargo check` (the project lives on a network filesystem that doesn't support file locking, so `CARGO_INCREMENTAL=0` is required)
+- **Rust unit tests**: `cd src-tauri && CARGO_INCREMENTAL=0 cargo test`
+- **Frontend test suites**:
+  - Verification & drift tests: `node src/js/profcheck.test.js` (21 tests)
+  - Chartread classifier & XY table tests: `node src/js/chartread.test.js` (39 tests)
+  - Gamut viewer tests: `node src/js/gamut_viewer.test.js`
+  - Browser devtools console: `import('./profcheck.test.js').then(m => m.runAll())`
+- **Frontend development server**: `npm run tauri dev`
+- **Production package build**: `npm run tauri build`
 
 ## Architecture Overview
 
@@ -145,3 +151,21 @@ The "Preferences" button opens the native macOS `NSPrintPanel` (not CUPS web UI 
 - Testing:
   - Pure line classification unit tests live in `src/js/chartread.test.js` (executable directly in Node or browser console).
   - Unix/macOS mock script `src-tauri/argyll/mocks/chartread.mock` supports `--xy` flag (or `MOCK_XY_TABLE=1`) with blocking `read` calls simulating calibration, sheet placement, fiducial alignment, and scanning.
+
+## Stage 3 i1Pro 2 LED Status Feedback (#204)
+
+- Supports the `-Y l` switch introduced in the ICCery ArgyllCMS fork to drive the dual RGB ring LEDs of the X-Rite i1Pro 2 (Rev E) for real-time visual status feedback during strip measurement:
+  - **Flashing White**: Awaiting baseline calibration on white tile.
+  - **Flashing Blue**: Ready for row swipe / awaiting strip read.
+  - **Flashing Red**: Strip scan error / misread.
+  - **Flashing Green**: Strip scan successfully captured.
+- Controlled via `enable_i1pro2_leds: bool` in `AppSettings` (persisted in `settings.json`), exposed under Settings → Instrument & Measurement Preferences.
+- Defaults to `false` ensuring 100% out-of-the-box compatibility with stock upstream ArgyllCMS binaries.
+- Subprocess error diagnostics in `chartread.js` capture `lastStderrLine` from `process:stderr`, auto-expanding the Process Output `<details>` panel with the stderr explanation if an unpatched binary rejects `-Y l`.
+
+## CI & Cross-Compilation Testing
+
+- macOS CI workflow lives in `.gitea/workflows/build-macos.yml`.
+- On Intel runner hosts, cross-compiling for Apple Silicon (`aarch64-apple-darwin`) must use `cargo test --no-run --target aarch64-apple-darwin`. This validates sidecar packaging, compilation, and link correctness without attempting to execute ARM64 binaries on an Intel CPU (`Bad CPU type in executable (os error 86)`).
+- Universal and native Intel matrix jobs run and execute full tests natively.
+
