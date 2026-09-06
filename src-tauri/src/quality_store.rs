@@ -100,15 +100,21 @@ pub fn load_history_file(path: &Path) -> Vec<VerificationRecord> {
     }
     let content = match fs::read_to_string(path) {
         Ok(c) => c,
-        Err(_) => return Vec::new(),
+        Err(e) => {
+            log::warn!("Failed to read verification history at {}: {}", path.display(), e);
+            return Vec::new();
+        }
     };
     match serde_json::from_str::<VerificationHistoryStore>(&content) {
         Ok(store) => store.records,
-        Err(_) => Vec::new(),
+        Err(e) => {
+            log::error!("Failed to parse verification history at {}: {}", path.display(), e);
+            Vec::new()
+        }
     }
 }
 
-/// Writes verification records to the specified JSON path.
+/// Writes verification records to the specified JSON path atomically.
 /// Automatically creates parent directories if needed.
 /// Evicts oldest records by timestamp if count exceeds HISTORY_CAP (1,000).
 pub fn write_history_file(path: &Path, records: &[VerificationRecord]) -> Result<(), String> {
@@ -132,7 +138,33 @@ pub fn write_history_file(path: &Path, records: &[VerificationRecord]) -> Result
 
     let json = serde_json::to_string_pretty(&store)
         .map_err(|e| format!("Failed to serialize verification history: {}", e))?;
-    fs::write(path, json).map_err(|e| format!("Failed to write verification history: {}", e))?;
+
+    let mut tmp_path = path.as_os_str().to_os_string();
+    tmp_path.push(".tmp");
+    let tmp_path = PathBuf::from(tmp_path);
+
+    // Write to temporary file with explicit flush and sync
+    {
+        use std::io::Write;
+        let mut file = fs::File::create(&tmp_path)
+            .map_err(|e| format!("Failed to create temp history file: {}", e))?;
+        file.write_all(json.as_bytes())
+            .map_err(|e| {
+                let _ = fs::remove_file(&tmp_path);
+                format!("Failed to write temp history file: {}", e)
+            })?;
+        file.sync_all()
+            .map_err(|e| {
+                let _ = fs::remove_file(&tmp_path);
+                format!("Failed to sync temp history file: {}", e)
+            })?;
+    }
+
+    // Atomically replace destination file
+    if let Err(e) = fs::rename(&tmp_path, path) {
+        let _ = fs::remove_file(&tmp_path);
+        return Err(format!("Failed to atomically replace verification history file: {}", e));
+    }
 
     Ok(())
 }
@@ -417,5 +449,39 @@ mod tests {
         let p2 = validate_csv_dest("/tmp/history").unwrap();
         assert_eq!(p2.extension().unwrap(), "csv");
         assert_eq!(p2.to_string_lossy(), "/tmp/history.csv");
+    }
+
+    #[test]
+    fn test_atomic_write_preserves_data_and_cleans_tmp() {
+        let temp_dir = std::env::temp_dir().join("iccery_test_atomic_write");
+        let _ = fs::remove_dir_all(&temp_dir);
+        fs::create_dir_all(&temp_dir).unwrap();
+
+        let file_path = temp_dir.join("verification_history.json");
+        let mut tmp_file_path = file_path.as_os_str().to_os_string();
+        tmp_file_path.push(".tmp");
+        let tmp_file_path = std::path::PathBuf::from(tmp_file_path);
+
+        let rec = sample_record("vr-atom-1", "2026-09-06T12:00:00Z", 0.5);
+        write_history_file(&file_path, &[rec.clone()]).unwrap();
+
+        assert!(file_path.exists(), "Target file must exist");
+        assert!(!tmp_file_path.exists(), "Temporary file must not remain after successful atomic write");
+
+        let loaded = load_history_file(&file_path);
+        assert_eq!(loaded.len(), 1);
+        assert_eq!(loaded[0], rec);
+
+        // Overwrite with updated records to verify atomic replacement
+        let rec2 = sample_record("vr-atom-2", "2026-09-06T12:05:00Z", 1.2);
+        write_history_file(&file_path, &[rec.clone(), rec2.clone()]).unwrap();
+
+        assert!(!tmp_file_path.exists(), "Temporary file must not remain after overwrite");
+        let loaded2 = load_history_file(&file_path);
+        assert_eq!(loaded2.len(), 2);
+        assert_eq!(loaded2[0], rec);
+        assert_eq!(loaded2[1], rec2);
+
+        let _ = fs::remove_dir_all(&temp_dir);
     }
 }
