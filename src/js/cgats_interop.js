@@ -1,4 +1,6 @@
-const { invoke } = window.__TAURI__.core;
+const invoke = typeof window !== 'undefined' && window.__TAURI__?.core?.invoke
+  ? window.__TAURI__.core.invoke
+  : async () => {};
 
 export class CgatsInterop {
   constructor(appState) {
@@ -22,26 +24,53 @@ export class CgatsInterop {
 
   async handleImport() {
     try {
-      const filePath = await invoke('select_target_file');
+      const filePath = await invoke('select_dataset_file', {
+        defaultDir: this.appState?.cwd || null,
+      });
       if (!filePath) return; // User cancelled
 
-      // Inspect first to show modal (optional, skipping for now, directly import)
-      // Since we are mocking the UI a bit for this branch, we will just import directly
+      const isWindows = filePath.includes('\\');
+      const sep = isWindows ? '\\' : '/';
+      const parts = filePath.split(sep);
+      const fileName = parts.pop();
+      const fileDir = parts.join(sep);
+      const fileStem = fileName.replace(/\.[^/.]+$/, '');
+
+      const targetCwd = this.appState?.cwd || fileDir;
+      const targetBasename = this.appState?.basename || fileStem;
+
+      const targetBasenameInput = document.getElementById('targetBasename');
+      if (targetBasenameInput && !targetBasenameInput.value.trim()) {
+        targetBasenameInput.value = targetBasename;
+      }
+      const selectedPathDisplay = document.getElementById('selectedPathDisplay');
+      if (selectedPathDisplay && (!selectedPathDisplay.textContent || selectedPathDisplay.textContent.includes('No directory') || !this.appState?.cwd)) {
+        selectedPathDisplay.textContent = `Directory: ${targetCwd}`;
+      }
+
+      if (this.appState?.setTarget) {
+        await this.appState.setTarget(targetBasename, targetCwd);
+      }
+
       const summary = await invoke('import_measurement_dataset', {
         filePath,
-        targetCwd: this.appState.cwd,
-        targetBasename: this.appState.basename,
+        targetCwd,
+        targetBasename,
       });
 
-      this.appState.showNotice(`Successfully imported dataset (${summary.patch_count} patches)`, 'success');
+      this.appState?.showNotice?.(`Successfully imported dataset (${summary.patch_count} patches)`, 'success');
       
       // Update state to jump to stage 4
-      await this.appState.updateGating();
-      this.appState.currentStage = 4;
-      this.appState.applyStageDOM(4);
+      if (this.appState?.updateGating) {
+        await this.appState.updateGating();
+      }
+      if (this.appState) {
+        this.appState.currentStage = 4;
+        this.appState.applyStageDOM?.(4);
+      }
       
     } catch (e) {
-      this.appState.showNotice(`Failed to import dataset: ${e}`, 'error');
+      this.appState?.showNotice?.(`Failed to import dataset: ${e}`, 'error');
     }
   }
 

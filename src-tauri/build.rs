@@ -10,6 +10,12 @@ fn main() {
 
     println!("cargo:rustc-env=BUILD_DATE={}", build_date);
 
+    println!("cargo:rerun-if-changed=build.rs");
+    println!("cargo:rerun-if-changed=src");
+    println!("cargo:rerun-if-changed=tauri.conf.json");
+    println!("cargo:rerun-if-changed=Cargo.toml");
+    println!("cargo:rerun-if-changed=argyll");
+
     // Validate that ArgyllCMS sidecar binaries are staged before building
     let target_os = std::env::var("CARGO_CFG_TARGET_OS").unwrap_or_default();
     let target_arch = std::env::var("CARGO_CFG_TARGET_ARCH").unwrap_or_default();

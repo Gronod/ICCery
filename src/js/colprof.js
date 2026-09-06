@@ -54,8 +54,8 @@ export function initColprof() {
   if (btnBrowseCustomSp && colprofCustomSpPath) {
     btnBrowseCustomSp.addEventListener("click", async () => {
       try {
-        const selected = await window.__TAURI__.dialog.open({
-          filters: [{ name: 'Spectrum', extensions: ['sp'] }]
+        const selected = await invoke("select_spectrum_file", {
+          defaultDir: chartreadCwd || wizardState.cwd || null,
         });
         if (selected) {
           colprofCustomSpPath.value = selected;

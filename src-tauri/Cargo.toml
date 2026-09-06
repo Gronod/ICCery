@@ -1,9 +1,20 @@
 [package]
 name = "iccery"
-version = "0.8.2"
+version = "0.8.3"
 description = "Modern Printer Profiling UI frontend for ArgyllCMS"
 authors = ["Gordon"]
 edition = "2021"
+include = [
+  "src/**/*",
+  "build.rs",
+  "Cargo.toml",
+  "Cargo.lock",
+  "tauri.conf.json",
+  "capabilities/**/*",
+  "gen/**/*",
+  "icons/**/*",
+  "windows/**/*",
+]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
