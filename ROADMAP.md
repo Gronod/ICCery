@@ -14,7 +14,7 @@ ICCery is a native, cross-platform desktop application built with:
 - **Frontend**: Vanilla JS (ES Modules) + HTML5/CSS3 with a modern dark theme and responsive layout.
 - **Visualization**: Three.js WebGL engine for 3D CIELAB color gamut volumes and sRGB reference comparisons.
 - **Engine**: ArgyllCMS command-line utilities orchestrated over isolated standard stream IPC (`stdin`, `stdout`, `stderr`).
-- **Current Version**: `v0.8.2` (Production release).
+- **Current Version**: `v0.8.3` (Production release).
 
 ---
 
@@ -107,6 +107,11 @@ ICCery is a native, cross-platform desktop application built with:
 - [x] **Printer Drift Tracking & Verification Analytics (#95)**: Track longitudinal printer drift in Stage 5 over time with historical run logging in `verification_history.json` (1,000 records), interactive dual-series SVG trend chart with ICCery verification reference bands, consecutive-breach alert recommendation card, and RFC-4180 CSV export.
 - [x] **XY Automated Scanning Tables (#93)**: Full Stage 3 support for automated XY scanning tables (GretagMacbeth SpectroScan, X-Rite i1iO) with pure multi-line prompt classification, fiducial alignment prompts, 4-step sequence checklist, and graceful head parking on cancel.
 - [ ] ~~**Multi-Language Localization (#96)**~~: *Closed — Won't Fix* (English UI retained as standard color-management terminology).
+
+### Maintenance & Reliability Release (`v0.8.3`)
+- [x] **Gamut Viewer Node Test Runner Support (#212)**: Guarded `window` and `window.__TAURI__` globals in `gamut_viewer.js` and added polyfill mock harness to `gamut_viewer.test.js` to enable automated headless test execution via `node src/js/gamut_viewer.test.js`.
+- [x] **Custom Spectrum File Picker Dialog (#210)**: Implemented native `select_spectrum_file` command wrapping Tauri file dialog with `.sp` filter for custom FWA/OBA spectrum selection in Stage 4 profile generation.
+- [x] **CGATS Dataset Import File Picker & State Synchronization (#211)**: Implemented native `select_dataset_file` command with `.ti3`, `.txt`, `.cgats`, and `.csv` filter, synchronized wizard target directory and basename upon import, and guarded against empty target states.
 
 ---
 

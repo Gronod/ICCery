@@ -52,6 +52,7 @@ pub fn run() {
             commands::select_existing_target,
             commands::select_profile_file,
             commands::select_spectrum_file,
+            commands::select_dataset_file,
             commands::select_target_file,
             commands::select_directory,
             commands::send_stdin,
