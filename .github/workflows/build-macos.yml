@@ -84,22 +84,9 @@ jobs:
           echo "SHORT_SHA=${SHORT_SHA}" >> $GITHUB_ENV
           echo "PREFIX=ICCery_${TAG}-${SHORT_SHA}-macos-${{ matrix.platform.arch }}" >> $GITHUB_ENV
 
-      - name: Warm up macOS GUI for DMG layout
-        if: runner.os == 'macOS'
-        run: |
-          # Tauri's DMG bundler runs an AppleScript that asks Finder to set the
-          # background picture and icon positions. On CI runners, Finder or the
-          # Aqua session may be idle, which can cause AppleEvent timeouts. Try to
-          # start/awaken Finder and System Events before the real build.
-          open -g -a Finder || true
-          open -g -a "System Events" || true
-          # Send a harmless probe to force Finder to initialise a scripting session.
-          osascript -e 'tell application "Finder" to get name' || true
-          sleep 10
-
       - name: Build Tauri App
         env:
-          TAURI_BUNDLER_DMG_IGNORE_CI: "true"
+          CI: "true"
         run: npm run tauri build -- --target ${{ matrix.platform.target }}
 
       - name: Prepare Release Assets
@@ -107,11 +94,22 @@ jobs:
         run: |
           mkdir -p release-assets
           
-          # Stage DMG package
-          DMG_FILE=$(find src-tauri/target -type f -path "*/release/bundle/dmg/*.dmg" | head -n 1)
-          if [ -n "$DMG_FILE" ] && [ -f "$DMG_FILE" ]; then
-            cp "$DMG_FILE" "release-assets/${PREFIX}.dmg"
+          APP_PATH=$(find src-tauri/target -type d -path "*/release/bundle/macos/*.app" | head -n 1)
+          if [ -z "$APP_PATH" ] || [ ! -d "$APP_PATH" ]; then
+            echo "Error: Could not locate built .app bundle in src-tauri/target"
+            exit 1
           fi
+          echo "Found .app bundle: ${APP_PATH}"
+
+          # Setup isolated Python virtual environment for dmgbuild
+          python3 -m venv "${{ runner.temp }}/dmgbuild-venv"
+          "${{ runner.temp }}/dmgbuild-venv/bin/pip" install --quiet dmgbuild
+
+          # Build styled DMG with background art and custom icon locations
+          "${{ runner.temp }}/dmgbuild-venv/bin/python" scripts/build-dmg.py \
+            --app "${APP_PATH}" \
+            --output "release-assets/${PREFIX}.dmg" \
+            --volname "ICCery"
 
 
       - name: Upload Artifacts

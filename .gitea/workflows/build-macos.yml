@@ -94,11 +94,22 @@ jobs:
         run: |
           mkdir -p release-assets
           
-          # Stage DMG package
-          DMG_FILE=$(find src-tauri/target -type f -path "*/release/bundle/dmg/*.dmg" | head -n 1)
-          if [ -n "$DMG_FILE" ] && [ -f "$DMG_FILE" ]; then
-            cp "$DMG_FILE" "release-assets/${PREFIX}.dmg"
+          APP_PATH=$(find src-tauri/target -type d -path "*/release/bundle/macos/*.app" | head -n 1)
+          if [ -z "$APP_PATH" ] || [ ! -d "$APP_PATH" ]; then
+            echo "Error: Could not locate built .app bundle in src-tauri/target"
+            exit 1
           fi
+          echo "Found .app bundle: ${APP_PATH}"
+
+          # Setup isolated Python virtual environment for dmgbuild
+          python3 -m venv "${{ runner.temp }}/dmgbuild-venv"
+          "${{ runner.temp }}/dmgbuild-venv/bin/pip" install --quiet dmgbuild
+
+          # Build styled DMG with background art and custom icon locations
+          "${{ runner.temp }}/dmgbuild-venv/bin/python" scripts/build-dmg.py \
+            --app "${APP_PATH}" \
+            --output "release-assets/${PREFIX}.dmg" \
+            --volname "ICCery"
 
 
       - name: Upload Artifacts
