@@ -8,6 +8,8 @@ export const wizardState = {
   cwd: "",
   printerName: "",
   noticeTimer: null,
+  sessionMode: "profile",
+  profileBasename: "",
   
   setTarget(basename, cwd) {
     if (basename) this.basename = basename;
@@ -61,6 +63,10 @@ export const wizardState = {
     const stages = document.querySelectorAll('.stage');
 
     steps.forEach(s => {
+      if (stageNumber === 0) {
+        s.classList.remove('active');
+        return;
+      }
       if (s.getAttribute('data-step') === String(stageNumber)) {
         s.classList.remove('disabled');
         s.classList.add('active');
@@ -70,7 +76,7 @@ export const wizardState = {
     });
 
     stages.forEach(s => {
-      if (s.id === `stage-${stageNumber}`) {
+      if (s.id === `stage-${stageNumber}` || (stageNumber === 0 && s.id === 'stage-cal')) {
         s.classList.remove('hidden');
         s.classList.add('active');
       } else {
@@ -90,7 +96,13 @@ export const wizardState = {
 
   async navigateToStage(stageNumber) {
     const targetNum = parseInt(stageNumber, 10);
-    if (isNaN(targetNum) || targetNum < 1 || targetNum > 5) return false;
+    if (isNaN(targetNum) || targetNum < 0 || targetNum > 5) return false;
+
+    if (targetNum === 0) {
+      this.currentStage = 0;
+      this.applyStageDOM(0);
+      return true;
+    }
 
     if (targetNum === 1) {
       this.currentStage = 1;

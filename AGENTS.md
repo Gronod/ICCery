@@ -1,5 +1,15 @@
 # ICCery Agent Notes
 
+## Printer Calibration (`printcal` / `applycal`) (#224)
+
+- Optional Stage 0 dashboard, opened from **Calibrate Printer**. The 1–5 wizard is unchanged when calibration is skipped.
+- Calibration charts use a `CAL_` basename so they never collide with the profiling `.ti1`/`.ti2`/`.ti3`.
+- `printtarg -K file.cal` is applied only to **profiling** layouts, never to the calibration chart itself.
+- After Stage 4 `colprof`, `applycal` embeds the curves into the ICC/ICM when Apply Calibration is on.
+- `.cal` overwrite requires an explicit Overwrite / Rename / Cancel choice.
+- Warn when a loaded `.cal` is older than `calibration_stale_days` (default 30) or the stored printer name differs.
+- Tests: `src-tauri/src/calibration.rs` (arg builders + `.cal` parser) and `src/js/calibration.test.js`.
+
 ## Stage 5 Verification / Profcheck
 
 - `profcheck` output is parsed from both JSON summaries (preferred) and legacy plain-text report formats.
@@ -64,6 +74,7 @@ The frontend uses a tiered button sizing system defined in `src/styles/main.css`
   - Verification & drift tests: `node src/js/profcheck.test.js` (21 tests)
   - Chartread classifier & XY table tests: `node src/js/chartread.test.js` (39 tests)
   - Gamut viewer tests: `node src/js/gamut_viewer.test.js`
+  - Calibration helpers: `node src/js/calibration.test.js`
   - Browser devtools console: `import('./profcheck.test.js').then(m => m.runAll())`
 - **Frontend development server**: `npm run tauri dev`
 - **Production package build**: `npm run tauri build`

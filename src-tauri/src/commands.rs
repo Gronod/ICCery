@@ -777,6 +777,12 @@ pub struct PrinttargConfig {
     pub no_randomize: bool,   // If true, pass -r (raster layout / no randomization)
     pub basename: String,     // Must match the .ti1 basename from Stage 1
     pub cwd: String,          // Working directory where the .ti1 file resides
+    /// Optional Argyll `.cal` applied via printtarg `-K` (or `-I` when embed-only).
+    #[serde(default)]
+    pub calibration_file: Option<String>,
+    /// When true, embed the calibration (`-I`) without applying it to printed patches.
+    #[serde(default)]
+    pub calibration_embed_only: bool,
 }
 
 pub fn build_targen_args(config: &TargenConfig) -> Vec<String> {
@@ -926,6 +932,18 @@ pub fn build_printtarg_args(config: &PrinttargConfig) -> Vec<String> {
         args.push("-t".to_string());
     }
     args.push(config.dpi.to_string());
+
+    if let Some(ref cal) = config.calibration_file {
+        let trimmed = cal.trim();
+        if !trimmed.is_empty() {
+            if config.calibration_embed_only {
+                args.push("-I".to_string());
+            } else {
+                args.push("-K".to_string());
+            }
+            args.push(trimmed.to_string());
+        }
+    }
 
     args.push(config.basename.clone());
     args
@@ -1621,6 +1639,8 @@ mod tests {
             no_randomize: false,
             basename: "my_profile".to_string(),
             cwd: "/tmp".to_string(),
+            calibration_file: None,
+            calibration_embed_only: false,
         };
         let args = build_printtarg_args(&config);
         assert_eq!(args, vec!["-v", "-u", "-i", "i1", "-p", "A4", "-R", "1", "-t", "100", "my_profile"]);
@@ -1638,6 +1658,8 @@ mod tests {
             no_randomize: false,
             basename: "cmyk_profile".to_string(),
             cwd: "/home/user".to_string(),
+            calibration_file: None,
+            calibration_embed_only: false,
         };
         let args = build_printtarg_args(&config);
         assert_eq!(args, vec!["-v", "-u", "-i", "CM", "-p", "Letter", "-R", "1", "-T", "300", "cmyk_profile"]);
@@ -1655,6 +1677,8 @@ mod tests {
             no_randomize: false,
             basename: "custom_target".to_string(),
             cwd: "/tmp".to_string(),
+            calibration_file: None,
+            calibration_embed_only: false,
         };
         let args = build_printtarg_args(&config);
         assert_eq!(args, vec!["-v", "-u", "-i", "SS", "-p", "200x400", "-R", "1", "-t", "150", "custom_target"]);
@@ -1672,6 +1696,8 @@ mod tests {
             no_randomize: false,
             basename: "my_profile".to_string(),
             cwd: "/tmp".to_string(),
+            calibration_file: None,
+            calibration_embed_only: false,
         };
         let args = build_printtarg_args(&config);
         assert_eq!(
@@ -1706,6 +1732,8 @@ mod tests {
             no_randomize: false,
             basename: "my_profile".to_string(),
             cwd: "/tmp".to_string(),
+            calibration_file: None,
+            calibration_embed_only: false,
         };
         let args = build_printtarg_args(&config);
         assert_eq!(args, vec!["-v", "-u", "-i", "i1", "-p", "A4", "-R", "42", "-t", "300", "my_profile"]);
@@ -1723,9 +1751,54 @@ mod tests {
             no_randomize: true,
             basename: "my_profile".to_string(),
             cwd: "/tmp".to_string(),
+            calibration_file: None,
+            calibration_embed_only: false,
         };
         let args = build_printtarg_args(&config);
         assert_eq!(args, vec!["-v", "-u", "-i", "i1", "-p", "A4", "-r", "-t", "300", "my_profile"]);
+    }
+
+    #[test]
+    fn test_build_printtarg_args_with_calibration_apply() {
+        let config = PrinttargConfig {
+            instrument: "i1".to_string(),
+            page_size: "A4".to_string(),
+            bit_depth: 8,
+            dpi: 300,
+            custom_label: None,
+            random_seed: Some(1),
+            no_randomize: false,
+            basename: "my_profile".to_string(),
+            cwd: "/tmp".to_string(),
+            calibration_file: Some("CAL_photo.cal".to_string()),
+            calibration_embed_only: false,
+        };
+        let args = build_printtarg_args(&config);
+        assert_eq!(
+            args,
+            vec!["-v", "-u", "-i", "i1", "-p", "A4", "-R", "1", "-t", "300", "-K", "CAL_photo.cal", "my_profile"]
+        );
+    }
+
+    #[test]
+    fn test_build_printtarg_args_with_calibration_embed_only() {
+        let config = PrinttargConfig {
+            instrument: "i1".to_string(),
+            page_size: "A4".to_string(),
+            bit_depth: 8,
+            dpi: 300,
+            custom_label: None,
+            random_seed: Some(1),
+            no_randomize: false,
+            basename: "my_profile".to_string(),
+            cwd: "/tmp".to_string(),
+            calibration_file: Some("lin.cal".to_string()),
+            calibration_embed_only: true,
+        };
+        let args = build_printtarg_args(&config);
+        assert!(args.contains(&"-I".to_string()));
+        assert!(!args.contains(&"-K".to_string()));
+        assert!(args.contains(&"lin.cal".to_string()));
     }
 
     #[test]
