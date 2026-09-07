@@ -88,7 +88,7 @@ flowchart TD
 - [Node.js](https://nodejs.org/) (v18 or newer)
 - [Rust](https://www.rust-lang.org/) (1.78+ stable)
 - Operating system dependencies:
-  - **macOS**: macOS 11.0 (Big Sur) or newer, Xcode Command Line Tools (`xcode-select --install`).
+  - **macOS**: macOS 12.0 (Monterey) or newer, Xcode Command Line Tools (`xcode-select --install`).
   - **Windows**: Microsoft Visual Studio C++ Build Tools & WebView2 runtime.
   - **Linux (Debian/Ubuntu)**: `libwebkit2gtk-4.1-dev`, `build-essential`, `curl`, `wget`, `file`, `libxdo-dev`, `libssl-dev`, `libayatana-appindicator3-dev`, `librsvg2-dev`, `libcups2-dev`.
 
@@ -124,6 +124,40 @@ npm run fetch-argyll
 # - Linux: .AppImage / .deb package
 npm run tauri build
 ```
+
+---
+
+## Platform support
+
+### macOS
+
+The packaged app declares `LSMinimumSystemVersion = 12.0`. Installers refuse Catalina and Big Sur rather than launching into a WKWebView crash loop.
+
+| macOS | Status |
+|---|---|
+| 13+ (Ventura and newer), Apple Silicon | Supported |
+| 13+, Intel | Supported |
+| 12.7.x Monterey, Apple Silicon | Supported, WebGL best-effort |
+| 12.0–12.6 Monterey, Intel | Best-effort; WebGL is deferred until Stage 5; known WKWebView GPU process crashes |
+| 11 Big Sur | Not supported (installer refuses) |
+| 10.15 Catalina | Not supported |
+
+The 3D gamut viewer (Stage 5) creates a WebGL context only when that stage is shown. Stages 1–4 remain usable if WebGL is missing or the GPU process is lost.
+
+### macOS troubleshooting
+
+If the window flashes white and disappears, this is almost always the WKWebView **Web Content** or **GPU** helper dying — Apple Crash Reporter will not attach to `ICCery.app`.
+
+- Launch from Terminal to see `web content process terminated`:
+  ```text
+  /Applications/ICCery.app/Contents/MacOS/ICCery
+  ```
+- Check `~/Library/Logs/DiagnosticReports` for `com.apple.WebKit.WebContent` or `com.apple.WebKit.GPU`.
+- ICCery log file (rotated, last 5 segments kept):
+  ```text
+  ~/Library/Logs/com.gronod.iccery/iccery.log
+  ```
+- Custom ColorSync display profiles can crash toolkit UIs on Monterey. Testing with the default display profile (or Safe Mode) is a valid support question.
 
 ---
 
