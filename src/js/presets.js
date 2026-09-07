@@ -1,5 +1,7 @@
 const { invoke } = window.__TAURI__.core;
 
+import { getActiveCalibration } from './calibration.js';
+
 let currentPresets = [];
 let activePresetId = "preset-std-rgb";
 
@@ -417,6 +419,8 @@ export async function initPresets() {
       colprof_observer,
       colprof_input_viewing_cond,
       colprof_output_viewing_cond,
+      calibration_file: getActiveCalibration().calPath || null,
+      apply_calibration: getActiveCalibration().applyEnabled,
     };
   }
 

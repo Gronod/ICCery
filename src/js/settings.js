@@ -70,6 +70,10 @@ export async function initSettings() {
             if (deltaEWarningMax) {
                 deltaEWarningMax.value = Number(settings.delta_e_warning_max ?? 5.0).toFixed(1);
             }
+            const staleDays = document.getElementById('calibrationStaleDays');
+            if (staleDays) {
+                staleDays.value = Number(settings.calibration_stale_days ?? 30);
+            }
             validateDeltaEThresholds();
             await refreshLogPath();
             dialog.showModal();
@@ -150,6 +154,7 @@ export async function initSettings() {
                     delta_e_good_max: getInputValueAsFloat('deltaEGoodMax', 2.0),
                     delta_e_warning_max: getInputValueAsFloat('deltaEWarningMax', 5.0),
                     enable_i1pro2_leds: enableI1Pro2Leds ? enableI1Pro2Leds.checked : false,
+                    calibration_stale_days: Math.max(1, parseInt(document.getElementById('calibrationStaleDays')?.value, 10) || 30),
                 };
                 await invoke('save_settings', { settings });
                 logger.info(`Settings saved. Log level set to: ${settings.log_level}`, 'Settings');

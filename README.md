@@ -2,19 +2,20 @@
 
 > Modern, cross-platform native desktop application for printer profiling, powered by ArgyllCMS.
 
-[![Release](https://img.shields.io/badge/version-v0.8.4-blue.svg)](https://git.i3omb.com/gronod/ICCery)
+[![Release](https://img.shields.io/badge/version-v0.8.5-blue.svg)](https://git.i3omb.com/gronod/ICCery)
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey.svg)](https://git.i3omb.com/gronod/ICCery)
 [![Framework](https://img.shields.io/badge/framework-Tauri%20v2%20%2B%20Rust-orange.svg)](https://tauri.app)
 [![License](https://img.shields.io/badge/license-Proprietary%20%2F%20EULA-blue.svg)](LICENCE.md)
 
-**ICCery** is a native GUI frontend designed to make creating custom ICC/ICM printer profiles seamless, visual, and reliable. It wraps the powerful color management capabilities of [ArgyllCMS](https://www.argyllcms.com/) within an intuitive, artefact-gated 5-stage wizard.
+**ICCery** is a native GUI frontend designed to make creating custom ICC/ICM printer profiles seamless, visual, and reliable. It wraps the powerful color management capabilities of [ArgyllCMS](https://www.argyllcms.com/) within an intuitive, artefact-gated 5-stage wizard, with an optional printer calibration (linearization) workflow.
 
 ---
 
 ## Key Features
 
 - 🪄 **Linear 5-Stage Wizard Workflow**:
-  1. **Stage 1 — Patch Generation (`targen`)**: Configure RGB (driver-managed) or CMYK (RIP-managed) patch sets with custom counts, profiling presets, neutral/grey axis boosting, and 11 advanced generation parameters with contextual guidance tooltips. Supports direct-resume from existing `.ti2` target files to jump straight to measurement.
+  0. **Optional — Printer Calibration (`printcal` / `applycal`)** (#224): Per-channel linearization and ink-limit discovery before a full profile. Generate a short `CAL_` chart, print and measure it with the existing Stage 2/3 engines, compute `.cal` curves, inspect channel-response plots, and toggle **Apply Calibration** so subsequent `printtarg` (`-K`) and `colprof` (`applycal`) runs consume the curves. Skip entirely for simple RGB photo printers.
+  1. **Stage 1 — Patch Generation (`targen`)**: Configure RGB (driver-managed) or CMYK (RIP-managed) patch sets with custom counts, profiling presets, neutral/grey axis boosting, and 11 advanced generation parameters with contextual guidance tooltips. Supports direct-resume from existing `.ti2` target files to jump straight to measurement. CMYK / RIP workflows show a reminder when no calibration is applied.
   2. **Stage 2 — Target Creation & Raw Printing (`printtarg`)**: Format patch targets for handheld spectrophotometers (i1Pro, i1Pro2, ColorMunki, SpyderPrint) and automated XY tables (i1iO, SpectroScan). View high-resolution downscaled TIFF previews and print directly using native OS unmanaged pathways:
      - **macOS**: Native `NSPrintPanel` driver preferences with automatic ColorSync suppression (`AP_ColorMatchingMode=AP_ApplicationColorMatching`), CUPS media type selection, and driver-specific color adjustment bypass detection (Canon `CNIJIntent2`, Epson `ColorCorrection`, Gutenprint).
      - **Windows**: GDI uncorrected raw printing and DEVMODE preferences.
@@ -54,10 +55,12 @@ flowchart TD
         QualityStore[Verification History & Drift Analytics]
         PrintEngine["Raw Print Subsystem (GDI / CUPS / NSPrintPanel)"]
         ProcMgr[Async Subprocess IPC Manager]
+        CalStore[Calibration .cal library]
 
         UI <--> State
         State <--> ProcMgr
         State <--> QualityStore
+        State <--> CalStore
         ProcMgr --> ThreeJS
         UI --> PrintEngine
         QualityStore --> UI
@@ -67,6 +70,7 @@ flowchart TD
         BIN_TAR[targen]
         BIN_PRT[printtarg]
         BIN_CHR[chartread]
+        BIN_CAL[printcal / applycal]
         BIN_COL[colprof]
         BIN_CHK[profcheck]
         BIN_GAM[iccgamut]
@@ -75,6 +79,7 @@ flowchart TD
     ProcMgr -- stdin/stdout/stderr pipes --> BIN_TAR
     ProcMgr -- stdin/stdout/stderr pipes --> BIN_PRT
     ProcMgr -- stdin/stdout/stderr pipes --> BIN_CHR
+    ProcMgr -- stdin/stdout/stderr pipes --> BIN_CAL
     ProcMgr -- stdin/stdout/stderr pipes --> BIN_COL
     ProcMgr -- stdin/stdout/stderr pipes --> BIN_CHK
     ProcMgr -- stdin/stdout/stderr pipes --> BIN_GAM

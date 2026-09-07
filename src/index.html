@@ -49,6 +49,8 @@
           <select id="presetSelect" style="width: 100%; font-size: 0.85rem; padding: 6px 8px; border-radius: 6px; background: var(--bg-card, #1a1a22); color: var(--text-color, #eee); border: 1px solid var(--border-color, #333); cursor: pointer;">
             <option value="" disabled selected>Loading presets...</option>
           </select>
+          <button type="button" id="btnCalibratePrinter" class="secondary btn-md" style="width:100%; margin-top:10px;" title="Optional printer linearization via printcal before profiling">Calibrate Printer</button>
+          <div id="calStatusChip" class="cal-status-chip cal-status-none">Calibration: None</div>
         </div>
 
         <nav class="stepper">
@@ -68,12 +70,112 @@
           <button type="button" id="wizardNotificationClose" class="notification-close" title="Dismiss notice">✕</button>
         </div>
 
+        <!-- Stage 0: Printer calibration (optional, parallel to the 5-stage wizard) -->
+        <section id="stage-cal" class="stage hidden">
+          <h2>Printer Calibration</h2>
+          <p>Linearize per-channel response and establish ink limits with Argyll <code>printcal</code> before building an ICC profile. Optional for RGB photo printers; strongly recommended for CMYK / RIP workflows.</p>
+
+          <div class="cal-status-banner cal-banner-active" data-cal-banner="always">
+            <span data-cal-banner-text>Calibration: None</span>
+            <label class="cal-apply-toggle" title="When enabled, subsequent Stage 2 printtarg runs use -K and Stage 4 applycal embeds the curves">
+              <input type="checkbox" id="calApplyToggleDash" data-cal-apply>
+              Apply Calibration
+            </label>
+          </div>
+
+          <div class="cal-dashboard-grid">
+            <div class="cal-card">
+              <h3>1. Calibration Chart</h3>
+              <div class="form-group has-tooltip">
+                <label>Colour Space</label>
+                <div class="radio-group">
+                  <label><input type="radio" name="calColourSpace" value="rgb"> RGB (driver-managed)</label>
+                  <label><input type="radio" name="calColourSpace" value="cmyk" checked> CMYK (RIP)</label>
+                </div>
+                <div class="tooltip-text">Calibration is most valuable on native CMYK devices. RGB printers already apply driver curves; results are often modest.</div>
+              </div>
+              <p id="calRgbHint" class="help-hint hidden">RGB driver-managed printers are typically already linearized. Calibration is optional here.</p>
+              <div class="input-row">
+                <div class="form-group has-tooltip">
+                  <label for="calSteps">Steps per channel</label>
+                  <input type="number" id="calSteps" min="11" max="51" value="21">
+                  <div class="tooltip-text">Wedge density for each ink channel (11–51). 21 is a good default; 33 for high-end inkjets.</div>
+                </div>
+                <div class="form-group has-tooltip">
+                  <label for="calInkExplore">Ink-limit exploration (TAC %)</label>
+                  <input type="number" id="calInkExplore" min="200" max="400" value="320">
+                  <div class="tooltip-text">CMYK only. Total area coverage range passed to targen -l so printcal can recommend a TAC.</div>
+                </div>
+              </div>
+              <label class="checkbox-label" for="calNeutralEmphasis">
+                <input type="checkbox" id="calNeutralEmphasis">
+                Neutral-axis emphasis
+              </label>
+              <div class="stage-actions">
+                <button type="button" class="primary btn-lg" id="btnCalGenerate">Generate Calibration Target</button>
+                <button type="button" class="secondary btn-md" id="btnCalLayout">Create Layout & Print</button>
+                <button type="button" class="secondary btn-md" id="btnCalMeasure">Measure Chart</button>
+              </div>
+            </div>
+
+            <div class="cal-card">
+              <h3>2. Saved curves</h3>
+              <p class="help-hint" id="calCurrentFile">No .cal loaded</p>
+              <div class="btn-row wrap">
+                <button type="button" class="secondary btn-md" id="btnCalLoad">Load Existing…</button>
+                <button type="button" class="secondary btn-md" id="btnCalLibrary">Save to Library</button>
+                <button type="button" class="danger btn-md" id="btnCalClear">Clear</button>
+              </div>
+              <select id="calSavedSelect" style="width:100%; margin-top:10px;"></select>
+              <div class="stage-actions">
+                <button type="button" class="primary btn-lg" id="btnCalCompute">Compute Curves</button>
+              </div>
+              <p class="help-hint">Requires a measured <code>CAL_*.ti3</code> in the working directory. Existing <code>.cal</code> files are never overwritten without confirmation.</p>
+            </div>
+          </div>
+
+          <div class="cal-dashboard-grid">
+            <div class="cal-card">
+              <h3>Channel response</h3>
+              <svg id="calCurveSvg" class="cal-curve-svg" role="img" aria-label="Channel response curves"></svg>
+              <div id="calCurveLegend" class="cal-curve-legend"></div>
+              <p class="help-hint">Solid lines are post-linearization device response. Dashed line is identity (already linear).</p>
+            </div>
+            <div class="cal-card">
+              <h3>Ink limits</h3>
+              <div class="cal-tac-card">Total area coverage: <strong id="calTacValue">—</strong></div>
+              <div class="form-group">
+                <label for="calTacOverride">Override TAC %</label>
+                <input type="number" id="calTacOverride" min="150" max="400" placeholder="use recommended">
+              </div>
+              <div id="calInkLimitControls"></div>
+              <p class="help-hint">Recommended power (targen -p): <strong id="calRecommendedPower">—</strong>. Re-run Compute Curves after editing limits.</p>
+            </div>
+          </div>
+
+          <div class="stage-actions">
+            <button type="button" class="secondary btn-md" id="btnCalBackToWizard">← Back to profiling wizard</button>
+          </div>
+          <details class="log-container hidden" id="calLogContainer">
+            <summary>Process Output</summary>
+            <pre id="calLog"></pre>
+          </details>
+        </section>
+
         <!-- Stage 1: targen -->
         <section id="stage-1" class="stage active">
           <h2 style="display:flex; justify-content:space-between; align-items:center;">
             Define Target
             <button type="button" id="btnToggleAllHelp" class="secondary btn-sm">Toggle Help Mode</button>
           </h2>
+          <div id="calStage1Recommend" class="cal-status-banner cal-banner-stale hidden">
+            <span>No calibration applied — recommended for CMYK / RIP workflows.</span>
+            <button type="button" class="secondary btn-sm" id="btnCalRecalibrate">Calibrate Printer</button>
+          </div>
+          <div class="cal-status-banner hidden" data-cal-banner>
+            <span data-cal-banner-text>Calibration: None</span>
+            <label class="cal-apply-toggle"><input type="checkbox" data-cal-apply> Apply Calibration</label>
+          </div>
           
           <div class="form-container" id="stage1FormContainer">
             <!-- Basic Settings -->
@@ -319,6 +421,10 @@
         <!-- Stage 2: printtarg -->
         <section id="stage-2" class="stage hidden">
           <h2>Print Layout</h2>
+          <div class="cal-status-banner hidden" data-cal-banner>
+            <span data-cal-banner-text>Calibration: None</span>
+            <label class="cal-apply-toggle"><input type="checkbox" data-cal-apply> Apply Calibration</label>
+          </div>
           <p>Configure the target layout for your instrument and paper size, then generate printable TIFF images.</p>
 
           <!-- Colour management warning banner -->
@@ -634,6 +740,10 @@
         <!-- Stage 4: colprof -->
         <section id="stage-4" class="stage hidden">
           <h2>Create Profile</h2>
+          <div class="cal-status-banner hidden" data-cal-banner>
+            <span data-cal-banner-text>Calibration: None</span>
+            <label class="cal-apply-toggle"><input type="checkbox" data-cal-apply> Apply Calibration</label>
+          </div>
           <p>Calculate the ICC profile from your target measurement data.</p>
 
           <div class="form-container">
@@ -790,6 +900,10 @@
         <!-- Stage 5: profcheck -->
         <section id="stage-5" class="stage hidden">
           <h2>Verify Profile</h2>
+          <div class="cal-status-banner hidden" data-cal-banner>
+            <span data-cal-banner-text>Calibration: None</span>
+            <label class="cal-apply-toggle"><input type="checkbox" data-cal-apply> Apply Calibration</label>
+          </div>
           <p>Check the numerical accuracy of your profile against the original measurement data.</p>
 
           <div class="stage-actions">
@@ -828,6 +942,7 @@
             <summary>Verification History &amp; Drift Tracking</summary>
             <div class="notification-banner warning hidden" id="driftAlertCard">
               <span id="driftAlertIcon">⚠️</span><span id="driftAlertText"></span>
+              <button type="button" class="secondary btn-sm" id="btnDriftRecalibrate">Re-calibrate</button>
             </div>
             <div class="drift-filter-row hidden" id="driftFilterRow">
               <label for="driftPrinterFilter">Filter by Printer:</label>
@@ -972,6 +1087,15 @@
         </div>
 
         <div class="form-group" style="margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--border-color, #333);">
+          <label style="font-weight: 600;">Printer Calibration</label>
+          <div style="margin-top: 8px;">
+            <label for="calibrationStaleDays" class="sub-label">Warn when loaded .cal is older than (days)</label>
+            <input type="number" id="calibrationStaleDays" min="1" max="365" value="30">
+            <small class="help-hint" style="display:block; font-size:0.75rem; color:var(--text-muted, #888); margin-top:3px;">Also warns when the stored printer name no longer matches the current destination. Default 30 days.</small>
+          </div>
+        </div>
+
+        <div class="form-group" style="margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--border-color, #333);">
           <label style="font-weight: 600;">Diagnostics &amp; Logging</label>
           <div class="input-row" style="margin-top: 8px;">
             <div>
@@ -1000,6 +1124,19 @@
       </div>
     </dialog>
 
+    <dialog id="calCollisionDialog" class="settings-modal">
+      <div class="modal-content">
+        <h2>Calibration file exists</h2>
+        <p id="calCollisionMessage" style="white-space:pre-wrap;"></p>
+        <p class="help-hint">ICCery never overwrites a .cal without an explicit choice.</p>
+        <div class="modal-actions">
+          <button type="button" id="calOverwriteBtn" class="danger">Overwrite</button>
+          <button type="button" id="calRenameBtn" class="primary">Rename (timestamp)</button>
+          <button type="button" id="calCancelCollisionBtn" class="secondary">Cancel</button>
+        </div>
+      </div>
+    </dialog>
+
     <!-- About Dialog -->
     <dialog id="aboutDialog" class="settings-modal about-modal">
       <div class="modal-content">
@@ -1007,7 +1144,7 @@
           <img src="./assets/ICCery-logo.svg" alt="ICCery Logo" class="about-logo" />
         </div>
         <h2>About ICCery</h2>
-        <p><strong>Version:</strong> <span id="aboutVersion">v0.8.2</span> &bull; <strong>Build Date:</strong> <span id="aboutBuildDate">September 2026</span></p>
+        <p><strong>Version:</strong> <span id="aboutVersion">v0.8.5</span> &bull; <strong>Build Date:</strong> <span id="aboutBuildDate">September 2026</span></p>
         <p><strong>Copyright &copy; 2026 Gordon Bolton. All rights reserved.</strong></p>
         <h3>Licences & EULA</h3>
         <div class="license-text-container">

@@ -2,6 +2,7 @@ use tauri::Manager;
 
 mod cgats;
 mod commands;
+mod calibration;
 mod events;
 mod macos_webview;
 mod print;
@@ -92,6 +93,15 @@ pub fn run() {
             commands::show_printer_properties,
             commands::print_target_native,
             commands::select_csv_save_path,
+            calibration::generate_calibration_target,
+            calibration::compute_calibration_curves,
+            calibration::apply_calibration,
+            calibration::parse_cal_file_cmd,
+            calibration::list_saved_calibrations,
+            calibration::save_calibration_to_library,
+            calibration::select_cal_file,
+            calibration::load_project_calibration,
+            calibration::save_project_calibration,
             quality_store::save_verification_record,
             quality_store::get_verification_history,
             quality_store::clear_verification_history,
