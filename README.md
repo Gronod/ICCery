@@ -2,19 +2,20 @@
 
 > Modern, cross-platform native desktop application for printer profiling, powered by ArgyllCMS.
 
-[![Release](https://img.shields.io/badge/version-v0.8.4-blue.svg)](https://git.i3omb.com/gronod/ICCery)
+[![Release](https://img.shields.io/badge/version-v0.8.5-blue.svg)](https://git.i3omb.com/gronod/ICCery)
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey.svg)](https://git.i3omb.com/gronod/ICCery)
 [![Framework](https://img.shields.io/badge/framework-Tauri%20v2%20%2B%20Rust-orange.svg)](https://tauri.app)
 [![License](https://img.shields.io/badge/license-Proprietary%20%2F%20EULA-blue.svg)](LICENCE.md)
 
-**ICCery** is a native GUI frontend designed to make creating custom ICC/ICM printer profiles seamless, visual, and reliable. It wraps the powerful color management capabilities of [ArgyllCMS](https://www.argyllcms.com/) within an intuitive, artefact-gated 5-stage wizard.
+**ICCery** is a native GUI frontend designed to make creating custom ICC/ICM printer profiles seamless, visual, and reliable. It wraps the powerful color management capabilities of [ArgyllCMS](https://www.argyllcms.com/) within an intuitive, artefact-gated 5-stage wizard, with an optional printer calibration (linearization) workflow.
 
 ---
 
 ## Key Features
 
 - 🪄 **Linear 5-Stage Wizard Workflow**:
-  1. **Stage 1 — Patch Generation (`targen`)**: Configure RGB (driver-managed) or CMYK (RIP-managed) patch sets with custom counts, profiling presets, neutral/grey axis boosting, and 11 advanced generation parameters with contextual guidance tooltips. Supports direct-resume from existing `.ti2` target files to jump straight to measurement.
+  0. **Optional — Printer Calibration (`printcal` / `applycal`)** (#224): Per-channel linearization and ink-limit discovery before a full profile. Generate a short `CAL_` chart, print and measure it with the existing Stage 2/3 engines, compute `.cal` curves, inspect channel-response plots, and toggle **Apply Calibration** so subsequent `printtarg` (`-K`) and `colprof` (`applycal`) runs consume the curves. Skip entirely for simple RGB photo printers.
+  1. **Stage 1 — Patch Generation (`targen`)**: Configure RGB (driver-managed) or CMYK (RIP-managed) patch sets with custom counts, profiling presets, neutral/grey axis boosting, and 11 advanced generation parameters with contextual guidance tooltips. Supports direct-resume from existing `.ti2` target files to jump straight to measurement. CMYK / RIP workflows show a reminder when no calibration is applied.
   2. **Stage 2 — Target Creation & Raw Printing (`printtarg`)**: Format patch targets for handheld spectrophotometers (i1Pro, i1Pro2, ColorMunki, SpyderPrint) and automated XY tables (i1iO, SpectroScan). View high-resolution downscaled TIFF previews and print directly using native OS unmanaged pathways:
      - **macOS**: Native `NSPrintPanel` driver preferences with automatic ColorSync suppression (`AP_ColorMatchingMode=AP_ApplicationColorMatching`), CUPS media type selection, and driver-specific color adjustment bypass detection (Canon `CNIJIntent2`, Epson `ColorCorrection`, Gutenprint).
      - **Windows**: GDI uncorrected raw printing and DEVMODE preferences.
@@ -30,6 +31,7 @@
      - **Longitudinal Printer Drift Analytics (#95)**: Historical verification logging persisted to `verification_history.json` (up to 1,000 records), an interactive dual-series SVG trend chart with shaded ICCery verification reference bands, consecutive-breach alert recommendation card (detecting drift across distinct dates or $\ge 1$ hour apart), and RFC-4180 compliant CSV export.
      - **Mathematical Accuracy Report**: Peak, Average, and RMS CIEDE2000 metrics with robust parsing of both Argyll JSON summaries (`-u`) and legacy plain-text reports.
      - **Interactive 3D Gamut Viewer**: CIELAB coordinate scaffold with crisp CSS2D labels, per-vertex true-colour profile gamut shading, layer visibility toggles and opacity sliders, camera reset (press **R**), touch controls, and bundled sRGB reference wireframe comparison.
+     - **Install Profile to System (#223)**: After a successful verification, copy the ICC/ICM into the OS colour-management store (Windows ICM Color folder, macOS ColorSync Profiles, Linux colord / `~/.local/share/icc`) without moving the working-directory artefact. Collisions prompt Overwrite / Rename / Cancel.
 - 📊 **CGATS Dataset Interoperability (#94)**: Native parser for external CGATS and Argyll `.ti3` datasets with canonical normalization (0–255 scaling, field aliasing, metadata synthesis) and direct-jump workflows to Stage 4 (Profile Calculation) and Stage 5 (Verification).
 - 📋 **Profiling Presets**: One-click configuration presets (Standard RGB Photo, High-Gamut CMYK Proofing, Fast RGB Draft) with custom preset export/import and security validation.
 - 🍎 **macOS Universal Binary**: Native Apple Silicon (`arm64`) and Intel (`x86_64`) support with universal binary bundling and fallback resolution.
@@ -54,10 +56,12 @@ flowchart TD
         QualityStore[Verification History & Drift Analytics]
         PrintEngine["Raw Print Subsystem (GDI / CUPS / NSPrintPanel)"]
         ProcMgr[Async Subprocess IPC Manager]
+        CalStore[Calibration .cal library]
 
         UI <--> State
         State <--> ProcMgr
         State <--> QualityStore
+        State <--> CalStore
         ProcMgr --> ThreeJS
         UI --> PrintEngine
         QualityStore --> UI
@@ -67,6 +71,7 @@ flowchart TD
         BIN_TAR[targen]
         BIN_PRT[printtarg]
         BIN_CHR[chartread]
+        BIN_CAL[printcal / applycal]
         BIN_COL[colprof]
         BIN_CHK[profcheck]
         BIN_GAM[iccgamut]
@@ -75,6 +80,7 @@ flowchart TD
     ProcMgr -- stdin/stdout/stderr pipes --> BIN_TAR
     ProcMgr -- stdin/stdout/stderr pipes --> BIN_PRT
     ProcMgr -- stdin/stdout/stderr pipes --> BIN_CHR
+    ProcMgr -- stdin/stdout/stderr pipes --> BIN_CAL
     ProcMgr -- stdin/stdout/stderr pipes --> BIN_COL
     ProcMgr -- stdin/stdout/stderr pipes --> BIN_CHK
     ProcMgr -- stdin/stdout/stderr pipes --> BIN_GAM
@@ -88,7 +94,7 @@ flowchart TD
 - [Node.js](https://nodejs.org/) (v18 or newer)
 - [Rust](https://www.rust-lang.org/) (1.78+ stable)
 - Operating system dependencies:
-  - **macOS**: macOS 11.0 (Big Sur) or newer, Xcode Command Line Tools (`xcode-select --install`).
+  - **macOS**: macOS 12.0 (Monterey) or newer, Xcode Command Line Tools (`xcode-select --install`).
   - **Windows**: Microsoft Visual Studio C++ Build Tools & WebView2 runtime.
   - **Linux (Debian/Ubuntu)**: `libwebkit2gtk-4.1-dev`, `build-essential`, `curl`, `wget`, `file`, `libxdo-dev`, `libssl-dev`, `libayatana-appindicator3-dev`, `librsvg2-dev`, `libcups2-dev`.
 
@@ -124,6 +130,40 @@ npm run fetch-argyll
 # - Linux: .AppImage / .deb package
 npm run tauri build
 ```
+
+---
+
+## Platform support
+
+### macOS
+
+The packaged app declares `LSMinimumSystemVersion = 12.0`. Installers refuse Catalina and Big Sur rather than launching into a WKWebView crash loop.
+
+| macOS | Status |
+|---|---|
+| 13+ (Ventura and newer), Apple Silicon | Supported |
+| 13+, Intel | Supported |
+| 12.7.x Monterey, Apple Silicon | Supported, WebGL best-effort |
+| 12.0–12.6 Monterey, Intel | Best-effort; WebGL is deferred until Stage 5; known WKWebView GPU process crashes |
+| 11 Big Sur | Not supported (installer refuses) |
+| 10.15 Catalina | Not supported |
+
+The 3D gamut viewer (Stage 5) creates a WebGL context only when that stage is shown. Stages 1–4 remain usable if WebGL is missing or the GPU process is lost.
+
+### macOS troubleshooting
+
+If the window flashes white and disappears, this is almost always the WKWebView **Web Content** or **GPU** helper dying — Apple Crash Reporter will not attach to `ICCery.app`.
+
+- Launch from Terminal to see `web content process terminated`:
+  ```text
+  /Applications/ICCery.app/Contents/MacOS/ICCery
+  ```
+- Check `~/Library/Logs/DiagnosticReports` for `com.apple.WebKit.WebContent` or `com.apple.WebKit.GPU`.
+- ICCery log file (rotated, last 5 segments kept):
+  ```text
+  ~/Library/Logs/com.gronod.iccery/iccery.log
+  ```
+- Custom ColorSync display profiles can crash toolkit UIs on Monterey. Testing with the default display profile (or Safe Mode) is a valid support question.
 
 ---
 

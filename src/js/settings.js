@@ -70,6 +70,18 @@ export async function initSettings() {
             if (deltaEWarningMax) {
                 deltaEWarningMax.value = Number(settings.delta_e_warning_max ?? 5.0).toFixed(1);
             }
+            const staleDays = document.getElementById('calibrationStaleDays');
+            if (staleDays) {
+                staleDays.value = Number(settings.calibration_stale_days ?? 30);
+            }
+            const installLoc = document.getElementById('defaultInstallLocation');
+            if (installLoc) {
+                installLoc.value = settings.default_install_location === 'system' ? 'system' : 'user';
+            }
+            const askOw = document.getElementById('askBeforeOverwriteProfile');
+            if (askOw) askOw.checked = settings.ask_before_overwrite_profile !== false;
+            const openPanel = document.getElementById('openColorPanelAfterInstall');
+            if (openPanel) openPanel.checked = !!settings.open_color_panel_after_install;
             validateDeltaEThresholds();
             await refreshLogPath();
             dialog.showModal();
@@ -150,6 +162,12 @@ export async function initSettings() {
                     delta_e_good_max: getInputValueAsFloat('deltaEGoodMax', 2.0),
                     delta_e_warning_max: getInputValueAsFloat('deltaEWarningMax', 5.0),
                     enable_i1pro2_leds: enableI1Pro2Leds ? enableI1Pro2Leds.checked : false,
+                    calibration_stale_days: Math.max(1, parseInt(document.getElementById('calibrationStaleDays')?.value, 10) || 30),
+                    default_install_location: document.getElementById('defaultInstallLocation')?.value === 'system' ? 'system' : 'user',
+                    ask_before_overwrite_profile: document.getElementById('askBeforeOverwriteProfile')
+                        ? document.getElementById('askBeforeOverwriteProfile').checked : true,
+                    open_color_panel_after_install: document.getElementById('openColorPanelAfterInstall')
+                        ? document.getElementById('openColorPanelAfterInstall').checked : false,
                 };
                 await invoke('save_settings', { settings });
                 logger.info(`Settings saved. Log level set to: ${settings.log_level}`, 'Settings');

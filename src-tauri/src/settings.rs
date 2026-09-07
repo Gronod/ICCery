@@ -58,10 +58,17 @@ pub struct ProfilingPreset {
     pub random_seed: Option<u32>,
     #[serde(default)]
     pub no_randomize: Option<bool>,
+    #[serde(default)]
+    pub calibration_file: Option<String>,
+    #[serde(default)]
+    pub apply_calibration: Option<bool>,
 }
 
 fn default_delta_e_good_max() -> f64 { 2.0 }
 fn default_delta_e_warning_max() -> f64 { 5.0 }
+fn default_cal_stale_days() -> u32 { 30 }
+fn default_install_location() -> String { "user".to_string() }
+fn default_true_bool() -> bool { true }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct AppSettings {
@@ -76,6 +83,15 @@ pub struct AppSettings {
     pub custom_presets: Vec<ProfilingPreset>,
     #[serde(default)]
     pub enable_i1pro2_leds: bool,
+    #[serde(default = "default_cal_stale_days")]
+    pub calibration_stale_days: u32,
+    /// `user` or `system` — default destination for Stage 5 profile install (#223).
+    #[serde(default = "default_install_location")]
+    pub default_install_location: String,
+    #[serde(default = "default_true_bool")]
+    pub ask_before_overwrite_profile: bool,
+    #[serde(default)]
+    pub open_color_panel_after_install: bool,
 }
 
 impl Default for AppSettings {
@@ -88,6 +104,10 @@ impl Default for AppSettings {
             delta_e_warning_max: default_delta_e_warning_max(),
             custom_presets: Vec::new(),
             enable_i1pro2_leds: false,
+            calibration_stale_days: default_cal_stale_days(),
+            default_install_location: default_install_location(),
+            ask_before_overwrite_profile: true,
+            open_color_panel_after_install: false,
         }
     }
 }
@@ -135,6 +155,8 @@ pub fn get_default_presets() -> Vec<ProfilingPreset> {
             device_power: None,
             random_seed: Some(1),
             no_randomize: Some(false),
+            calibration_file: None,
+            apply_calibration: None,
             colprof_fwa: Some("D50".to_string()),
             colprof_illuminant: None,
             colprof_observer: None,
@@ -169,6 +191,8 @@ pub fn get_default_presets() -> Vec<ProfilingPreset> {
             device_power: None,
             random_seed: Some(1),
             no_randomize: Some(false),
+            calibration_file: None,
+            apply_calibration: None,
             colprof_fwa: Some("D50".to_string()),
             colprof_illuminant: None,
             colprof_observer: None,
@@ -203,6 +227,8 @@ pub fn get_default_presets() -> Vec<ProfilingPreset> {
             device_power: None,
             random_seed: Some(1),
             no_randomize: Some(false),
+            calibration_file: None,
+            apply_calibration: None,
             colprof_fwa: Some("D50".to_string()),
             colprof_illuminant: None,
             colprof_observer: None,
@@ -237,6 +263,8 @@ pub fn get_default_presets() -> Vec<ProfilingPreset> {
             device_power: None,
             random_seed: Some(1),
             no_randomize: Some(false),
+            calibration_file: None,
+            apply_calibration: None,
             colprof_fwa: Some("D50".to_string()),
             colprof_illuminant: None,
             colprof_observer: None,
@@ -405,6 +433,8 @@ mod tests {
             device_power: Some(1.2),
             random_seed: Some(42),
             no_randomize: Some(false),
+            calibration_file: None,
+            apply_calibration: None,
             colprof_fwa: Some("D50".to_string()),
             colprof_illuminant: None,
             colprof_observer: None,
@@ -474,6 +504,10 @@ mod tests {
     fn test_default_enable_i1pro2_leds() {
         let settings = AppSettings::default();
         assert_eq!(settings.enable_i1pro2_leds, false);
+        assert_eq!(settings.calibration_stale_days, 30);
+        assert_eq!(settings.default_install_location, "user");
+        assert!(settings.ask_before_overwrite_profile);
+        assert!(!settings.open_color_panel_after_install);
     }
 
     #[test]

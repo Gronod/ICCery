@@ -3,6 +3,7 @@ const { listen } = window.__TAURI__.event;
 import { loadGamutMesh } from './gamut_viewer.js';
 import { wizardState } from './state.js';
 import { logger } from './logger.js';
+import { setProfileInstallSource } from './profile_install.js';
 
 let profileBasename = "";
 let profileCwd = "";
@@ -535,6 +536,7 @@ export function initProfcheck() {
     logContainer.classList.remove("hidden");
     reportCard.classList.add("hidden");
     btnVerify.disabled = true;
+    setProfileInstallSource(iccPath, false);
 
     const config = {
       ti3_path: ti3Path,
@@ -571,6 +573,7 @@ export function initProfcheck() {
           if (event.payload.code === 0) {
             logPre.textContent += "\n[SUCCESS] profcheck verification finished.\n";
             const report = parseProfcheckReport(stdoutAccumulator);
+            setProfileInstallSource(iccPath, true);
 
             reportCard.classList.remove("hidden");
             if (report.warnings.length > 0) {

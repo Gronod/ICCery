@@ -3,6 +3,7 @@ const { listen } = window.__TAURI__.event;
 import { setStage2Result } from './chartread.js';
 import { wizardState } from './state.js';
 import { logger } from './logger.js';
+import { getPrinttargCalibrationFields } from './calibration.js';
 
 // Module-level state: set by Stage 1 when it completes
 let stage1Basename = "";
@@ -505,6 +506,7 @@ export function initPrinttarg() {
       no_randomize: noRandomize,
       basename: stage1Basename,
       cwd: stage1Cwd,
+      ...getPrinttargCalibrationFields(stage1Basename),
     };
 
     const processId = `printtarg_${stage1Basename}`;

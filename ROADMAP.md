@@ -14,7 +14,7 @@ ICCery is a native, cross-platform desktop application built with:
 - **Frontend**: Vanilla JS (ES Modules) + HTML5/CSS3 with a modern dark theme and responsive layout.
 - **Visualization**: Three.js WebGL engine for 3D CIELAB color gamut volumes and sRGB reference comparisons.
 - **Engine**: ArgyllCMS command-line utilities orchestrated over isolated standard stream IPC (`stdin`, `stdout`, `stderr`).
-- **Current Version**: `v0.8.4` (Production release).
+- **Current Version**: `v0.8.5` (Production release).
 
 ---
 
@@ -116,6 +116,11 @@ ICCery is a native, cross-platform desktop application built with:
 ### Maintenance & Reliability Release (`v0.8.4`)
 - [x] **Atomic Verification History Persistence (#213)**: Hardened `quality_store.rs` with atomic temporary file writes (`.tmp`), explicit flush/sync, and atomic rename to prevent historical drift data loss or corruption upon unexpected system crashes.
 - [x] **Frontend Unit Testing & CI Integration (#215)**: Added standard `npm test` script executing the 3 frontend test suites (`profcheck`, `chartread`, and `gamut_viewer`) and integrated automated frontend test validation into macOS, Linux, and Windows CI workflows.
+- [x] **macOS Monterey WKWebView survival (#225)**: Deferred Stage 5 WebGL until the gamut viewer is shown, hid the main window until first paint, painted a dark WKWebView backing, logged Web Content termination, and raised `minimumSystemVersion` to 12.0.
+
+### Printer Calibration Release (`v0.8.5`)
+- [x] **Printer Calibration Curves (#224)**: Optional Stage 0 dashboard for `printcal` linearization and ink limits. `CAL_` artefacts, Apply Calibration toggle feeding `printtarg -K` and `applycal`, channel-response plots, stale-cal warnings, and project/library persistence.
+- [x] **System-Wide Profile Installation (#223)**: Stage 5 “Install Profile to System” copies the verified ICC/ICM into the platform colour store (user or system), with overwrite/rename/cancel, elevation guidance, and a note when printcal curves were applied.
 
 ---
 

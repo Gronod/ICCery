@@ -1,5 +1,23 @@
 # ICCery Agent Notes
 
+## Printer Calibration (`printcal` / `applycal`) (#224)
+
+- Optional Stage 0 dashboard, opened from **Calibrate Printer**. The 1–5 wizard is unchanged when calibration is skipped.
+- Calibration charts use a `CAL_` basename so they never collide with the profiling `.ti1`/`.ti2`/`.ti3`.
+- `printtarg -K file.cal` is applied only to **profiling** layouts, never to the calibration chart itself.
+- After Stage 4 `colprof`, `applycal` embeds the curves into the ICC/ICM when Apply Calibration is on.
+- `.cal` overwrite requires an explicit Overwrite / Rename / Cancel choice.
+- Warn when a loaded `.cal` is older than `calibration_stale_days` (default 30) or the stored printer name differs.
+- Tests: `src-tauri/src/calibration.rs` (arg builders + `.cal` parser) and `src/js/calibration.test.js`.
+
+## Stage 5 System Profile Install (#223)
+
+- `install_profile_to_system` copies the working-directory `.icc`/`.icm` into the OS colour store. It never moves or deletes the project artefact.
+- Destinations: Windows `%WINDIR%\System32\spool\drivers\color` (`.icm`); macOS `~/Library/ColorSync/Profiles` or `/Library/ColorSync/Profiles`; Linux `~/.local/share/icc` or `/usr/share/color/icc` (colormgr when present).
+- Collisions require Overwrite / Rename / Cancel. Permission errors must mention elevation.
+- If Apply Calibration is on, the success toast notes which `.cal` was embedded.
+- Tests: `src-tauri/src/profile_install.rs` and `src/js/profile_install.test.js`.
+
 ## Stage 5 Verification / Profcheck
 
 - `profcheck` output is parsed from both JSON summaries (preferred) and legacy plain-text report formats.
@@ -10,6 +28,9 @@
 ## 3D Gamut Viewer
 
 - The viewer renders the measured/derived `.gam` volume and an optional sRGB reference wireframe in CIELAB.
+- **Do not** create `THREE.WebGLRenderer` during `DOMContentLoaded`. Call `ensureGamutViewer()` from `state.js` only when Stage 5 becomes visible. Eager WebGL on a hidden canvas respawns WKWebView on macOS Monterey Intel (#225).
+- Feature-detect WebGL first; missing/lost context must leave a fallback message in `#gamutViewerContainer` and must not take down the app.
+- Pause the rAF loop when leaving Stage 5 (`pauseGamutViewer`).
 - Layer controls (profile, sRGB, axes) each have visibility toggles and opacity sliders.
 - Click **Reset View** or press **R** to return the camera to its default position.
 - Full JSDoc is provided on the public API in `src/js/gamut_viewer.js`.
@@ -61,6 +82,8 @@ The frontend uses a tiered button sizing system defined in `src/styles/main.css`
   - Verification & drift tests: `node src/js/profcheck.test.js` (21 tests)
   - Chartread classifier & XY table tests: `node src/js/chartread.test.js` (39 tests)
   - Gamut viewer tests: `node src/js/gamut_viewer.test.js`
+  - Calibration helpers: `node src/js/calibration.test.js`
+  - Profile install helpers: `node src/js/profile_install.test.js`
   - Browser devtools console: `import('./profcheck.test.js').then(m => m.runAll())`
 - **Frontend development server**: `npm run tauri dev`
 - **Production package build**: `npm run tauri build`

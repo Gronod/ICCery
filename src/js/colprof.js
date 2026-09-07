@@ -4,6 +4,7 @@ import { setStage4Result } from './profcheck.js';
 import { loadGamutMesh } from './gamut_viewer.js';
 import { wizardState } from './state.js';
 import { logger } from './logger.js';
+import { applyCalibrationToProfile, getActiveCalibration } from './calibration.js';
 
 let chartreadBasename = "";
 let chartreadCwd = "";
@@ -158,6 +159,16 @@ export function initColprof() {
 
             wizardState.setTarget(basename, cwd);
             setStage4Result(basename, cwd);
+
+            const cal = getActiveCalibration();
+            if (cal.applyEnabled && cal.calPath) {
+              logPre.textContent += `\nApplying calibration ${cal.filename || cal.calPath} via applycal...\n`;
+              const applied = await applyCalibrationToProfile(profilePath);
+              if (applied && applied.output_path) {
+                profilePath = applied.output_path;
+                logPre.textContent += `[SUCCESS] ${applied.message}\n`;
+              }
+            }
 
             // Automatically extract gamut mesh for 3D visualization
             triggerGamutExtraction(basename, cwd, profilePath);

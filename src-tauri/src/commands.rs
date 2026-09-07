@@ -105,18 +105,99 @@ pub async fn resolve_binary(app: AppHandle, binary_name: String) -> Result<Strin
     Ok(resource_path.to_string_lossy().to_string())
 }
 
+#[derive(Serialize, Clone, Debug, PartialEq, Eq)]
+pub struct OsInfo {
+    pub os: String,
+    pub arch: String,
+    pub family: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub macos_major: Option<u32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub macos_minor: Option<u32>,
+}
+
+/// Parse `sw_vers -productVersion` output such as `"12.7.6"` or `"13.0"`.
+pub fn parse_macos_product_version(version: &str) -> Option<(u32, u32, u32)> {
+    let mut parts = version.trim().split('.');
+    let major = parts.next()?.parse().ok()?;
+    let minor = parts.next().unwrap_or("0").parse().unwrap_or(0);
+    let patch = parts.next().unwrap_or("0").parse().unwrap_or(0);
+    Some((major, minor, patch))
+}
+
+fn macos_version_from_sw_vers() -> Option<(u32, u32, u32)> {
+    #[cfg(target_os = "macos")]
+    {
+        let output = std::process::Command::new("sw_vers")
+            .arg("-productVersion")
+            .output()
+            .ok()?;
+        if !output.status.success() {
+            return None;
+        }
+        parse_macos_product_version(&String::from_utf8_lossy(&output.stdout))
+    }
+    #[cfg(not(target_os = "macos"))]
+    {
+        None
+    }
+}
+
+pub fn collect_os_info() -> OsInfo {
+    let (macos_major, macos_minor) = match macos_version_from_sw_vers() {
+        Some((maj, min, _)) => (Some(maj), Some(min)),
+        None => (None, None),
+    };
+    OsInfo {
+        os: std::env::consts::OS.to_string(),
+        arch: std::env::consts::ARCH.to_string(),
+        family: std::env::consts::FAMILY.to_string(),
+        macos_major,
+        macos_minor,
+    }
+}
+
 #[derive(Serialize)]
 pub struct AppInfo {
     pub version: String,
     pub build_date: String,
+    pub os: String,
+    pub arch: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub macos_major: Option<u32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub macos_minor: Option<u32>,
+}
+
+#[tauri::command]
+pub fn get_os_info() -> OsInfo {
+    collect_os_info()
 }
 
 #[tauri::command]
 pub fn get_app_info() -> AppInfo {
+    let os = collect_os_info();
     AppInfo {
         version: env!("CARGO_PKG_VERSION").to_string(),
         build_date: env!("BUILD_DATE").to_string(),
+        os: os.os,
+        arch: os.arch,
+        macos_major: os.macos_major,
+        macos_minor: os.macos_minor,
     }
+}
+
+#[tauri::command]
+pub fn show_main_window(app: AppHandle) -> Result<(), String> {
+    if let Some(win) = app.get_webview_window("main") {
+        crate::macos_webview::paint_dark_webview(&win);
+        win.show().map_err(|e| e.to_string())?;
+        let _ = win.set_focus();
+        log::info!("Main window shown after frontend ready");
+    } else {
+        log::warn!("show_main_window: window 'main' not found");
+    }
+    Ok(())
 }
 
 pub fn resolve_safe_cwd(app: &AppHandle, cwd_input: &str) -> Result<String, String> {
@@ -696,6 +777,12 @@ pub struct PrinttargConfig {
     pub no_randomize: bool,   // If true, pass -r (raster layout / no randomization)
     pub basename: String,     // Must match the .ti1 basename from Stage 1
     pub cwd: String,          // Working directory where the .ti1 file resides
+    /// Optional Argyll `.cal` applied via printtarg `-K` (or `-I` when embed-only).
+    #[serde(default)]
+    pub calibration_file: Option<String>,
+    /// When true, embed the calibration (`-I`) without applying it to printed patches.
+    #[serde(default)]
+    pub calibration_embed_only: bool,
 }
 
 pub fn build_targen_args(config: &TargenConfig) -> Vec<String> {
@@ -845,6 +932,18 @@ pub fn build_printtarg_args(config: &PrinttargConfig) -> Vec<String> {
         args.push("-t".to_string());
     }
     args.push(config.dpi.to_string());
+
+    if let Some(ref cal) = config.calibration_file {
+        let trimmed = cal.trim();
+        if !trimmed.is_empty() {
+            if config.calibration_embed_only {
+                args.push("-I".to_string());
+            } else {
+                args.push("-K".to_string());
+            }
+            args.push(trimmed.to_string());
+        }
+    }
 
     args.push(config.basename.clone());
     args
@@ -1540,6 +1639,8 @@ mod tests {
             no_randomize: false,
             basename: "my_profile".to_string(),
             cwd: "/tmp".to_string(),
+            calibration_file: None,
+            calibration_embed_only: false,
         };
         let args = build_printtarg_args(&config);
         assert_eq!(args, vec!["-v", "-u", "-i", "i1", "-p", "A4", "-R", "1", "-t", "100", "my_profile"]);
@@ -1557,6 +1658,8 @@ mod tests {
             no_randomize: false,
             basename: "cmyk_profile".to_string(),
             cwd: "/home/user".to_string(),
+            calibration_file: None,
+            calibration_embed_only: false,
         };
         let args = build_printtarg_args(&config);
         assert_eq!(args, vec!["-v", "-u", "-i", "CM", "-p", "Letter", "-R", "1", "-T", "300", "cmyk_profile"]);
@@ -1574,6 +1677,8 @@ mod tests {
             no_randomize: false,
             basename: "custom_target".to_string(),
             cwd: "/tmp".to_string(),
+            calibration_file: None,
+            calibration_embed_only: false,
         };
         let args = build_printtarg_args(&config);
         assert_eq!(args, vec!["-v", "-u", "-i", "SS", "-p", "200x400", "-R", "1", "-t", "150", "custom_target"]);
@@ -1591,6 +1696,8 @@ mod tests {
             no_randomize: false,
             basename: "my_profile".to_string(),
             cwd: "/tmp".to_string(),
+            calibration_file: None,
+            calibration_embed_only: false,
         };
         let args = build_printtarg_args(&config);
         assert_eq!(
@@ -1625,6 +1732,8 @@ mod tests {
             no_randomize: false,
             basename: "my_profile".to_string(),
             cwd: "/tmp".to_string(),
+            calibration_file: None,
+            calibration_embed_only: false,
         };
         let args = build_printtarg_args(&config);
         assert_eq!(args, vec!["-v", "-u", "-i", "i1", "-p", "A4", "-R", "42", "-t", "300", "my_profile"]);
@@ -1642,9 +1751,54 @@ mod tests {
             no_randomize: true,
             basename: "my_profile".to_string(),
             cwd: "/tmp".to_string(),
+            calibration_file: None,
+            calibration_embed_only: false,
         };
         let args = build_printtarg_args(&config);
         assert_eq!(args, vec!["-v", "-u", "-i", "i1", "-p", "A4", "-r", "-t", "300", "my_profile"]);
+    }
+
+    #[test]
+    fn test_build_printtarg_args_with_calibration_apply() {
+        let config = PrinttargConfig {
+            instrument: "i1".to_string(),
+            page_size: "A4".to_string(),
+            bit_depth: 8,
+            dpi: 300,
+            custom_label: None,
+            random_seed: Some(1),
+            no_randomize: false,
+            basename: "my_profile".to_string(),
+            cwd: "/tmp".to_string(),
+            calibration_file: Some("CAL_photo.cal".to_string()),
+            calibration_embed_only: false,
+        };
+        let args = build_printtarg_args(&config);
+        assert_eq!(
+            args,
+            vec!["-v", "-u", "-i", "i1", "-p", "A4", "-R", "1", "-t", "300", "-K", "CAL_photo.cal", "my_profile"]
+        );
+    }
+
+    #[test]
+    fn test_build_printtarg_args_with_calibration_embed_only() {
+        let config = PrinttargConfig {
+            instrument: "i1".to_string(),
+            page_size: "A4".to_string(),
+            bit_depth: 8,
+            dpi: 300,
+            custom_label: None,
+            random_seed: Some(1),
+            no_randomize: false,
+            basename: "my_profile".to_string(),
+            cwd: "/tmp".to_string(),
+            calibration_file: Some("lin.cal".to_string()),
+            calibration_embed_only: true,
+        };
+        let args = build_printtarg_args(&config);
+        assert!(args.contains(&"-I".to_string()));
+        assert!(!args.contains(&"-K".to_string()));
+        assert!(args.contains(&"lin.cal".to_string()));
     }
 
     #[test]
@@ -2095,5 +2249,34 @@ mod tests {
         assert!(temp_dir.join("iccery.log").exists(), "Active log must never be deleted");
 
         let _ = std::fs::remove_dir_all(&temp_dir);
+    }
+
+    #[test]
+    fn test_parse_macos_product_version() {
+        assert_eq!(parse_macos_product_version("12.7.6"), Some((12, 7, 6)));
+        assert_eq!(parse_macos_product_version("13.0"), Some((13, 0, 0)));
+        assert_eq!(parse_macos_product_version(" 15.1.1\n"), Some((15, 1, 1)));
+        assert_eq!(parse_macos_product_version(""), None);
+        assert_eq!(parse_macos_product_version("ventura"), None);
+    }
+
+    #[test]
+    fn test_collect_os_info_has_host_os_and_arch() {
+        let info = collect_os_info();
+        assert_eq!(info.os, std::env::consts::OS);
+        assert_eq!(info.arch, std::env::consts::ARCH);
+        assert_eq!(info.family, std::env::consts::FAMILY);
+        if info.os != "macos" {
+            assert_eq!(info.macos_major, None);
+            assert_eq!(info.macos_minor, None);
+        }
+    }
+
+    #[test]
+    fn test_get_app_info_includes_os_arch() {
+        let info = get_app_info();
+        assert!(!info.version.is_empty());
+        assert_eq!(info.os, std::env::consts::OS);
+        assert_eq!(info.arch, std::env::consts::ARCH);
     }
 }

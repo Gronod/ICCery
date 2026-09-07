@@ -2,11 +2,15 @@ use tauri::Manager;
 
 mod cgats;
 mod commands;
+mod calibration;
 mod events;
+mod macos_webview;
 mod print;
 mod process_manager;
+mod profile_install;
 mod quality_store;
 mod settings;
+mod window_lifecycle;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -21,6 +25,10 @@ pub fn run() {
                     tauri_plugin_log::Target::new(tauri_plugin_log::TargetKind::Stdout),
                     tauri_plugin_log::Target::new(tauri_plugin_log::TargetKind::Webview),
                 ])
+                // wry / tauri_runtime_wry log "web content process terminated" at info/debug.
+                // Surface those lines in iccery.log so Monterey GPU deaths are diagnosable.
+                .level_for("wry", log::LevelFilter::Info)
+                .level_for("tauri_runtime_wry", log::LevelFilter::Info)
                 .max_file_size(5 * 1024 * 1024)
                 .rotation_strategy(tauri_plugin_log::RotationStrategy::KeepAll)
                 .build(),
@@ -33,6 +41,12 @@ pub fn run() {
             let filter = settings::parse_log_level_filter(settings.log_level.as_deref());
             log::set_max_level(filter);
             log::info!("ICCery initialized. Effective log level: {:?}", filter);
+
+            if let Some(win) = app.get_webview_window("main") {
+                // Dark backing before first paint. Do not show() here — that races
+                // the still-white WKWebView. Frontend invokes show_main_window.
+                macos_webview::paint_dark_webview(&win);
+            }
             Ok(())
         })
         .manage(process_manager::ProcessManager::new())
@@ -40,6 +54,8 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             commands::spawn_process,
             commands::get_app_info,
+            commands::get_os_info,
+            commands::show_main_window,
             commands::get_default_working_dir,
             commands::get_log_path,
             commands::get_recent_log_excerpt,
@@ -78,6 +94,17 @@ pub fn run() {
             commands::show_printer_properties,
             commands::print_target_native,
             commands::select_csv_save_path,
+            calibration::generate_calibration_target,
+            calibration::compute_calibration_curves,
+            calibration::apply_calibration,
+            calibration::parse_cal_file_cmd,
+            calibration::list_saved_calibrations,
+            calibration::save_calibration_to_library,
+            calibration::select_cal_file,
+            calibration::load_project_calibration,
+            calibration::save_project_calibration,
+            profile_install::install_profile_to_system,
+            profile_install::get_profile_install_dir,
             quality_store::save_verification_record,
             quality_store::get_verification_history,
             quality_store::clear_verification_history,
@@ -95,21 +122,35 @@ pub fn run() {
         .run(|app_handle, event| {
             match event {
                 tauri::RunEvent::Exit | tauri::RunEvent::ExitRequested { .. } => {
+                    window_lifecycle::mark_user_close_requested();
                     let pm = app_handle.state::<process_manager::ProcessManager>();
                     tauri::async_runtime::block_on(async {
                         pm.kill_all().await;
                     });
                 }
-                tauri::RunEvent::WindowEvent {
-                    event: tauri::WindowEvent::CloseRequested { .. },
-                    ..
-                } => {
-                    let pm = app_handle.state::<process_manager::ProcessManager>();
-                    tauri::async_runtime::block_on(async {
-                        pm.kill_all().await;
-                    });
+                tauri::RunEvent::WindowEvent { label, event, .. } => {
+                    match event {
+                        tauri::WindowEvent::Destroyed => {
+                            window_lifecycle::on_window_destroyed(&label);
+                        }
+                        tauri::WindowEvent::CloseRequested { .. } => {
+                            window_lifecycle::mark_user_close_requested();
+                            let pm = app_handle.state::<process_manager::ProcessManager>();
+                            tauri::async_runtime::block_on(async {
+                                pm.kill_all().await;
+                            });
+                        }
+                        other => {
+                            log::debug!("WindowEvent on {label}: {other:?}");
+                        }
+                    }
                 }
-                _ => {}
+                other => {
+                    let text = format!("{other:?}");
+                    if window_lifecycle::is_web_content_termination_event(&text) {
+                        log::error!("WebView lifecycle event: {text}");
+                    }
+                }
             }
         });
 }
