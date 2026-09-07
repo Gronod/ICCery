@@ -67,6 +67,8 @@ pub struct ProfilingPreset {
 fn default_delta_e_good_max() -> f64 { 2.0 }
 fn default_delta_e_warning_max() -> f64 { 5.0 }
 fn default_cal_stale_days() -> u32 { 30 }
+fn default_install_location() -> String { "user".to_string() }
+fn default_true_bool() -> bool { true }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct AppSettings {
@@ -83,6 +85,13 @@ pub struct AppSettings {
     pub enable_i1pro2_leds: bool,
     #[serde(default = "default_cal_stale_days")]
     pub calibration_stale_days: u32,
+    /// `user` or `system` — default destination for Stage 5 profile install (#223).
+    #[serde(default = "default_install_location")]
+    pub default_install_location: String,
+    #[serde(default = "default_true_bool")]
+    pub ask_before_overwrite_profile: bool,
+    #[serde(default)]
+    pub open_color_panel_after_install: bool,
 }
 
 impl Default for AppSettings {
@@ -96,6 +105,9 @@ impl Default for AppSettings {
             custom_presets: Vec::new(),
             enable_i1pro2_leds: false,
             calibration_stale_days: default_cal_stale_days(),
+            default_install_location: default_install_location(),
+            ask_before_overwrite_profile: true,
+            open_color_panel_after_install: false,
         }
     }
 }
@@ -493,6 +505,9 @@ mod tests {
         let settings = AppSettings::default();
         assert_eq!(settings.enable_i1pro2_leds, false);
         assert_eq!(settings.calibration_stale_days, 30);
+        assert_eq!(settings.default_install_location, "user");
+        assert!(settings.ask_before_overwrite_profile);
+        assert!(!settings.open_color_panel_after_install);
     }
 
     #[test]

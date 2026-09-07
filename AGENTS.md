@@ -10,6 +10,14 @@
 - Warn when a loaded `.cal` is older than `calibration_stale_days` (default 30) or the stored printer name differs.
 - Tests: `src-tauri/src/calibration.rs` (arg builders + `.cal` parser) and `src/js/calibration.test.js`.
 
+## Stage 5 System Profile Install (#223)
+
+- `install_profile_to_system` copies the working-directory `.icc`/`.icm` into the OS colour store. It never moves or deletes the project artefact.
+- Destinations: Windows `%WINDIR%\System32\spool\drivers\color` (`.icm`); macOS `~/Library/ColorSync/Profiles` or `/Library/ColorSync/Profiles`; Linux `~/.local/share/icc` or `/usr/share/color/icc` (colormgr when present).
+- Collisions require Overwrite / Rename / Cancel. Permission errors must mention elevation.
+- If Apply Calibration is on, the success toast notes which `.cal` was embedded.
+- Tests: `src-tauri/src/profile_install.rs` and `src/js/profile_install.test.js`.
+
 ## Stage 5 Verification / Profcheck
 
 - `profcheck` output is parsed from both JSON summaries (preferred) and legacy plain-text report formats.
@@ -75,6 +83,7 @@ The frontend uses a tiered button sizing system defined in `src/styles/main.css`
   - Chartread classifier & XY table tests: `node src/js/chartread.test.js` (39 tests)
   - Gamut viewer tests: `node src/js/gamut_viewer.test.js`
   - Calibration helpers: `node src/js/calibration.test.js`
+  - Profile install helpers: `node src/js/profile_install.test.js`
   - Browser devtools console: `import('./profcheck.test.js').then(m => m.runAll())`
 - **Frontend development server**: `npm run tauri dev`
 - **Production package build**: `npm run tauri build`

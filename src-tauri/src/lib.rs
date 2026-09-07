@@ -7,6 +7,7 @@ mod events;
 mod macos_webview;
 mod print;
 mod process_manager;
+mod profile_install;
 mod quality_store;
 mod settings;
 mod window_lifecycle;
@@ -102,6 +103,8 @@ pub fn run() {
             calibration::select_cal_file,
             calibration::load_project_calibration,
             calibration::save_project_calibration,
+            profile_install::install_profile_to_system,
+            profile_install::get_profile_install_dir,
             quality_store::save_verification_record,
             quality_store::get_verification_history,
             quality_store::clear_verification_history,

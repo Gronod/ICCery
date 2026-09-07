@@ -908,6 +908,7 @@
 
           <div class="stage-actions">
             <button class="primary btn-lg" id="btnVerify">Verify Profile Accuracy</button>
+            <button class="secondary btn-lg" id="btnInstallProfile" disabled title="Copies the generated ICC/ICM profile into the operating system’s standard colour-profile directory so that print dialogs and colour-managed applications can discover it. Requires elevated privileges on some platforms.">Install Profile to System</button>
           </div>
 
           <!-- Report Card -->
@@ -1093,6 +1094,21 @@
             <input type="number" id="calibrationStaleDays" min="1" max="365" value="30">
             <small class="help-hint" style="display:block; font-size:0.75rem; color:var(--text-muted, #888); margin-top:3px;">Also warns when the stored printer name no longer matches the current destination. Default 30 days.</small>
           </div>
+          <div style="margin-top: 12px;">
+            <label for="defaultInstallLocation" class="sub-label">Default ICC install location</label>
+            <select id="defaultInstallLocation">
+              <option value="user" selected>User (no elevation)</option>
+              <option value="system">System-wide (may require admin)</option>
+            </select>
+          </div>
+          <label class="checkbox-label" for="askBeforeOverwriteProfile" style="display:flex; align-items:center; gap:8px; margin-top:10px; cursor:pointer;">
+            <input type="checkbox" id="askBeforeOverwriteProfile" checked>
+            <span>Ask before overwriting an existing system profile</span>
+          </label>
+          <label class="checkbox-label" for="openColorPanelAfterInstall" style="display:flex; align-items:center; gap:8px; margin-top:8px; cursor:pointer;">
+            <input type="checkbox" id="openColorPanelAfterInstall">
+            <span>Open the system Colour Management panel after install</span>
+          </label>
         </div>
 
         <div class="form-group" style="margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--border-color, #333);">
@@ -1133,6 +1149,19 @@
           <button type="button" id="calOverwriteBtn" class="danger">Overwrite</button>
           <button type="button" id="calRenameBtn" class="primary">Rename (timestamp)</button>
           <button type="button" id="calCancelCollisionBtn" class="secondary">Cancel</button>
+        </div>
+      </div>
+    </dialog>
+
+    <dialog id="profileInstallCollisionDialog" class="settings-modal">
+      <div class="modal-content">
+        <h2>Profile already installed</h2>
+        <p id="profileInstallCollisionMessage" style="white-space:pre-wrap;"></p>
+        <p class="help-hint">The working-directory copy is never moved. Choose how to handle the existing system profile.</p>
+        <div class="modal-actions">
+          <button type="button" id="profileOverwriteBtn" class="danger">Overwrite</button>
+          <button type="button" id="profileRenameBtn" class="primary">Rename (timestamp)</button>
+          <button type="button" id="profileCancelCollisionBtn" class="secondary">Cancel</button>
         </div>
       </div>
     </dialog>
