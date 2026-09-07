@@ -1,21 +1,210 @@
 import { computeQuickHull } from "./vendor/quickhull.js";
 import { labToSrgb } from "./color_convert.js";
+import { logger } from "./logger.js";
 
 const invoke = typeof window !== 'undefined' && window.__TAURI__?.core?.invoke ? window.__TAURI__.core.invoke : null;
+
+export const WEBGL_UNAVAILABLE_MESSAGE =
+    "3D gamut viewer requires WebGL; the rest of ICCery still works.";
 
 let scene, camera, renderer, labelRenderer, controls;
 let currentProfileMesh = null;
 let sRgbGroup = null;
 let axisScaffoldGroup = null;
+let resizeObserver = null;
+
+let gamutViewerReady = false;
+let gamutViewerInitStarted = false;
+let gamutViewerUnavailable = false;
+let animationRunning = false;
+let contextLost = false;
+let togglesWired = false;
+let gpuHints = {};
+
+export function setGpuHints(hints) {
+    gpuHints = { ...gpuHints, ...(hints || {}) };
+}
+
+export function isGamutViewerReady() {
+    return gamutViewerReady;
+}
+
+/**
+ * Feature-detect WebGL before constructing THREE.WebGLRenderer.
+ * @param {typeof document} [doc]
+ * @returns {boolean}
+ */
+export function webglAvailable(doc = (typeof document !== 'undefined' ? document : null)) {
+    if (!doc || typeof doc.createElement !== 'function') return false;
+    try {
+        const c = doc.createElement('canvas');
+        if (!c || typeof c.getContext !== 'function') return false;
+        return !!(c.getContext('webgl2') || c.getContext('webgl') || c.getContext('experimental-webgl'));
+    } catch {
+        return false;
+    }
+}
+
+/**
+ * Heuristic for Monterey Intel / Rosetta: drop antialias and cap DPR.
+ * Prefer backend `arch` from `get_app_info` so Apple Silicon is not treated as Intel
+ * (Safari still reports `navigator.platform === "MacIntel"` on ARM).
+ *
+ * @param {{ navigator?: Navigator, arch?: string, macosMajor?: number }} [hints]
+ * @returns {boolean}
+ */
+export function isLikelyConstrainedGpu(hints = {}) {
+    const merged = { ...gpuHints, ...hints };
+    const arch = String(merged.arch || '');
+    if (arch) {
+        return arch === 'x86_64' || arch === 'x86' || arch === 'ia32';
+    }
+    const nav = merged.navigator || (typeof navigator !== 'undefined' ? navigator : {});
+    const uaDataArch = nav.userAgentData && nav.userAgentData.architecture;
+    if (uaDataArch) {
+        return /x86/i.test(String(uaDataArch));
+    }
+    const ua = String(nav.userAgent || '');
+    const platform = String(nav.platform || '');
+    const looksMac = /Macintosh|Mac OS X|MacIntel/i.test(`${platform} ${ua}`);
+    if (!looksMac) return false;
+    if (/ARM|Apple Silicon|aarch64/i.test(ua)) return false;
+    // Intel Mac UA historically includes "Intel"; Apple Silicon UA often does not.
+    if (/Intel/i.test(ua) || /MacIntel/i.test(platform)) {
+        const major = merged.macosMajor;
+        if (typeof major === 'number') return major < 13;
+        return true;
+    }
+    return false;
+}
+
+function showGamutFallback(container, message, { reloadable = false } = {}) {
+    if (!container) return;
+    container.innerHTML = '';
+    const el = document.createElement('div');
+    el.className = 'gamut-webgl-fallback';
+    el.setAttribute('role', 'status');
+    const p = document.createElement('p');
+    p.textContent = message;
+    el.appendChild(p);
+    if (reloadable) {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'secondary btn-md';
+        btn.textContent = 'Reload 3D view';
+        btn.addEventListener('click', () => {
+            disposeViewer();
+            ensureGamutViewer();
+        });
+        el.appendChild(btn);
+    }
+    container.appendChild(el);
+}
+
+function stopAnimate() {
+    animationRunning = false;
+}
+
+function startAnimate() {
+    if (!renderer || contextLost) return;
+    if (animationRunning) return;
+    animationRunning = true;
+    animate();
+}
+
+function disposeViewer() {
+    stopAnimate();
+    if (resizeObserver) {
+        try { resizeObserver.disconnect(); } catch (_) { /* ignore */ }
+        resizeObserver = null;
+    }
+    if (renderer) {
+        try {
+            renderer.dispose();
+        } catch (_) { /* ignore */ }
+        if (renderer.domElement && renderer.domElement.parentNode) {
+            renderer.domElement.parentNode.removeChild(renderer.domElement);
+        }
+    }
+    if (labelRenderer && labelRenderer.domElement && labelRenderer.domElement.parentNode) {
+        labelRenderer.domElement.parentNode.removeChild(labelRenderer.domElement);
+    }
+    renderer = null;
+    scene = null;
+    camera = null;
+    controls = null;
+    labelRenderer = null;
+    currentProfileMesh = null;
+    sRgbGroup = null;
+    axisScaffoldGroup = null;
+    gamutViewerReady = false;
+    gamutViewerInitStarted = false;
+    contextLost = false;
+}
+
+/**
+ * Create the Three.js renderer the first time Stage 5 is shown.
+ * Safe to call repeatedly; a second call does not leak a renderer.
+ */
+export function ensureGamutViewer() {
+    if (gamutViewerUnavailable) return;
+    if (gamutViewerReady) {
+        startAnimate();
+        return;
+    }
+    const stage5 = typeof document !== 'undefined' ? document.getElementById('stage-5') : null;
+    if (stage5 && stage5.classList.contains('hidden')) return;
+
+    const kick = () => {
+        if (gamutViewerUnavailable) return;
+        if (gamutViewerReady) {
+            startAnimate();
+            return;
+        }
+        const s = typeof document !== 'undefined' ? document.getElementById('stage-5') : null;
+        if (s && s.classList.contains('hidden')) return;
+        initGamutViewer();
+    };
+
+    if (typeof requestAnimationFrame === 'function') {
+        requestAnimationFrame(kick);
+    } else {
+        kick();
+    }
+}
+
+export function pauseGamutViewer() {
+    stopAnimate();
+}
+
+export function resumeGamutViewer() {
+    if (gamutViewerReady && !contextLost) startAnimate();
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Public: initialise the gamut viewer
 // ─────────────────────────────────────────────────────────────────────────────
 export async function initGamutViewer() {
-    try {
-        const container = document.getElementById('gamutViewerContainer');
-        if (!container || typeof THREE === 'undefined') return;
+    if (gamutViewerReady || gamutViewerInitStarted) return;
+    gamutViewerInitStarted = true;
 
+    const container = typeof document !== 'undefined'
+        ? document.getElementById('gamutViewerContainer')
+        : null;
+    if (!container || typeof THREE === 'undefined') {
+        gamutViewerInitStarted = false;
+        return;
+    }
+
+    if (!webglAvailable()) {
+        gamutViewerUnavailable = true;
+        gamutViewerInitStarted = false;
+        logger.warn(WEBGL_UNAVAILABLE_MESSAGE, 'GamutViewer');
+        showGamutFallback(container, WEBGL_UNAVAILABLE_MESSAGE);
+        return;
+    }
+
+    try {
         // Clear any existing contents if re-initialised
         container.innerHTML = "";
 
@@ -25,16 +214,42 @@ export async function initGamutViewer() {
         const width  = container.clientWidth  > 0 ? container.clientWidth  : 500;
         const height = container.clientHeight > 0 ? container.clientHeight : 400;
 
-        // ── WebGL renderer ────────────────────────────────────────────────────
+        const lowPower = isLikelyConstrainedGpu();
+        logger.info(
+            `Creating WebGLRenderer (lowPower=${lowPower}, arch=${gpuHints.arch || 'unknown'}, dpr=${window.devicePixelRatio || 1})`,
+            'GamutViewer'
+        );
+
         camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 2000);
         camera.position.set(180, 120, 180);
 
-        renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer = new THREE.WebGLRenderer({
+            antialias: !lowPower,
+            alpha: false,
+            powerPreference: lowPower ? 'low-power' : 'default',
+            failIfMajorPerformanceCaveat: false,
+        });
         renderer.setSize(width, height);
-        renderer.setPixelRatio(window.devicePixelRatio || 1);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, lowPower ? 1 : 2));
         renderer.domElement.style.touchAction = 'none';
         renderer.domElement.style.display = 'block';
         container.appendChild(renderer.domElement);
+
+        renderer.domElement.addEventListener('webglcontextlost', (e) => {
+            e.preventDefault();
+            contextLost = true;
+            stopAnimate();
+            logger.error('WebGL context lost', 'GamutViewer');
+            showGamutFallback(container, '3D view lost its GPU context. Profiling stages still work.', {
+                reloadable: true,
+            });
+        });
+        renderer.domElement.addEventListener('webglcontextrestored', () => {
+            logger.warn('WebGL context restored — rebuilding viewer', 'GamutViewer');
+            contextLost = false;
+            disposeViewer();
+            ensureGamutViewer();
+        });
 
         // ── CSS2D label renderer ──────────────────────────────────────────────
         if (typeof THREE.CSS2DRenderer !== 'undefined') {
@@ -74,21 +289,24 @@ export async function initGamutViewer() {
         buildAxisScaffold();
 
         // ── Resize handling ───────────────────────────────────────────────────
-        const resizeObserver = new ResizeObserver((entries) => {
-            for (const entry of entries) {
-                const w = entry.contentRect.width;
-                const h = entry.contentRect.height;
-                if (w > 0 && h > 0 && renderer && camera) {
-                    camera.aspect = w / h;
-                    camera.updateProjectionMatrix();
-                    renderer.setSize(w, h);
-                    if (labelRenderer) labelRenderer.setSize(w, h);
+        if (typeof ResizeObserver !== 'undefined') {
+            resizeObserver = new ResizeObserver((entries) => {
+                for (const entry of entries) {
+                    const w = entry.contentRect.width;
+                    const h = entry.contentRect.height;
+                    if (w > 0 && h > 0 && renderer && camera) {
+                        camera.aspect = w / h;
+                        camera.updateProjectionMatrix();
+                        renderer.setSize(w, h);
+                        if (labelRenderer) labelRenderer.setSize(w, h);
+                    }
                 }
-            }
-        });
-        resizeObserver.observe(container);
+            });
+            resizeObserver.observe(container);
+        }
 
-        animate();
+        gamutViewerReady = true;
+        startAnimate();
 
         // ── Wire toggle controls ──────────────────────────────────────────────
         _wireToggles();
@@ -97,7 +315,16 @@ export async function initGamutViewer() {
         loadSrgbReferenceGamut();
 
     } catch (err) {
-        console.warn("Gamut viewer initialisation notice:", err);
+        logger.error(`Gamut viewer initialisation failed: ${err?.stack || err}`, 'GamutViewer');
+        gamutViewerInitStarted = false;
+        gamutViewerReady = false;
+        try {
+            if (renderer && renderer.domElement && renderer.domElement.parentNode) {
+                renderer.domElement.parentNode.removeChild(renderer.domElement);
+            }
+        } catch (_) { /* ignore */ }
+        renderer = null;
+        showGamutFallback(container, WEBGL_UNAVAILABLE_MESSAGE, { reloadable: true });
     }
 }
 
@@ -105,7 +332,9 @@ export async function initGamutViewer() {
 // Animation loop
 // ─────────────────────────────────────────────────────────────────────────────
 function animate() {
+    if (!animationRunning) return;
     requestAnimationFrame(animate);
+    if (contextLost || !renderer) return;
     if (controls) controls.update();
     if (renderer && scene && camera) {
         renderer.render(scene, camera);
@@ -560,6 +789,8 @@ export function toggleAxes(visible) {
 // Wire legend toggle checkboxes, opacity sliders, and reset button
 // ─────────────────────────────────────────────────────────────────────────────
 function _wireToggles() {
+    if (togglesWired) return;
+    togglesWired = true;
     const bindings = [
         ['chkProfileGamut',   toggleProfileGamut  ],
         ['chkSrgbReference',  toggleSrgbReference ],

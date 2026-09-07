@@ -4,13 +4,43 @@ import { initChartread } from './chartread.js';
 import { initColprof } from './colprof.js';
 import { initProfcheck } from './profcheck.js';
 import { initSettings } from './settings.js';
-import { initGamutViewer } from './gamut_viewer.js';
+import { setGpuHints } from './gamut_viewer.js';
 import { initPresets } from './presets.js';
 import { wizardState } from './state.js';
 import { logger } from './logger.js';
 import { CgatsInterop } from './cgats_interop.js';
 
 const { invoke } = window.__TAURI__.core;
+
+let mainWindowShown = false;
+
+async function revealMainWindow() {
+  if (mainWindowShown) return;
+  mainWindowShown = true;
+  try {
+    await invoke('show_main_window');
+  } catch (e) {
+    mainWindowShown = false;
+    console.warn('[ICCery] show_main_window failed:', e);
+  }
+}
+
+function maybeShowConstrainedGpuNotice(info) {
+  if (!info || info.os !== 'macos') return;
+  const intel = info.arch === 'x86_64' || info.arch === 'x86';
+  const major = typeof info.macos_major === 'number' ? info.macos_major : null;
+  if (!intel || (major !== null && major >= 13)) return;
+  const key = 'iccery.macos-intel-webgl-notice';
+  try {
+    if (sessionStorage.getItem(key)) return;
+    sessionStorage.setItem(key, '1');
+  } catch (_) { /* private mode */ }
+  wizardState.showNotice(
+    'On this Mac the 3D gamut view may be unavailable. Profiling stages still work.',
+    'info',
+    8000
+  );
+}
 
 document.addEventListener('DOMContentLoaded', () => {
   // Initialize interoperability handlers
@@ -39,6 +69,13 @@ document.addEventListener('DOMContentLoaded', () => {
     wizardState.updateGating();
   });
 
+  document.addEventListener('visibilitychange', () => {
+    logger.warn(`Frontend visibilitychange hidden=${document.hidden}`, 'WebView');
+  });
+  window.addEventListener('pagehide', () => {
+    logger.warn('Frontend pagehide', 'WebView');
+  });
+
   // Initialize gating on load
   wizardState.updateGating();
 
@@ -54,6 +91,12 @@ document.addEventListener('DOMContentLoaded', () => {
       const buildDateEl = document.getElementById('aboutBuildDate');
       if (versionEl && info.version) versionEl.textContent = `v${info.version}`;
       if (buildDateEl && info.build_date) buildDateEl.textContent = info.build_date;
+      setGpuHints({
+        arch: info.arch,
+        os: info.os,
+        macosMajor: info.macos_major,
+      });
+      maybeShowConstrainedGpuNotice(info);
     } catch (e) {
       console.warn('[ICCery] Could not load dynamic app info:', e);
     }
@@ -82,13 +125,23 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   };
 
-  // Initialize all stages & features safely
+  // Initialize all stages & features safely.
+  // Gamut Viewer is deferred until Stage 5 is shown (eager WebGL on launch
+  // respawns WKWebView on Monterey Intel).
   safeInit('Stage 1 (Targen)', initTargen);
   safeInit('Stage 2 (Printtarg)', initPrinttarg);
   safeInit('Stage 3 (Chartread)', initChartread);
   safeInit('Stage 4 (Colprof)', initColprof);
   safeInit('Stage 5 (Profcheck)', initProfcheck);
   safeInit('Settings', initSettings);
-  safeInit('Gamut Viewer', initGamutViewer);
   safeInit('Presets', initPresets);
+
+  // Double-rAF waits for layout + first paint of the dark CSS.
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      revealMainWindow();
+    });
+  });
+  // Fallback so a JS exception cannot leave a permanently hidden window.
+  setTimeout(revealMainWindow, 1500);
 });
