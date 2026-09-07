@@ -105,18 +105,99 @@ pub async fn resolve_binary(app: AppHandle, binary_name: String) -> Result<Strin
     Ok(resource_path.to_string_lossy().to_string())
 }
 
+#[derive(Serialize, Clone, Debug, PartialEq, Eq)]
+pub struct OsInfo {
+    pub os: String,
+    pub arch: String,
+    pub family: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub macos_major: Option<u32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub macos_minor: Option<u32>,
+}
+
+/// Parse `sw_vers -productVersion` output such as `"12.7.6"` or `"13.0"`.
+pub fn parse_macos_product_version(version: &str) -> Option<(u32, u32, u32)> {
+    let mut parts = version.trim().split('.');
+    let major = parts.next()?.parse().ok()?;
+    let minor = parts.next().unwrap_or("0").parse().unwrap_or(0);
+    let patch = parts.next().unwrap_or("0").parse().unwrap_or(0);
+    Some((major, minor, patch))
+}
+
+fn macos_version_from_sw_vers() -> Option<(u32, u32, u32)> {
+    #[cfg(target_os = "macos")]
+    {
+        let output = std::process::Command::new("sw_vers")
+            .arg("-productVersion")
+            .output()
+            .ok()?;
+        if !output.status.success() {
+            return None;
+        }
+        parse_macos_product_version(&String::from_utf8_lossy(&output.stdout))
+    }
+    #[cfg(not(target_os = "macos"))]
+    {
+        None
+    }
+}
+
+pub fn collect_os_info() -> OsInfo {
+    let (macos_major, macos_minor) = match macos_version_from_sw_vers() {
+        Some((maj, min, _)) => (Some(maj), Some(min)),
+        None => (None, None),
+    };
+    OsInfo {
+        os: std::env::consts::OS.to_string(),
+        arch: std::env::consts::ARCH.to_string(),
+        family: std::env::consts::FAMILY.to_string(),
+        macos_major,
+        macos_minor,
+    }
+}
+
 #[derive(Serialize)]
 pub struct AppInfo {
     pub version: String,
     pub build_date: String,
+    pub os: String,
+    pub arch: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub macos_major: Option<u32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub macos_minor: Option<u32>,
+}
+
+#[tauri::command]
+pub fn get_os_info() -> OsInfo {
+    collect_os_info()
 }
 
 #[tauri::command]
 pub fn get_app_info() -> AppInfo {
+    let os = collect_os_info();
     AppInfo {
         version: env!("CARGO_PKG_VERSION").to_string(),
         build_date: env!("BUILD_DATE").to_string(),
+        os: os.os,
+        arch: os.arch,
+        macos_major: os.macos_major,
+        macos_minor: os.macos_minor,
     }
+}
+
+#[tauri::command]
+pub fn show_main_window(app: AppHandle) -> Result<(), String> {
+    if let Some(win) = app.get_webview_window("main") {
+        crate::macos_webview::paint_dark_webview(&win);
+        win.show().map_err(|e| e.to_string())?;
+        let _ = win.set_focus();
+        log::info!("Main window shown after frontend ready");
+    } else {
+        log::warn!("show_main_window: window 'main' not found");
+    }
+    Ok(())
 }
 
 pub fn resolve_safe_cwd(app: &AppHandle, cwd_input: &str) -> Result<String, String> {
@@ -2095,5 +2176,34 @@ mod tests {
         assert!(temp_dir.join("iccery.log").exists(), "Active log must never be deleted");
 
         let _ = std::fs::remove_dir_all(&temp_dir);
+    }
+
+    #[test]
+    fn test_parse_macos_product_version() {
+        assert_eq!(parse_macos_product_version("12.7.6"), Some((12, 7, 6)));
+        assert_eq!(parse_macos_product_version("13.0"), Some((13, 0, 0)));
+        assert_eq!(parse_macos_product_version(" 15.1.1\n"), Some((15, 1, 1)));
+        assert_eq!(parse_macos_product_version(""), None);
+        assert_eq!(parse_macos_product_version("ventura"), None);
+    }
+
+    #[test]
+    fn test_collect_os_info_has_host_os_and_arch() {
+        let info = collect_os_info();
+        assert_eq!(info.os, std::env::consts::OS);
+        assert_eq!(info.arch, std::env::consts::ARCH);
+        assert_eq!(info.family, std::env::consts::FAMILY);
+        if info.os != "macos" {
+            assert_eq!(info.macos_major, None);
+            assert_eq!(info.macos_minor, None);
+        }
+    }
+
+    #[test]
+    fn test_get_app_info_includes_os_arch() {
+        let info = get_app_info();
+        assert!(!info.version.is_empty());
+        assert_eq!(info.os, std::env::consts::OS);
+        assert_eq!(info.arch, std::env::consts::ARCH);
     }
 }

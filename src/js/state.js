@@ -1,3 +1,5 @@
+import { ensureGamutViewer, pauseGamutViewer } from './gamut_viewer.js';
+
 const { invoke } = window.__TAURI__.core;
 
 export const wizardState = {
@@ -78,6 +80,12 @@ export const wizardState = {
     });
 
     window.dispatchEvent(new CustomEvent('stage-changed', { detail: { stage: stageNumber } }));
+
+    if (stageNumber === 5) {
+      ensureGamutViewer();
+    } else {
+      pauseGamutViewer();
+    }
   },
 
   async navigateToStage(stageNumber) {

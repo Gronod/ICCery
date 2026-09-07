@@ -10,6 +10,9 @@
 ## 3D Gamut Viewer
 
 - The viewer renders the measured/derived `.gam` volume and an optional sRGB reference wireframe in CIELAB.
+- **Do not** create `THREE.WebGLRenderer` during `DOMContentLoaded`. Call `ensureGamutViewer()` from `state.js` only when Stage 5 becomes visible. Eager WebGL on a hidden canvas respawns WKWebView on macOS Monterey Intel (#225).
+- Feature-detect WebGL first; missing/lost context must leave a fallback message in `#gamutViewerContainer` and must not take down the app.
+- Pause the rAF loop when leaving Stage 5 (`pauseGamutViewer`).
 - Layer controls (profile, sRGB, axes) each have visibility toggles and opacity sliders.
 - Click **Reset View** or press **R** to return the camera to its default position.
 - Full JSDoc is provided on the public API in `src/js/gamut_viewer.js`.
