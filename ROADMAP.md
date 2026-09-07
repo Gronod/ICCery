@@ -120,6 +120,7 @@ ICCery is a native, cross-platform desktop application built with:
 
 ### Printer Calibration Release (`v0.8.5`)
 - [x] **Printer Calibration Curves (#224)**: Optional Stage 0 dashboard for `printcal` linearization and ink limits. `CAL_` artefacts, Apply Calibration toggle feeding `printtarg -K` and `applycal`, channel-response plots, stale-cal warnings, and project/library persistence.
+- [x] **System-Wide Profile Installation (#223)**: Stage 5 “Install Profile to System” copies the verified ICC/ICM into the platform colour store (user or system), with overwrite/rename/cancel, elevation guidance, and a note when printcal curves were applied.
 
 ---
 

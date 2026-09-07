@@ -10,6 +10,7 @@ import { wizardState } from './state.js';
 import { logger } from './logger.js';
 import { CgatsInterop } from './cgats_interop.js';
 import { initCalibration } from './calibration.js';
+import { initProfileInstall } from './profile_install.js';
 
 const { invoke } = window.__TAURI__.core;
 
@@ -137,6 +138,7 @@ document.addEventListener('DOMContentLoaded', () => {
   safeInit('Settings', initSettings);
   safeInit('Presets', initPresets);
   safeInit('Calibration', initCalibration);
+  safeInit('ProfileInstall', initProfileInstall);
 
   // Double-rAF waits for layout + first paint of the dark CSS.
   requestAnimationFrame(() => {
